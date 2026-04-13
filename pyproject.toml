@@ -1,0 +1,118 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [ "hatchling" ]
+
+[project]
+name = "pyansys-geometry-mcp"
+version = "0.1.0"
+description = "MCP server for PyAnsys Geometry"
+readme = "README.rst"
+license = "MIT"
+authors = [
+  { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
+]
+maintainers = [
+  { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
+]
+keywords = [
+  "ansys",
+  "mcp",
+  "model-context-protocol",
+  "ai",
+  "assistant",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.10,<4"
+dependencies = [
+  "ansys-common-mcp>=0.2.0",
+  "ansys-geometry-core",
+]
+
+[project.optional-dependencies]
+doc = [
+  "ansys-sphinx-theme>=0.14",
+  "pypdf>=4.0",
+  "sphinx>=7.0",
+  "sphinx-click>=5.0",
+  "sphinx-copybutton>=0.5",
+  "sphinx-design>=0.5",
+  "sphinx-jinja>=0.2",
+]
+tests = [
+  "pytest>=7.0",
+  "pytest-asyncio>=0.21",
+  "pytest-cov>=4.0",
+  "pytest-mock>=3.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
+Repository = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+Issues = "https://github.com/ansys-internal/pyansys-geometry-mcp/issues"
+
+[project.scripts]
+pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
+
+[tool.hatch]
+build.targets.editable.packages = [ "src/ansys/geometry/mcp" ]
+build.targets.editable.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
+build.targets.wheel.packages = [ "src/ansys/geometry/mcp" ]
+build.targets.wheel.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+[tool.ruff.lint]
+select = [
+  "D",   # pydocstyle
+  "I",   # isort
+  "PTH", # flake8-use-pathlib
+  "TD",  # flake8-todos
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["ansys.geometry.mcp"]
+
+[tool.pydocstyle]
+convention = "numpy"
+add_ignore = ["D100", "D104"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+asyncio_mode = "auto"
+addopts = [
+  "--verbose",
+  "--cov=ansys.geometry.mcp",
+  "--cov-report=term-missing",
+  "--cov-report=html",
+  "--cov-report=xml",
+]
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/__pycache__/*"]
