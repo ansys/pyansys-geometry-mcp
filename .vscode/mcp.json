@@ -1,0 +1,10 @@
+// Launching the local MCP server
+{
+    "servers": {
+        "pyansys-geometry-mcp": {
+            "type": "stdio",
+            "command": ".\\examples\\.venv\\Scripts\\python.exe",
+            "args": ["-m", "pyansys-geometry-mcp"]
+        }
+    }
+}

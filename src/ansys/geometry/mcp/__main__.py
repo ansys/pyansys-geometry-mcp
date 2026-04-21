@@ -33,7 +33,10 @@ from ansys.common.mcp.logging_config import setup_logging
 def main():
     """Run the PyAnsys Geometry MCP MCP server."""
     setup_logging(level="INFO")
-    app.run()
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        pass
     return 0
 
 
