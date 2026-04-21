@@ -21,8 +21,6 @@
 
 """MCP server for PyAnsys Geometry MCP."""
 
-import threading
-
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
 
@@ -38,8 +36,6 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
     ``ansys-geometry-core`` for simulation and analysis workflows.
     """
 
-    _product_thread: threading.Thread | None = None
-    """Private attribute to hold the reference to the product launch thread."""
     context: PyAnsysGeometryContext
     """The application context for the MCP server, containing the product instance and related information."""
 
@@ -75,35 +71,27 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         self.context.product_instance = None
         logger.info("Starting PyAnsys Geometry MCP backend...")
 
-        def _launch():
-            if self.context.connect_to_existing_service:
-                from ansys.geometry.core import Modeler
+        if self.context.connect_to_existing_service:
+            from ansys.geometry.core import Modeler
 
-                logger.info(
-                    f"Connecting to existing geometry service at "
-                    f"{self.context.host}:{self.context.port}..."
-                )
-                instance = Modeler(
-                    host=self.context.host,
-                    port=self.context.port,
-                    transport_mode=self.context.transport_mode,
-                )
-            else:
-                from ansys.geometry.core import launch_modeler
+            logger.info(
+                f"Connecting to existing geometry service at "
+                f"{self.context.host}:{self.context.port}..."
+            )
+            instance = Modeler(
+                host=self.context.host,
+                port=self.context.port,
+                transport_mode=self.context.transport_mode,
+            )
+        else:
+            from ansys.geometry.core import launch_modeler
 
-                instance = launch_modeler(transport_mode=self.context.transport_mode)
+            instance = launch_modeler(transport_mode=self.context.transport_mode)
 
-            self.context.product_instance = instance
-            # Log the successful launch of the product instance
-            logger.info("PyAnsys Geometry MCP backend launched successfully.")
-            logger.info(f"Product instance details:\n\n{self.context.product_instance}")
-
-        # Launch the product in a separate thread to avoid blocking the server startup
-        t = threading.Thread(target=_launch, daemon=True)
-        t.start()
-
-        # Store the thread reference to ensure it stays alive and can be joined if needed
-        self._product_thread = t
+        self.context.product_instance = instance
+        # Log the successful launch of the product instance
+        logger.info("PyAnsys Geometry MCP backend launched successfully.")
+        logger.info(f"Product instance details:\n\n{self.context.product_instance}")
 
     def product_cleanup(self):
         """Clean up the product instance when the server stops.
@@ -117,14 +105,6 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 logger.info("PyAnsys Geometry MCP backend closed successfully.")
             except Exception as e:
                 logger.error(f"Error during product cleanup: {e}")
-
-        # Close the threaded product launch if it's still running to ensure clean shutdown
-        if self._product_thread is not None and self._product_thread.is_alive():
-            logger.info("Waiting for product launch thread to finish...")
-            self._product_thread.join(timeout=5)
-            if self._product_thread.is_alive():
-                logger.warning("Product launch thread did not finish within timeout.")
-
 
 # Create the MCP server instance used by tools.py and __main__.py.
 # CLI arguments set in __main__.py are applied to this instance before app.run().
