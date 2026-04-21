@@ -70,6 +70,7 @@ build.targets.wheel.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
 
 [tool.ruff]
 line-length = 100
+fix = true
 format.indent-style = "space"
 format.quote-style = "double"
 format.docstring-code-line-length = "dynamic"

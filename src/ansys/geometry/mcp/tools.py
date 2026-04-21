@@ -40,20 +40,22 @@ Notes
 -----
 Import this module in ``__main__.py`` (already done) to register all tools
 with the server before it starts.
+
 """
 
-from fastmcp.server import Context
-
 from ansys.common.mcp.logging_config import get_logger
+import ansys.common.mcp.tools as shared_tools
+from fastmcp.server import Context
+from websockets.asyncio.async_timeout import timeout
 
-from ansys.geometry.mcp import app
+from ansys.geometry.mcp import PyAnsysGeometryContext, app
 
 logger = get_logger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# TODO: Replace the example tool below with your product-specific tools.
-# ---------------------------------------------------------------------------
+def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
+    """Access the PyAnsysGeometryContext from the MCP context."""
+    return ctx.fastmcp._lifespan_result  # type: ignore[return-value]
 
 
 @app.tool()
@@ -69,8 +71,9 @@ def get_product_status(ctx: Context) -> str:
     -------
     str
         Status message describing whether the product is connected.
+
     """
-    app_context = ctx.fastmcp._lifespan_result
+    app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
         return "Product backend is not connected. Check server logs for startup errors."
@@ -78,33 +81,82 @@ def get_product_status(ctx: Context) -> str:
     return f"Product backend is connected: {app_context.product_instance}"
 
 
-# TODO: Add your product-specific tools here.
-# Example template:
-#
-# @app.tool()
-# def do_something(ctx: Context, param: str) -> str:
-#     """One-line summary shown to the AI assistant.
-#
-#     Parameters
-#     ----------
-#     param : str
-#         Description of the parameter.
-#
-#     Returns
-#     -------
-#     str
-#         Description of the return value.
-#     """
-#     app_context = ctx.fastmcp._lifespan_result
-#
-#     if app_context.product_instance is None:
-#         return "Product is not connected yet. Please try again in a moment."
-#
-#     try:
-#         result = app_context.product_instance.do_something(param)
-#         app_context.command_history.append(f"do_something({param!r})")
-#         logger.info(f"do_something called with param={param!r}")
-#         return str(result)
-#     except Exception as e:
-#         logger.error(f"do_something failed: {e}")
-#         return f"Error: {e}"
+@app.tool()
+async def run_python_code(ctx: Context, code: str) -> str:
+    """Execute arbitrary Python code in the product backend's Python session.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    code : str
+        The Python code to execute.
+
+    Returns
+    -------
+    str
+        The output or result of the executed code, or an error message if execution fails.
+
+    """
+    return await shared_tools.execute_python_code(ctx, code, timeout=60)
+
+
+@app.tool()
+def create_design(ctx: Context, design_name: str) -> str:
+    """Create a new design in the product backend.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    design_name : str
+        Name of the design to create.
+
+    Returns
+    -------
+    str
+        Result message indicating success or failure.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create design."
+
+    try:
+        app_context.product_instance.create_design(design_name)
+        app_context.command_history.append(f"design=modeler.create_design({design_name!r})")
+        logger.info(f"create_design called with design_name={design_name!r}")
+        return f"Design '{design_name}' created successfully."
+    except Exception as e:
+        logger.error(f"create_design failed: {e}")
+        return f"Error creating design '{design_name}': {e}"
+
+
+@app.tool()
+def get_design_info(ctx: Context) -> str:
+    """Get information about the current active design.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+
+    Returns
+    -------
+    str
+        Information about the design, or an error message if retrieval fails.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot retrieve design info."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        logger.info("get_design_info called")
+        return str(design)
+    except Exception as e:
+        logger.error(f"get_design_info failed: {e}")
+        return f"Error retrieving info for design: {e}"

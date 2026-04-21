@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from typing import Any, Optional
 
 from ansys.common.mcp import PyAnsysBaseAppContext
+from ansys.geometry.core import Modeler
 
 
 @dataclass
@@ -49,9 +50,10 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     --------
     >>> context = PyAnsysGeometryContext()
     >>> context.product_instance  # None until product_startup() runs
+
     """
 
-    product_instance: Optional[Any] = None
+    product_instance: Optional[Modeler] = None
     transport_mode: Optional[str] = None
     host: str = "localhost"
     port: int = 50051

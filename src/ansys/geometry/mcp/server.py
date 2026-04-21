@@ -51,6 +51,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         -------
         PyAnsysGeometryContext
             Context instance with Python session and command history.
+
         """
         if getattr(self, "context", None) is not None:
             return self.context
@@ -83,10 +84,17 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 port=self.context.port,
                 transport_mode=self.context.transport_mode,
             )
+            self.context.command_history.append(
+                f"modeler=Modeler(host={self.context.host!r}, port={self.context.port}, "
+                f"transport_mode={self.context.transport_mode!r})"
+            )
         else:
             from ansys.geometry.core import launch_modeler
 
             instance = launch_modeler(transport_mode=self.context.transport_mode)
+            self.context.command_history.append(
+                f"modeler=launch_modeler(transport_mode={self.context.transport_mode!r})"
+            )
 
         self.context.product_instance = instance
         # Log the successful launch of the product instance
@@ -105,6 +113,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 logger.info("PyAnsys Geometry MCP backend closed successfully.")
             except Exception as e:
                 logger.error(f"Error during product cleanup: {e}")
+
 
 # Create the MCP server instance used by tools.py and __main__.py.
 # CLI arguments set in __main__.py are applied to this instance before app.run().
