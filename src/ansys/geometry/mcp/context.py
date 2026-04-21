@@ -35,12 +35,15 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     ----------
     product_instance : Optional[Any]
         The connected product instance.
-
-    Notes
-    -----
-    Add any additional product-specific attributes here.
-    For example, if your product exposes a model or session object,
-    add it as a field with a default value of ``None``.
+    transport_mode : str
+        Transport mode for the geometry service connection.
+    host : str
+        Host name or IP address of the geometry service.
+    port : int
+        Port number of the geometry service.
+    connect_to_existing_service : bool
+        When ``True``, connect to a running geometry service instead of
+        launching a new one.
 
     Examples
     --------
@@ -49,8 +52,7 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     """
 
     product_instance: Optional[Any] = None
-
-    # TODO: Add more product-specific fields as needed.
-    # Example:
-    # model: Optional[Any] = None
-    # session: Optional[Any] = None
+    transport_mode: str = "insecure"
+    host: str = "localhost"
+    port: int = 50051
+    connect_to_existing_service: bool = False
