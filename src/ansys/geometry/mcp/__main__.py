@@ -38,7 +38,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--transport-mode",
-        default="insecure",
+        default=None,
         choices=["insecure", "mtls", "wnua", "uds"],
         help=(
             "Transport mode for the geometry service connection (default: insecure). "

@@ -35,7 +35,7 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     ----------
     product_instance : Optional[Any]
         The connected product instance.
-    transport_mode : str
+    transport_mode : Optional[str]
         Transport mode for the geometry service connection.
     host : str
         Host name or IP address of the geometry service.
@@ -52,7 +52,7 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     """
 
     product_instance: Optional[Any] = None
-    transport_mode: str = "insecure"
+    transport_mode: Optional[str] = None
     host: str = "localhost"
     port: int = 50051
     connect_to_existing_service: bool = False

@@ -3,8 +3,8 @@
     "servers": {
         "pyansys-geometry-mcp": {
             "type": "stdio",
-            "command": ".\\examples\\.venv\\Scripts\\python.exe",
-            "args": ["-m", "pyansys-geometry-mcp"]
+            "command": ".\\.venv\\Scripts\\pyansys-geometry-mcp.exe",
+            "args": ["--transport-mode", "insecure"]
         }
     }
 }
