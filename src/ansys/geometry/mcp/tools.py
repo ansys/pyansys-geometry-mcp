@@ -160,3 +160,37 @@ def get_design_info(ctx: Context) -> str:
     except Exception as e:
         logger.error(f"get_design_info failed: {e}")
         return f"Error retrieving info for design: {e}"
+
+
+@app.tool()
+def export_design_to_fmd(ctx: Context, location: str | None = None) -> str:
+    """Export the current active design to an FMD file.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    location : str, optional
+        File path on disk to save the FMD file. If not provided, the file
+        is saved in the current working directory.
+
+    Returns
+    -------
+    str
+        The path to the saved FMD file, or an error message if export fails.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot export design."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        saved_path = design.export_to_fmd(location)
+        logger.info(f"export_design_to_fmd called, saved to {saved_path}")
+        app_context.command_history.append(f"design.export_to_fmd({location!r})")
+        return f"Design exported to FMD file: {saved_path}"
+    except Exception as e:
+        logger.error(f"export_design_to_fmd failed: {e}")
+        return f"Error exporting design to FMD: {e}"
