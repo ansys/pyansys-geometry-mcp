@@ -73,10 +73,7 @@ def get_product_status(ctx: Context) -> str:
     app_context = ctx.fastmcp._lifespan_result
 
     if app_context.product_instance is None:
-        return (
-            "Product backend is not connected. "
-            "Check server logs for startup errors."
-        )
+        return "Product backend is not connected. Check server logs for startup errors."
 
     return f"Product backend is connected: {app_context.product_instance}"
 

@@ -21,6 +21,8 @@
 
 """MCP server for PyAnsys Geometry MCP."""
 
+import threading
+
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
 
@@ -36,14 +38,27 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
     ``ansys-geometry-core`` for simulation and analysis workflows.
     """
 
+    _product_thread: threading.Thread | None = None
+    """Private attribute to hold the reference to the product launch thread."""
+    context: PyAnsysGeometryContext
+    """The application context for the MCP server, containing the product instance and related information."""
+
     def create_context(self) -> PyAnsysGeometryContext:
-        """Create product-specific context.
+        """Create (or return the pre-existing) product-specific context.
+
+        If the context has already been initialised — for example because
+        CLI arguments were written to ``app.context`` before ``app.run()``
+        was called — this method returns it unchanged so that caller-set
+        configuration is preserved.
 
         Returns
         -------
         PyAnsysGeometryContext
             Context instance with Python session and command history.
         """
+        if getattr(self, "context", None) is not None:
+            return self.context
+
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
                 python_executable=self.python_executable,
@@ -56,72 +71,63 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         """Launch the product instance when the server starts.
 
         This method is called automatically during server startup.
-
-        Notes
-        -----
-        TODO: Replace the placeholder below with code that launches or
-        connects to your product. Store the instance on ``self.context``
-        so that tools can access it.
-
-        If your product takes time to start (for example, it requires a
-        Docker container or a license check), consider launching it in a
-        background thread so the MCP handshake can complete immediately.
-
-        Example (synchronous)::
-
-            from my_product import launch_product
-            self.context.product_instance = launch_product()
-
-        Example (background thread)::
-
-            import threading
-
-            def _launch():
-                from my_product import launch_product
-                self.context.product_instance = launch_product()
-
-            t = threading.Thread(target=_launch, daemon=True)
-            t.start()
-            # Do NOT join — return immediately so the MCP handshake completes.
         """
+        self.context.product_instance = None
         logger.info("Starting PyAnsys Geometry MCP backend...")
 
-        # TODO: Implement product startup.
-        # Example:
-        # from my_product import launch_product
-        # self.context.product_instance = launch_product()
+        def _launch():
+            if self.context.connect_to_existing_service:
+                from ansys.geometry.core import Modeler
 
-        logger.warning(
-            "product_startup() is not implemented yet. "
-            "Edit server.py to launch your product."
-        )
+                logger.info(
+                    f"Connecting to existing geometry service at "
+                    f"{self.context.host}:{self.context.port}..."
+                )
+                instance = Modeler(
+                    host=self.context.host,
+                    port=self.context.port,
+                    transport_mode=self.context.transport_mode,
+                )
+            else:
+                from ansys.geometry.core import launch_modeler
+
+                instance = launch_modeler(transport_mode=self.context.transport_mode)
+
+            self.context.product_instance = instance
+            # Log the successful launch of the product instance
+            logger.info("PyAnsys Geometry MCP backend launched successfully.")
+            logger.info(f"Product instance details:\n\n{self.context.product_instance}")
+
+        # Launch the product in a separate thread to avoid blocking the server startup
+        t = threading.Thread(target=_launch, daemon=True)
+        t.start()
+
+        # Store the thread reference to ensure it stays alive and can be joined if needed
+        self._product_thread = t
 
     def product_cleanup(self):
         """Clean up the product instance when the server stops.
 
         This method is called automatically during server shutdown.
-
-        Notes
-        -----
-        TODO: Replace the placeholder below with code that gracefully
-        shuts down or disconnects from your product.
-
-        Example::
-
-            if self.context.product_instance is not None:
-                self.context.product_instance.exit()
         """
         if self.context.product_instance is not None:
             try:
                 logger.info("Closing PyAnsys Geometry MCP backend...")
-                # TODO: Call the appropriate shutdown method on your product.
-                # Example: self.context.product_instance.exit()
+                self.context.product_instance.close()
                 logger.info("PyAnsys Geometry MCP backend closed successfully.")
             except Exception as e:
                 logger.error(f"Error during product cleanup: {e}")
 
+        # Close the threaded product launch if it's still running to ensure clean shutdown
+        if self._product_thread is not None and self._product_thread.is_alive():
+            logger.info("Waiting for product launch thread to finish...")
+            self._product_thread.join(timeout=5)
+            if self._product_thread.is_alive():
+                logger.warning("Product launch thread did not finish within timeout.")
 
-# Create the MCP server instance used by tools.py and __main__.py
+
+# Create the MCP server instance used by tools.py and __main__.py.
+# CLI arguments set in __main__.py are applied to this instance before app.run().
 app = PyAnsysGeometryMCP(
     name="pyansys-geometry-mcp",
 )

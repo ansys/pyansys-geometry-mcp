@@ -7,20 +7,21 @@ name = "pyansys-geometry-mcp"
 version = "0.1.0"
 description = "MCP server for PyAnsys Geometry"
 readme = "README.rst"
-license = "MIT"
-authors = [
-  { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
+keywords = [
+  "ai",
+  "ansys",
+  "assistant",
+  "mcp",
+  "model-context-protocol",
 ]
+license = "MIT"
 maintainers = [
   { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
 ]
-keywords = [
-  "ansys",
-  "mcp",
-  "model-context-protocol",
-  "ai",
-  "assistant",
+authors = [
+  { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
 ]
+requires-python = ">=3.10,<4"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -32,17 +33,15 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.10,<4"
 dependencies = [
   "ansys-common-mcp>=0.2.0",
-  "ansys-geometry-core",
+  "ansys-geometry-core[all]>=0.15.0",
 ]
-
-[project.optional-dependencies]
-doc = [
+optional-dependencies.doc = [
   "ansys-sphinx-theme>=0.14",
   "pypdf>=4.0",
   "sphinx>=7.0",
@@ -51,21 +50,17 @@ doc = [
   "sphinx-design>=0.5",
   "sphinx-jinja>=0.2",
 ]
-tests = [
+optional-dependencies.tests = [
   "pytest>=7.0",
   "pytest-asyncio>=0.21",
   "pytest-cov>=4.0",
   "pytest-mock>=3.10",
 ]
-
-[project.urls]
-Homepage = "https://github.com/ansys-internal/pyansys-geometry-mcp"
-Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
-Repository = "https://github.com/ansys-internal/pyansys-geometry-mcp"
-Issues = "https://github.com/ansys-internal/pyansys-geometry-mcp/issues"
-
-[project.scripts]
-pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
+urls.Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
+urls.Homepage = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+urls.Issues = "https://github.com/ansys-internal/pyansys-geometry-mcp/issues"
+urls.Repository = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
 
 [tool.hatch]
 build.targets.editable.packages = [ "src/ansys/geometry/mcp" ]
@@ -75,37 +70,27 @@ build.targets.wheel.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
 
 [tool.ruff]
 line-length = 100
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-docstring-code-format = true
-docstring-code-line-length = "dynamic"
-
-[tool.ruff.lint]
-select = [
+format.indent-style = "space"
+format.quote-style = "double"
+format.docstring-code-line-length = "dynamic"
+format.docstring-code-format = true
+lint.select = [
   "D",   # pydocstyle
   "I",   # isort
   "PTH", # flake8-use-pathlib
   "TD",  # flake8-todos
 ]
+lint.isort.combine-as-imports = true
+lint.isort.force-sort-within-sections = true
+lint.isort.known-first-party = [ "ansys.geometry.mcp" ]
 
-[tool.ruff.lint.isort]
-combine-as-imports = true
-force-sort-within-sections = true
-known-first-party = ["ansys.geometry.mcp"]
-
-[tool.pydocstyle]
-convention = "numpy"
-add_ignore = ["D100", "D104"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-asyncio_mode = "auto"
-addopts = [
+[tool.pytest]
+ini_options.testpaths = [ "tests" ]
+ini_options.python_files = "test_*.py"
+ini_options.python_classes = "Test*"
+ini_options.python_functions = "test_*"
+ini_options.asyncio_mode = "auto"
+ini_options.addopts = [
   "--verbose",
   "--cov=ansys.geometry.mcp",
   "--cov-report=term-missing",
@@ -113,6 +98,10 @@ addopts = [
   "--cov-report=xml",
 ]
 
-[tool.coverage.run]
-source = ["src"]
-omit = ["*/__pycache__/*"]
+[tool.coverage]
+run.omit = [ "*/__pycache__/*" ]
+run.source = [ "src" ]
+
+[tool.pydocstyle]
+convention = "numpy"
+add_ignore = [ "D100", "D104" ]
