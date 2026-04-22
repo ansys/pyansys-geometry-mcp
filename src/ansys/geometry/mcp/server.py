@@ -23,6 +23,7 @@
 
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
+import ansys.common.mcp.tools as shared_tools
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 
@@ -52,6 +53,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         PyAnsysGeometryContext
             Context instance with Python session and command history.
 
+
         """
         if getattr(self, "context", None) is not None:
             return self.context
@@ -59,7 +61,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
                 python_executable=self.python_executable,
-                working_directory=self.working_directory,
+                working_directory=self.working_directory
             ),
             command_history=[],
         )
@@ -84,8 +86,25 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 port=self.context.port,
                 transport_mode=self.context.transport_mode,
             )
+
+            # creates the background instance of the modeler to be used when running python scripts in the interpreter
+            host, port = (
+                instance.client.get_name().split(":")
+                if instance.client
+                else (self.context.host, self.context.port)
+            )
+            background_python_instance_creation = f"""
+from ansys.geometry.core import Modeler
+
+instance = Modeler(
+    host='{host}',
+    port={port},
+    transport_mode='{self.context.transport_mode}')
+"""
+            self.context.python_session.execute(background_python_instance_creation)
+            
             self.context.command_history.append(
-                f"modeler=Modeler(host={self.context.host!r}, port={self.context.port}, "
+                f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
                 f"transport_mode={self.context.transport_mode!r})"
             )
         else:
