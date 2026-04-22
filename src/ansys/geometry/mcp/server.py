@@ -88,16 +88,20 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             )
 
             # creates the background instance of the modeler to be used when running python scripts in the interpreter
+            host, port = (
+                instance.client.get_name().split(":")
+                if instance.client
+                else (self.context.host, self.context.port)
+            )
             background_python_instance_creation = f"""
 from ansys.geometry.core import Modeler
 
 instance = Modeler(
-    host='{self.context.host}',
-    port={self.context.port},
+    host='{host}',
+    port={port},
     transport_mode='{self.context.transport_mode}')
 """
             self.context.python_session.execute(background_python_instance_creation)
-            #shared_tools.execute_python_code(self.context, background_python_instance_creation, timeout=60)
             
             self.context.command_history.append(
                 f"modeler=Modeler(host={self.context.host!r}, port={self.context.port}, "
