@@ -84,7 +84,8 @@ def get_product_status(ctx: Context) -> str:
 @app.tool()
 async def run_python_code(ctx: Context, code: str) -> str:
     """Execute arbitrary Python code in the product backend's Python session.
-
+        Predefined variables : 
+        instance -> is the instance of ansys.geometry.core.Modeler() that should be used
     Parameters
     ----------
     ctx : Context

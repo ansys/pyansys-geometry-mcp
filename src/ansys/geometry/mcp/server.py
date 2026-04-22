@@ -23,6 +23,7 @@
 
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
+import ansys.common.mcp.tools as shared_tools
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 
@@ -59,7 +60,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
                 python_executable=self.python_executable,
-                working_directory=self.working_directory,
+                working_directory=self.working_directory
             ),
             command_history=[],
         )
@@ -84,6 +85,19 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 port=self.context.port,
                 transport_mode=self.context.transport_mode,
             )
+
+            # creates the background instance of the modeler to be used when running python scripts in the interpreter
+            background_python_instance_creation = f"""
+from ansys.geometry.core import Modeler
+
+instance = Modeler(
+    host='{self.context.host}',
+    port={self.context.port},
+    transport_mode='{self.context.transport_mode}')
+"""
+            self.context.python_session.execute(background_python_instance_creation)
+            #shared_tools.execute_python_code(self.context, background_python_instance_creation, timeout=60)
+            
             self.context.command_history.append(
                 f"modeler=Modeler(host={self.context.host!r}, port={self.context.port}, "
                 f"transport_mode={self.context.transport_mode!r})"
