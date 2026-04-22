@@ -24,11 +24,12 @@
 import argparse
 import sys
 
-# Import tools module to register all @app.tool() decorators with the server.
-import ansys.geometry.mcp.tools  # noqa: F401
+from ansys.common.mcp.logging_config import setup_logging
+
 from ansys.geometry.mcp import app
 
-from ansys.common.mcp.logging_config import setup_logging
+# Import tools module to register all @app.tool() decorators with the server.
+import ansys.geometry.mcp.tools  # noqa: F401
 
 
 def _build_parser() -> argparse.ArgumentParser:
