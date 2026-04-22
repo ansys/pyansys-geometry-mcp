@@ -53,6 +53,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         PyAnsysGeometryContext
             Context instance with Python session and command history.
 
+
         """
         if getattr(self, "context", None) is not None:
             return self.context

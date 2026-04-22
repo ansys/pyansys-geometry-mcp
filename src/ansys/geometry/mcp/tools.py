@@ -43,6 +43,8 @@ with the server before it starts.
 
 """
 
+import time
+
 from ansys.common.mcp.logging_config import get_logger
 import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
@@ -84,8 +86,7 @@ def get_product_status(ctx: Context) -> str:
 @app.tool()
 async def run_python_code(ctx: Context, code: str) -> str:
     """Execute arbitrary Python code in the product backend's Python session.
-        Predefined variables : 
-        instance -> is the instance of ansys.geometry.core.Modeler() that should be used
+
     Parameters
     ----------
     ctx : Context
@@ -99,7 +100,17 @@ async def run_python_code(ctx: Context, code: str) -> str:
         The output or result of the executed code, or an error message if execution fails.
 
     """
-    return await shared_tools.execute_python_code(ctx, code, timeout=60)
+    import json
+
+    result = await shared_tools.execute_python_code(ctx, code, timeout=60)
+    try:
+        parsed = json.loads(result)
+        if parsed.get("success"):
+            app_context = get_geometry_ctx(ctx)
+            app_context.command_history.append(code)
+    except (json.JSONDecodeError, AttributeError):
+        pass
+    return result
 
 
 @app.tool()
@@ -164,21 +175,85 @@ def get_design_info(ctx: Context) -> str:
 
 
 @app.tool()
-def export_design_to_fmd(ctx: Context, location: str | None = None) -> str:
-    """Export the current active design to an FMD file.
+def create_box(
+    ctx: Context,
+    name: str,
+    width: float,
+    depth: float,
+    height: float,
+) -> str:
+    """Create a 3D box (rectangular solid) body in the active design.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    location : str, optional
-        File path on disk to save the FMD file. If not provided, the file
+    name : str
+        Name for the box body.
+    width : float
+        Width of the box base in meters (X direction).
+    depth : float
+        Depth of the box base in meters (Y direction).
+    height : float
+        Height (extrusion depth) of the box in meters (Z direction).
+
+    Returns
+    -------
+    str
+        Result message indicating success or failure.
+
+    """
+    from ansys.geometry.core.math import Point2D
+    from ansys.geometry.core.misc import Distance
+    from ansys.geometry.core.sketch import Sketch
+    from pint import Unit
+
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create box."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        sketch = Sketch()
+        sketch.box(center=Point2D([0, 0]), width=width, height=depth)
+        body = design.extrude_sketch(
+            name=name,
+            sketch=sketch,
+            distance=Distance(height, unit=Unit("m")),
+        )
+        app_context.command_history.append(
+            f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
+            f"design.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
+        )
+        logger.info(
+            f"create_box called: name={name!r}, width={width}, depth={depth}, height={height}"
+        )
+        return f"Box '{name}' ({width}m x {depth}m x {height}m) created successfully: {body}"
+    except Exception as e:
+        logger.error(f"create_box failed: {e}")
+        return f"Error creating box '{name}': {e}"
+
+
+@app.tool()
+def export_design_to(ctx: Context, file_format: str, folder: str | None = None) -> str:
+    """Export the current active design to a specified format.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    file_format : str
+        The format to export the design to. Options are 'fmd', 'step', 'iges', 'scdocx',
+        'disco', 'parasolid_text', 'parasolid_bin'.
+    folder : str, optional
+        Folder on disk to save the design. If not provided, the file
         is saved in the current working directory.
 
     Returns
     -------
     str
-        The path to the saved FMD file, or an error message if export fails.
+        The path to the saved design file, or an error message if export fails.
 
     """
     app_context = get_geometry_ctx(ctx)
@@ -187,11 +262,93 @@ def export_design_to_fmd(ctx: Context, location: str | None = None) -> str:
         return "Product backend is not connected. Cannot export design."
 
     try:
+        from ansys.geometry.core.designer import DesignFileFormat
+
         design = app_context.product_instance.get_active_design()
-        saved_path = design.export_to_fmd(location)
-        logger.info(f"export_design_to_fmd called, saved to {saved_path}")
-        app_context.command_history.append(f"design.export_to_fmd({location!r})")
-        return f"Design exported to FMD file: {saved_path}"
+        # Depending on format... Use DesignFileFormat enum
+        if file_format.lower() == DesignFileFormat.FMD.name.lower():
+            saved_path = design.export_to_fmd(folder)
+            app_context.command_history.append(f"design.export_to_fmd({folder!r})")
+        elif file_format.lower() == DesignFileFormat.STEP.name.lower():
+            saved_path = design.export_to_step(folder)
+            app_context.command_history.append(f"design.export_to_step({folder!r})")
+        elif file_format.lower() == DesignFileFormat.IGES.name.lower():
+            saved_path = design.export_to_iges(folder)
+            app_context.command_history.append(f"design.export_to_iges({folder!r})")
+        elif file_format.lower() == DesignFileFormat.SCDOCX.name.lower():
+            saved_path = design.export_to_scdocx(folder)
+            app_context.command_history.append(f"design.export_to_scdocx({folder!r})")
+        elif file_format.lower() == DesignFileFormat.DISCO.name.lower():
+            saved_path = design.export_to_disco(folder)
+            app_context.command_history.append(f"design.export_to_disco({folder!r})")
+        elif file_format.lower() == DesignFileFormat.PARASOLID_TEXT.name.lower():
+            saved_path = design.export_to_parasolid_text(folder)
+            app_context.command_history.append(f"design.export_to_parasolid_text({folder!r})")
+        elif file_format.lower() == DesignFileFormat.PARASOLID_BIN.name.lower():
+            saved_path = design.export_to_parasolid_bin(folder)
+            app_context.command_history.append(f"design.export_to_parasolid_bin({folder!r})")
+        else:
+            return f"Unsupported format '{file_format}'. Supported formats are:"
+        " fmd, step, iges, scdocx, disco, parasolid_text, parasolid_bin."
+
+        logger.info(f"export_design_to called, saved to {saved_path}")
+        return f"Design exported to {file_format.upper()} file: {saved_path}"
     except Exception as e:
-        logger.error(f"export_design_to_fmd failed: {e}")
-        return f"Error exporting design to FMD: {e}"
+        logger.error(f"export_design_to failed: {e}")
+        return f"Error exporting design to {file_format.upper()}: {e}"
+
+
+@app.tool()
+def get_design_3d_scene(ctx: Context, path: str | None = None) -> str:
+    """Get a 3D scene screenshot of the current active design.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    path : str, optional
+        Path to save the 3D scene screenshot. If not provided, a default path is used.
+
+    Returns
+    -------
+    str
+        Path to the saved 3D scene screenshot, or an error message if the operation fails.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot get 3D scene."
+
+    # Path can be provided by user or default to current working directory
+    # with a timestamped filename
+    path = path or f"design_3d_scene_{int(time.time())}.png"
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        _ = design.plot(screenshot=path)
+        app_context.command_history.append(f"design.plot(screenshot={path!r})")
+        logger.info(f"get_design_3d_scene called, saved to {path}")
+        return f"3D scene screenshot saved: {path}"
+    except Exception as e:
+        logger.error(f"get_design_3d_scene failed: {e}")
+        return f"Error getting 3D scene screenshot: {e}"
+
+
+@app.tool()
+def get_command_history(ctx: Context) -> list[str]:
+    """Get the history of commands executed in the product backend.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+
+    Returns
+    -------
+    list of str
+        List of command strings that have been executed.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+    return app_context.command_history
