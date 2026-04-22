@@ -104,7 +104,7 @@ instance = Modeler(
             self.context.python_session.execute(background_python_instance_creation)
             
             self.context.command_history.append(
-                f"modeler=Modeler(host={self.context.host!r}, port={self.context.port}, "
+                f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
                 f"transport_mode={self.context.transport_mode!r})"
             )
         else:
