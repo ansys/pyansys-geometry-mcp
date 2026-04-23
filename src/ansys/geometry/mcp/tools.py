@@ -78,6 +78,7 @@ def get_command_history(ctx: Context) -> list[str]:
     app_context = get_geometry_ctx(ctx)
     return app_context.command_history
 
+
 @app.tool()
 def get_transcript(ctx: Context) -> str:
     """Get a transcript of the current session, including all executed commands.
@@ -95,17 +96,18 @@ def get_transcript(ctx: Context) -> str:
     """
     app_context = get_geometry_ctx(ctx)
     commands = "\n".join(app_context.command_history)
-    
+
     # Format Python script using import sorting and black-style formatting
     try:
-        import isort
         import black
+        import isort
 
         sorted_commands = isort.code(commands)
         formatted_commands = black.format_str(sorted_commands, mode=black.Mode())
         return formatted_commands if formatted_commands else "No commands executed yet."
     except (ImportError, black.InvalidInput):
         return commands if commands else "No commands executed yet."
+
 
 @app.tool()
 def get_product_status(ctx: Context) -> str:
@@ -396,6 +398,7 @@ def get_design_3d_scene(ctx: Context, path: str | None = None) -> str:
     except Exception as e:
         logger.error(f"get_design_3d_scene failed: {e}")
         return f"Error getting 3D scene screenshot: {e}"
+
 
 # ---------------------------------------------------------------------------
 # Private helpers

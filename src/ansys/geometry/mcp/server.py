@@ -72,11 +72,13 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         """
         self.context.product_instance = None
         logger.info("Starting PyAnsys Geometry MCP backend...")
-        
+
         if not self.context.connect_to_existing_service:
-            logger.info("No existing geometry service connection requested; launching new instance...")
+            logger.info(
+                "No existing geometry service connection requested; launching new instance..."
+            )
             from ansys.geometry.core import launch_modeler
-    
+
             instance = launch_modeler(transport_mode=self.context.transport_mode)
         else:
             from ansys.geometry.core import Modeler
