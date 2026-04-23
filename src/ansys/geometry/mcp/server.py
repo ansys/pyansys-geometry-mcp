@@ -60,8 +60,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
 
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
-                python_executable=self.python_executable,
-                working_directory=self.working_directory
+                python_executable=self.python_executable, working_directory=self.working_directory
             ),
             command_history=[],
         )
@@ -102,7 +101,7 @@ instance = Modeler(
     transport_mode='{self.context.transport_mode}')
 """
             self.context.python_session.execute(background_python_instance_creation)
-            
+
             self.context.command_history.append(
                 f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
                 f"transport_mode={self.context.transport_mode!r})"
