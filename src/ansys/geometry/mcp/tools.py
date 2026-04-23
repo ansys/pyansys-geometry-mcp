@@ -134,7 +134,7 @@ def get_product_status(ctx: Context) -> str:
 
 @app.tool()
 async def run_python_code(ctx: Context, code: str) -> str:
-    """Execute arbitrary Python code in the product backend's Python session.
+    """Execute arbitrary Python code in the product backend's Python session. Session is persistent - variables inside remain available.
 
     Predefined variables : ``instance`` -> is the instance of ansys.geometry.core.Modeler()
     that should be used.
@@ -388,10 +388,12 @@ def get_design_3d_scene(ctx: Context, path: str | None = None) -> str:
 
     try:
         design = app_context.product_instance.get_active_design()
-        _ = design.plot(screenshot=path)
+        _ = design.plot(screenshot=path, use_service_colors=True)  # noqa: F841
 
         # Perform transcript
-        app_context.command_history.append(f"design.plot(screenshot={path!r})")
+        app_context.command_history.append(
+            f"design.plot(screenshot={path!r}, use_service_colors=True)"
+        )
 
         logger.info(f"get_design_3d_scene called, saved to {path}")
         return f"3D scene screenshot saved: {path}"

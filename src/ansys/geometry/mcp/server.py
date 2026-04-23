@@ -73,14 +73,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         self.context.product_instance = None
         logger.info("Starting PyAnsys Geometry MCP backend...")
 
-        if not self.context.connect_to_existing_service:
-            logger.info(
-                "No existing geometry service connection requested; launching new instance..."
-            )
-            from ansys.geometry.core import launch_modeler
-
-            instance = launch_modeler(transport_mode=self.context.transport_mode)
-        else:
+        if self.context.connect_to_existing_service:
             from ansys.geometry.core import Modeler
 
             logger.info(
@@ -93,14 +86,13 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 transport_mode=self.context.transport_mode,
             )
 
-        # Create the background instance of the modeler to be used when running
-        # python scripts in the interpreter
-        host, port = (
-            instance.client.get_name().split(":")
-            if instance.client
-            else (self.context.host, self.context.port)
-        )
-        background_python_instance_creation = f"""
+            # creates the background instance of the modeler to be used when running python scripts in the interpreter
+            host, port = (
+                instance.client.get_name().split(":")
+                if instance.client
+                else (self.context.host, self.context.port)
+            )
+            background_python_instance_creation = f"""
 from ansys.geometry.core import Modeler
 
 instance = Modeler(
@@ -108,16 +100,42 @@ instance = Modeler(
     port={port},
     transport_mode='{self.context.transport_mode}')
 """
-        self.context.python_session.execute(background_python_instance_creation)
+            self.context.python_session.execute(background_python_instance_creation)
 
-        self.context.command_history.append("from ansys.geometry.core import Modeler")
-        self.context.command_history.append(
-            f"instance=Modeler(host='{host}', port={port}, "
-            f"transport_mode={self.context.transport_mode!r})"
-        )
+            self.context.command_history.append("from ansys.geometry.core import Modeler")
+            self.context.command_history.append(
+                f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
+                f"transport_mode={self.context.transport_mode!r})"
+            )
+        else:
+            from ansys.geometry.core import launch_modeler
+
+            instance = launch_modeler(transport_mode=self.context.transport_mode)
+            self.context.command_history.append("from ansys.geometry.core import launch_modeler")
+            self.context.command_history.append(
+                f"instance=launch_modeler(transport_mode={self.context.transport_mode!r})"
+            )
+
+            # Mirror instance into the persistent Python session so that
+            # run_python_code() can reference it via the 'instance' variable.
+            host, port = (
+                instance.client.get_name().split(":")
+                if instance.client
+                else (self.context.host, self.context.port)
+            )
+            background_python_instance_creation = f"""
+from ansys.geometry.core import Modeler
+
+instance = Modeler(
+    host='{host}',
+    port={port},
+    transport_mode='{self.context.transport_mode}')
+"""
+            self.context.python_session.execute(background_python_instance_creation)
 
         self.context.product_instance = instance
-        # Log the successful connection of the product instance
+        # Log the successful launch of the product instance
+        logger.info("PyAnsys Geometry MCP backend launched successfully.")
         logger.info(f"Product instance details:\n\n{self.context.product_instance}")
 
     def product_cleanup(self):
