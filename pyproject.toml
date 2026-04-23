@@ -40,6 +40,8 @@ classifiers = [
 dependencies = [
   "ansys-common-mcp>=0.2.0",
   "ansys-geometry-core[all]>=0.15.0",
+  "isort",
+  "black",
 ]
 optional-dependencies.doc = [
   "ansys-sphinx-theme>=0.14",
