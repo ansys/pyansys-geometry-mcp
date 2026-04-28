@@ -61,6 +61,36 @@ def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
 
 
 @app.tool()
+def read_image_in_base64(ctx: Context, image_path: str) -> dict[str, str]:
+    """Read an image file and return its contents as a base64-encoded string.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    image_path : str
+        Path to the image file to read.
+
+    Returns
+    -------
+    dict of str
+        A dictionary with a single key "base64" containing the base64-encoded
+        contents of the image, or an error message if reading fails.
+
+    """
+    import base64
+    from pathlib import Path
+
+    try:
+        with Path(image_path).open("rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            return {"base64": encoded}
+    except Exception as e:
+        logger.error(f"read_image_in_base64 failed: {e}")
+        return {"error": f"Error reading image '{image_path}': {e}"}
+
+
+@app.tool()
 def get_command_history(ctx: Context) -> list[str]:
     """Get the history of commands executed in the product backend.
 
@@ -191,7 +221,7 @@ def create_design(ctx: Context, design_name: str) -> str:
         app_context.product_instance.create_design(design_name)
 
         # Perform transcript
-        app_context.command_history.append(f"design=modeler.create_design({design_name!r})")
+        app_context.command_history.append(f"design=instance.create_design({design_name!r})")
 
         logger.info(f"create_design called with design_name={design_name!r}")
         return f"Design '{design_name}' created successfully."
@@ -361,7 +391,7 @@ def export_design_to(ctx: Context, file_format: str, folder: str | None = None) 
 
 
 @app.tool()
-def get_design_3d_scene(ctx: Context, path: str | None = None) -> str:
+def get_screenshot(ctx: Context, path: str | None = None) -> str:
     """Get a 3D scene screenshot of the current active design.
 
     Parameters
@@ -400,6 +430,31 @@ def get_design_3d_scene(ctx: Context, path: str | None = None) -> str:
     except Exception as e:
         logger.error(f"get_design_3d_scene failed: {e}")
         return f"Error getting 3D scene screenshot: {e}"
+
+
+@app.tool()
+def get_design_3d_scene(ctx: Context) -> None:
+    """Get a 3D scene window of the current active design.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot get 3D scene."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        _ = design.plot(use_service_colors=True)  # noqa: F841
+
+        return f"3D scene window opened."
+    except Exception as e:
+        logger.error(f"get_design_3d_scene failed: {e}")
+        return f"Error getting 3D scene window: {e}"
 
 
 # ---------------------------------------------------------------------------
