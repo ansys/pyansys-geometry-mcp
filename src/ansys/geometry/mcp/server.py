@@ -60,8 +60,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
 
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
-                python_executable=self.python_executable,
-                working_directory=self.working_directory
+                python_executable=self.python_executable, working_directory=self.working_directory
             ),
             command_history=[],
         )
@@ -102,7 +101,8 @@ instance = Modeler(
     transport_mode='{self.context.transport_mode}')
 """
             self.context.python_session.execute(background_python_instance_creation)
-            
+
+            self.context.command_history.append("from ansys.geometry.core import Modeler")
             self.context.command_history.append(
                 f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
                 f"transport_mode={self.context.transport_mode!r})"
@@ -111,9 +111,27 @@ instance = Modeler(
             from ansys.geometry.core import launch_modeler
 
             instance = launch_modeler(transport_mode=self.context.transport_mode)
+            self.context.command_history.append("from ansys.geometry.core import launch_modeler")
             self.context.command_history.append(
-                f"modeler=launch_modeler(transport_mode={self.context.transport_mode!r})"
+                f"instance=launch_modeler(transport_mode={self.context.transport_mode!r})"
             )
+
+            # Mirror instance into the persistent Python session so that
+            # run_python_code() can reference it via the 'instance' variable.
+            host, port = (
+                instance.client.get_name().split(":")
+                if instance.client
+                else (self.context.host, self.context.port)
+            )
+            background_python_instance_creation = f"""
+from ansys.geometry.core import Modeler
+
+instance = Modeler(
+    host='{host}',
+    port={port},
+    transport_mode='{self.context.transport_mode}')
+"""
+            self.context.python_session.execute(background_python_instance_creation)
 
         self.context.product_instance = instance
         # Log the successful launch of the product instance
@@ -129,6 +147,7 @@ instance = Modeler(
             try:
                 logger.info("Closing PyAnsys Geometry MCP backend...")
                 self.context.product_instance.close()
+                self.context.command_history.append("instance.close()")
                 logger.info("PyAnsys Geometry MCP backend closed successfully.")
             except Exception as e:
                 logger.error(f"Error during product cleanup: {e}")
