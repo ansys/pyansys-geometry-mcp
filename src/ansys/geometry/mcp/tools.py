@@ -266,8 +266,13 @@ def create_box(
     width: float,
     depth: float,
     height: float,
+    parent_component_name: str | None = None
 ) -> str:
-    """Create a 3D box (rectangular solid) body in the active design.
+    """Create a 3D box (rectangular solid) body in the active design or inside a named parent component.
+
+    Use this tool when asked to create a box, cuboid, or rectangular solid — with or without
+    a parent component. Pass ``parent_component_name`` to place the box inside a specific
+    component instead of the root design.
 
     Parameters
     ----------
@@ -281,12 +286,14 @@ def create_box(
         Depth of the box base in meters (Y direction).
     height : float
         Height (extrusion depth) of the box in meters (Z direction).
+    parent_component_name : str, optional
+        Name of the existing component to place the box inside. If omitted, the box is
+        added to the root design. Use ``list_components`` to find valid component names.
 
     Returns
     -------
     str
         Result message indicating success or failure.
-
     """
     from ansys.geometry.core.math import Point2D
     from ansys.geometry.core.misc import Distance
@@ -300,9 +307,11 @@ def create_box(
 
     try:
         design = app_context.product_instance.get_active_design()
+        parent = design if parent_component_name is None else _find_component(design, parent_component_name)
+
         sketch = Sketch()
         sketch.box(center=Point2D([0, 0]), width=width, height=depth)
-        body = design.extrude_sketch(
+        body = parent.extrude_sketch(
             name=name,
             sketch=sketch,
             distance=Distance(height, unit=Unit("m")),
@@ -315,7 +324,7 @@ def create_box(
         app_context.command_history.append("from pint import Unit")
         app_context.command_history.append(
             f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
-            f"design.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
+            f"{parent_component_name if parent_component_name is not None else 'design'}.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
         )
 
         logger.info(
@@ -325,6 +334,56 @@ def create_box(
     except Exception as e:
         logger.error(f"create_box failed: {e}")
         return f"Error creating box '{name}': {e}"
+
+
+@app.tool()
+def move_body_to_component(ctx: Context, body_name: str, target_component_name: str) -> str:
+    """Move an existing body into a named component.
+
+    Use this tool when asked to move, reassign, or place a body inside a component.
+    Use ``list_bodies`` and ``list_components`` first to confirm exact names.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Exact name of the body to move (use ``list_bodies`` to find it).
+    target_component_name : str
+        Exact name of the destination component (use ``list_components`` to find it).
+
+    Returns
+    -------
+    str
+        Result message indicating success or failure.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot move body."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+
+        body = _find_body(design, body_name)
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+        comp = _find_component(design, target_component_name)
+        if comp is None:
+            return f"Component '{target_component_name}' not found. Use list_components to see available components."
+        comp.move_bodies_to_component([body])
+
+        # Perform transcript
+        app_context.command_history.append(
+            f"{target_component_name}_comp.move_bodies_to_component([{body_name}_body])"
+        )
+
+        logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
+        return f"Body '{body_name}' moved to component '{target_component_name}' successfully."
+    except Exception as e:
+        logger.error(f"move_body_to_component failed: {e}")
+        return f"Error moving body '{body_name}': {e}"
 
 
 @app.tool()
@@ -455,7 +514,6 @@ def get_design_3d_scene(ctx: Context) -> None:
     except Exception as e:
         logger.error(f"get_design_3d_scene failed: {e}")
         return f"Error getting 3D scene window: {e}"
-
 
 # ---------------------------------------------------------------------------
 # Private helpers
