@@ -266,8 +266,13 @@ def create_box(
     width: float,
     depth: float,
     height: float,
+    parent_component_name: str | None = None
 ) -> str:
-    """Create a 3D box (rectangular solid) body in the active design.
+    """Create a 3D box (rectangular solid) body in the active design or inside a named parent component.
+
+    Use this tool when asked to create a box, cuboid, or rectangular solid — with or without
+    a parent component. Pass ``parent_component_name`` to place the box inside a specific
+    component instead of the root design.
 
     Parameters
     ----------
@@ -281,12 +286,15 @@ def create_box(
         Depth of the box base in meters (Y direction).
     height : float
         Height (extrusion depth) of the box in meters (Z direction).
+    parent_component_name : str, optional
+        Name of the existing component to place the box inside. If omitted, the box is
+        added to the root design. Use ``list_components`` to find valid component names.
 
     Returns
     -------
     str
         Result message indicating success or failure.
-
+        
     """
     from ansys.geometry.core.math import Point2D
     from ansys.geometry.core.misc import Distance
@@ -300,9 +308,11 @@ def create_box(
 
     try:
         design = app_context.product_instance.get_active_design()
+        parent = design if parent_component_name is None else _find_component(design, parent_component_name)
+
         sketch = Sketch()
         sketch.box(center=Point2D([0, 0]), width=width, height=depth)
-        body = design.extrude_sketch(
+        body = parent.extrude_sketch(
             name=name,
             sketch=sketch,
             distance=Distance(height, unit=Unit("m")),
@@ -315,7 +325,7 @@ def create_box(
         app_context.command_history.append("from pint import Unit")
         app_context.command_history.append(
             f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
-            f"design.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
+            f"{parent_component_name if parent_component_name is not None else 'design'}.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
         )
 
         logger.info(
