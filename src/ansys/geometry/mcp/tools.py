@@ -308,7 +308,10 @@ def create_box(
 
     try:
         design = app_context.product_instance.get_active_design()
-        parent = design if parent_component_name is None else _find_component(design, parent_component_name)
+        parent = _find_component(design, parent_component_name) if parent_component_name else design
+        if parent is None:
+            logger.info(f"Parent component '{parent_component_name}' not found. Adding box to root design.")
+            parent = design
 
         sketch = Sketch()
         sketch.box(center=Point2D([0, 0]), width=width, height=depth)
@@ -325,7 +328,8 @@ def create_box(
         app_context.command_history.append("from pint import Unit")
         app_context.command_history.append(
             f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
-            f"{parent_component_name if parent_component_name is not None else 'design'}.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
+            f"target = design if {parent_component_name!r} is None else design.get_component({parent_component_name!r}); "
+            f"target.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
         )
 
         logger.info(
@@ -367,7 +371,7 @@ def move_body_to_component(ctx: Context, body_name: str, target_component_name: 
     try:
         design = app_context.product_instance.get_active_design()
 
-        body = _find_body(design, body_name)
+        body = _find_body(design, body_name.split("/")[-1])
         if body is None:
             return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
         comp = _find_component(design, target_component_name)
@@ -376,9 +380,9 @@ def move_body_to_component(ctx: Context, body_name: str, target_component_name: 
         comp.move_bodies_to_component([body])
 
         # Perform transcript
-        app_context.command_history.append(
-            f"{target_component_name}_comp.move_bodies_to_component([{body_name}_body])"
-        )
+        app_context.command_history.append(f"body = design.get_body({body_name.split('/')[-1]!r})")
+        app_context.command_history.append(f"comp = design.get_component({target_component_name!r})")
+        app_context.command_history.append(f"comp.move_bodies_to_component([body])")
 
         logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
         return f"Body '{body_name}' moved to component '{target_component_name}' successfully."
