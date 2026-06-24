@@ -294,7 +294,6 @@ def create_box(
     -------
     str
         Result message indicating success or failure.
-        
     """
     from ansys.geometry.core.math import Point2D
     from ansys.geometry.core.misc import Distance
