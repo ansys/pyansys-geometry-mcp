@@ -553,7 +553,7 @@ def create_sweep_pipe(
     """
     import math
 
-    from ansys.geometry.core.math import Plane, Point3D
+    from ansys.geometry.core.math import Point3D
     from ansys.geometry.core.shapes.curves.nurbs import NURBSCurve
 
     app_context = get_geometry_ctx(ctx)
@@ -594,6 +594,9 @@ def create_sweep_pipe(
         p1 = path_points[1]
         dx, dy, dz = p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]
         mag = math.sqrt(dx * dx + dy * dy + dz * dz)
+        if mag == 0:
+            return "First two path waypoints must not be identical. Cannot compute tangent direction."
+
         tangent = [dx / mag, dy / mag, dz / mag]
 
         # Pick an arbitrary vector not (nearly) parallel to the tangent
@@ -631,7 +634,7 @@ def create_sweep_pipe(
         # Transcript
         app_context.command_history.append(
             "import math\n"
-            "from ansys.geometry.core.math import Plane, Point3D\n"
+            "from ansys.geometry.core.math import Plane, Point3D, UnitVector3D\n"
             "from ansys.geometry.core.shapes.curves.nurbs import NURBSCurve\n"
             "from ansys.geometry.core.sketch import Sketch"
         )
