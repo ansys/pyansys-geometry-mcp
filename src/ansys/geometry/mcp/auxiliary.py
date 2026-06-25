@@ -124,10 +124,14 @@ def _build_sketch(
             accumulated_commands.append(
                 f"sketch.arc(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}]), center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), clockwise={prim.get('clockwise', False)})"
             )
+        elif prim_type == "nurbs":
+            sketch.nurbs_from_2d_points(
+                points=[Point2D([p[0], p[1]]) for p in prim["points"]],
+            )
         else:
             raise ValueError(
                 f"Unsupported sketch primitive type: {prim_type!r}. "
-                "Supported types: circle, box, polygon, segment, arc."
+                "Supported types: circle, box, polygon, segment, arc, nurbs."
             )
 
     return sketch, accumulated_commands
