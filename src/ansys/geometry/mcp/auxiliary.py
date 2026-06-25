@@ -111,7 +111,7 @@ def _build_sketch(
                 end=Point2D([prim["end_x"], prim["end_y"]]),
             )
             accumulated_commands.append(
-                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}])"
+                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}]))"
             )
         elif prim_type == "arc":
             # arc requires start, end, and center points
