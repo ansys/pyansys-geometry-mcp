@@ -530,12 +530,6 @@ def create_sweep_pipe(
         One or more sketch primitives defining the cross-section profile.
         Uses the same format as ``extrude_sketch``. Coordinates are in the
         local plane of the profile (2D, in metres), centred at the path start.
-        Supported types:
-
-        - ``{"type": "circle", "radius": 0.01}``  — round pipe
-        - ``{"type": "box", "width": 0.02, "height": 0.01}``  — rectangular duct
-        - ``{"type": "polygon", "inner_radius": 0.01, "sides": 6}``  — hex section
-        - ``{"type": "arc", ...}``, ``{"type": "segment", ...}``  — open profiles
 
     component_name : str, optional
         Name of an existing component to place the body inside.
@@ -674,56 +668,6 @@ def create_sweep_pipe(
 # ---------------------------------------------------------------------------
 # Export and visualization tools
 # ---------------------------------------------------------------------------
-
-
-@app.tool()
-def move_body_to_component(ctx: Context, body_name: str, target_component_name: str) -> str:
-    """Move an existing body into a named component.
-
-    Use this tool when asked to move, reassign, or place a body inside a component.
-    Use ``list_bodies`` and ``list_components`` first to confirm exact names.
-
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-    body_name : str
-        Exact name of the body to move (use ``list_bodies`` to find it).
-    target_component_name : str
-        Exact name of the destination component (use ``list_components`` to find it).
-
-    Returns
-    -------
-    str
-        Result message indicating success or failure.
-
-    """
-    app_context = get_geometry_ctx(ctx)
-
-    if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot move body."
-
-    try:
-        design = app_context.product_instance.get_active_design()
-
-        body = _find_body(design, body_name)
-        if body is None:
-            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
-        comp = design.search_component_by_name(target_component_name)
-        if comp is None:
-            return f"Component '{target_component_name}' not found. Use list_components to see available components."
-        comp.move_bodies_to_component([body])
-
-        # Perform transcript
-        app_context.command_history.append(
-            f"{target_component_name}_comp.move_bodies_to_component([{body_name}_body])"
-        )
-
-        logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
-        return f"Body '{body_name}' moved to component '{target_component_name}' successfully."
-    except Exception as e:
-        logger.error(f"move_body_to_component failed: {e}")
-        return f"Error moving body '{body_name}': {e}"
 
 
 @app.tool()
@@ -1084,6 +1028,7 @@ def extrude_sketch(
         - ``"segment"``: ``start_x``, ``start_y``, ``end_x``, ``end_y``
         - ``"arc"``:     ``center_x``, ``center_y``, ``start_x``, ``start_y``,
           ``end_x``, ``end_y``; optional ``clockwise`` (bool, default ``false``)
+        - ``"nurbs"``:   ``control_points`` (list of [x, y] pairs)
 
     distance : float
         Extrusion distance in metres. Positive extrudes along the plane normal;
