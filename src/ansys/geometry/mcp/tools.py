@@ -332,11 +332,11 @@ def create_box(
         app_context.command_history.append("from ansys.geometry.core.misc import Distance")
         app_context.command_history.append("from ansys.geometry.core.sketch import Sketch")
         app_context.command_history.append("from pint import Unit")
+        app_context.command_history.append(f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth})")
         app_context.command_history.append(
-            f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
-            f"target = design if {parent_component_name!r} is None else design.search_component_by_name({parent_component_name!r}); "
-            f"target.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
+            f"target = design if {parent_component_name!r} is None else (design.search_component_by_name({parent_component_name!r}) or design)"
         )
+        app_context.command_history.append(f"target.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))")
 
         logger.info(
             f"create_box called: name={name!r}, width={width}, depth={depth}, height={height}"
@@ -461,7 +461,7 @@ def extrude_nurbs_profile(
         )
         app_context.command_history.append(
             f"design = instance.get_active_design()\n"
-            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
+            f"target = design if {component_name!r} is None else (design.search_component_by_name({component_name!r}) or design)"
         )
         plane_code = (
             f"Sketch(Plane(origin=Point3D({plane_origin}), "
@@ -637,7 +637,7 @@ def create_sweep_pipe(
         )
         app_context.command_history.append(
             f"design = instance.get_active_design()\n"
-            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
+            f"target = design if {component_name!r} is None else (design.search_component_by_name({component_name!r}) or design)"
         )
         app_context.command_history.append(
             f"degree = min(3, len({path_points!r}) - 1)\n"
@@ -706,7 +706,7 @@ def move_body_to_component(ctx: Context, body_name: str, target_component_name: 
         body = _find_body(design, body_name)
         if body is None:
             return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
-        comp = _find_component(design, target_component_name)
+        comp = design.search_component_by_name(target_component_name)
         if comp is None:
             return f"Component '{target_component_name}' not found. Use list_components to see available components."
         comp.move_bodies_to_component([body])
@@ -1033,7 +1033,7 @@ def move_body_to_component(ctx: Context, body_name: str, target_component_name: 
 
         # Perform transcript
         app_context.command_history.append(f"body = design.get_body({body_name.split('/')[-1]!r})")
-        app_context.command_history.append(f"comp = design.search_component_by_name({target_component_name!r})")
+        app_context.command_history.append(f"comp = design.search_component_by_name({target_component_name!r}) or design")
         app_context.command_history.append(f"comp.move_bodies_to_component([body])")
 
         logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
@@ -1120,7 +1120,7 @@ def extrude_sketch(
         # Perform transcript
         app_context.command_history.append("from pint import Quantity")
         app_context.command_history.append(
-            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
+            f"target = design if {component_name!r} is None else (design.search_component_by_name({component_name!r}) or design)"
         )
         app_context.command_history.extend(commands)
         app_context.command_history.append(
@@ -1209,7 +1209,7 @@ def revolve_sketch(
             "from ansys.geometry.core.math import Point3D, Vector3D; from pint import Quantity"
         )
         app_context.command_history.append(
-            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
+            f"target = design if {component_name!r} is None else (design.search_component_by_name({component_name!r}) or design)"
         )
         app_context.command_history.extend(commands)
         app_context.command_history.append(
