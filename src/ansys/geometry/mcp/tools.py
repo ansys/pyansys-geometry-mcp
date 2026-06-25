@@ -51,6 +51,7 @@ from fastmcp.server import Context
 from websockets.asyncio.async_timeout import timeout
 
 from ansys.geometry.mcp import PyAnsysGeometryContext, app
+from ansys.geometry.mcp.auxiliary import _build_sketch, _find_body
 
 logger = get_logger(__name__)
 
@@ -195,6 +196,11 @@ async def run_python_code(ctx: Context, code: str) -> str:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Designer tools
+# ---------------------------------------------------------------------------
+
+
 @app.tool()
 def create_design(ctx: Context, design_name: str) -> str:
     """Create a new design in the product backend.
@@ -308,7 +314,7 @@ def create_box(
 
     try:
         design = app_context.product_instance.get_active_design()
-        parent = _find_component(design, parent_component_name) if parent_component_name else design
+        parent = design.search_component_by_name(parent_component_name) if parent_component_name else design
         if parent is None:
             logger.info(f"Parent component '{parent_component_name}' not found. Adding box to root design.")
             parent = design
@@ -328,7 +334,7 @@ def create_box(
         app_context.command_history.append("from pint import Unit")
         app_context.command_history.append(
             f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
-            f"target = design if {parent_component_name!r} is None else design.get_component({parent_component_name!r}); "
+            f"target = design if {parent_component_name!r} is None else design.search_component_by_name({parent_component_name!r}); "
             f"target.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
         )
 
@@ -339,56 +345,332 @@ def create_box(
     except Exception as e:
         logger.error(f"create_box failed: {e}")
         return f"Error creating box '{name}': {e}"
-
+    
 
 @app.tool()
-def move_body_to_component(ctx: Context, body_name: str, target_component_name: str) -> str:
-    """Move an existing body into a named component.
+def extrude_nurbs_profile(
+    ctx: Context,
+    name: str,
+    profile_points: list[list[float]],
+    extrude_distance: float,
+    close_profile: bool = True,
+    plane_origin: list[float] | None = None,
+    plane_dir_x: list[float] | None = None,
+    plane_dir_y: list[float] | None = None,
+    component_name: str | None = None,
+) -> str:
+    """Extrude a freeform solid body defined by a NURBS profile fitted through 2D points.
 
-    Use this tool when asked to move, reassign, or place a body inside a component.
-    Use ``list_bodies`` and ``list_components`` first to confirm exact names.
+    Fits a smooth NURBS spline through the supplied 2D profile points on a sketch
+    plane and extrudes it into a solid body.  This is the right tool whenever you
+    need an organic or freeform cross-section that cannot be described by circles,
+    boxes, or polygons — for example cam profiles, airfoil outlines, or custom
+    bracket silhouettes.
+
+    The tool handles the full workflow automatically:
+
+    1. Build the sketch plane (defaults to the world XY plane).
+    2. Convert the raw coordinate pairs to ``Point2D`` objects.
+    3. Fit a NURBS spline through the points via ``Sketch.nurbs_from_2d_points()``.
+    4. Optionally close the profile with a straight segment from the last point
+       back to the first (``close_profile=True``).
+    5. Extrude the closed profile by ``extrude_distance`` metres.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    body_name : str
-        Exact name of the body to move (use ``list_bodies`` to find it).
-    target_component_name : str
-        Exact name of the destination component (use ``list_components`` to find it).
+    name : str
+        Name for the resulting solid body.
+    profile_points : list of [float, float]
+        Ordered 2D boundary points of the profile in metres, e.g.
+        ``[[0,0], [0.05,0.02], [0.1,0], [0.05,-0.02]]``.
+        At least 3 distinct points are required. Do **not** repeat the first
+        point at the end — ``close_profile`` handles closure automatically.
+    extrude_distance : float
+        Extrusion depth in metres along the sketch-plane normal (+Z by default).
+    close_profile : bool, default: True
+        When ``True`` a straight closing segment is added from the last point
+        back to the first point before extruding.  Set to ``False`` only when
+        the NURBS itself is already closed (first point == last point).
+    plane_origin : list of float, optional
+        ``[x, y, z]`` origin of the sketch plane. Defaults to ``[0, 0, 0]``.
+    plane_dir_x : list of float, optional
+        ``[x, y, z]`` X direction of the sketch plane. Defaults to ``[1, 0, 0]``.
+    plane_dir_y : list of float, optional
+        ``[x, y, z]`` Y direction of the sketch plane. Defaults to ``[0, 1, 0]``.
+    component_name : str, optional
+        Name of an existing component to place the body inside.
+        Defaults to the root design.
 
     Returns
     -------
     str
-        Result message indicating success or failure.
+        Confirmation message with the new body's details, or an error description.
 
     """
+    from ansys.geometry.core.math import Plane, Point2D, Point3D, UnitVector3D
+    from ansys.geometry.core.sketch import Sketch
+    from pint import Quantity
+
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot move body."
+        return "Product backend is not connected. Cannot create NURBS body."
+
+    if len(profile_points) < 3:
+        return "At least 3 profile points are required to fit a NURBS curve."
 
     try:
         design = app_context.product_instance.get_active_design()
+        target = design if component_name is None else design.search_component_by_name(component_name)
+        if target is None:
+            return f"Component '{component_name}' not found. Use list_components to see available components."
 
-        body = _find_body(design, body_name.split("/")[-1])
-        if body is None:
-            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
-        comp = _find_component(design, target_component_name)
-        if comp is None:
-            return f"Component '{target_component_name}' not found. Use list_components to see available components."
-        comp.move_bodies_to_component([body])
+        # Build sketch plane
+        nondefault_plane = plane_origin is not None or plane_dir_x is not None or plane_dir_y is not None
+        if nondefault_plane:
+            plane = Plane(
+                origin=Point3D(plane_origin),
+                direction_x=UnitVector3D(plane_dir_x),
+                direction_y=UnitVector3D(plane_dir_y),
+            )
+            sketch = Sketch(plane)
+        else:
+            sketch = Sketch()
 
-        # Perform transcript
-        app_context.command_history.append(f"body = design.get_body({body_name.split('/')[-1]!r})")
-        app_context.command_history.append(f"comp = design.get_component({target_component_name!r})")
-        app_context.command_history.append(f"comp.move_bodies_to_component([body])")
+        # Fit the NURBS spline through the 2D profile points
+        pts_2d = [Point2D(p) for p in profile_points]
+        sketch.nurbs_from_2d_points(pts_2d)
 
-        logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
-        return f"Body '{body_name}' moved to component '{target_component_name}' successfully."
+        # Close the profile with a straight segment so the backend can extrude it
+        if close_profile:
+            sketch.segment(start=pts_2d[-1], end=pts_2d[0])
+
+        body = target.extrude_sketch(
+            name=name,
+            sketch=sketch,
+            distance=Quantity(extrude_distance, "m"),
+        )
+
+        # Transcript
+        app_context.command_history.append(
+            "from ansys.geometry.core.math import Plane, Point2D, Point3D, UnitVector3D\n"
+            "from ansys.geometry.core.sketch import Sketch\n"
+            "from pint import Quantity"
+        )
+        app_context.command_history.append(
+            f"design = instance.get_active_design()\n"
+            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
+        )
+        plane_code = (
+            f"Sketch(Plane(origin=Point3D({plane_origin}), "
+            f"direction_x=UnitVector3D({plane_dir_x}), direction_y=UnitVector3D({plane_dir_y})))"
+            if nondefault_plane
+            else "Sketch()"
+        )
+        app_context.command_history.append(f"sketch = {plane_code}")
+        app_context.command_history.append(
+            f"pts_2d = [Point2D(p) for p in {profile_points!r}]\n"
+            "sketch.nurbs_from_2d_points(pts_2d)"
+        )
+        if close_profile:
+            app_context.command_history.append("sketch.segment(start=pts_2d[-1], end=pts_2d[0])")
+        app_context.command_history.append(
+            f"target.extrude_sketch(name={name!r}, sketch=sketch, "
+            f"distance=Quantity({extrude_distance}, 'm'))"
+        )
+
+        logger.info(
+            f"fit_nurbs_through_points: name={name!r}, points={len(profile_points)}, "
+            f"distance={extrude_distance}"
+        )
+        return (
+            f"NURBS body '{name}' created from {len(profile_points)}-point profile, "
+            f"extruded {extrude_distance} m: {body}"
+        )
     except Exception as e:
-        logger.error(f"move_body_to_component failed: {e}")
-        return f"Error moving body '{body_name}': {e}"
+        logger.error(f"fit_nurbs_through_points failed: {e}")
+        return f"Error creating NURBS body '{name}': {e}"
+
+
+@app.tool()
+def create_sweep_pipe(
+    ctx: Context,
+    name: str,
+    path_points: list[list[float]],
+    cross_section: list[dict],
+    component_name: str | None = None,
+) -> str:
+    """Sweep a 2D cross-section profile along a freeform 3D path to create a body.
+
+    Use this tool for pipes, tubes, conduits, hoses, channels, or any body where a
+    profile must follow a curved 3D route.  The cross-section can be any shape
+    supported by ``extrude_sketch`` — circle, box, polygon, arc, segment, or NURBS.
+
+    The tool handles the full multi-step workflow automatically:
+
+    1. Fit a smooth cubic NURBS curve through the 3D path waypoints.
+    2. Compute the tangent direction at the path start.
+    3. Build a sketch plane **perpendicular** to that tangent at the first waypoint.
+    4. Draw the requested cross-section on that plane.
+    5. Sweep the profile along the NURBS path to produce a solid body.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    name : str
+        Name for the resulting body.
+    path_points : list of [float, float, float]
+        Ordered 3D waypoints the centerline passes through, in metres.
+        At least 2 points are required; 4 or more give a smooth cubic spline.
+        Example: ``[[0,0,0], [0.1,0.05,0], [0.2,0,0]]``
+    cross_section : list of dict
+        One or more sketch primitives defining the cross-section profile.
+        Uses the same format as ``extrude_sketch``. Coordinates are in the
+        local plane of the profile (2D, in metres), centred at the path start.
+        Supported types:
+
+        - ``{"type": "circle", "radius": 0.01}``  — round pipe
+        - ``{"type": "box", "width": 0.02, "height": 0.01}``  — rectangular duct
+        - ``{"type": "polygon", "inner_radius": 0.01, "sides": 6}``  — hex section
+        - ``{"type": "arc", ...}``, ``{"type": "segment", ...}``  — open profiles
+
+    component_name : str, optional
+        Name of an existing component to place the body inside.
+        Defaults to the root design.
+
+    Returns
+    -------
+    str
+        Confirmation message with the new body's details, or an error description.
+
+    Warnings
+    --------
+    Requires Ansys release 24R2 or later (26R1 for NURBS path support).
+
+    """
+    import math
+
+    from ansys.geometry.core.math import Plane, Point3D
+    from ansys.geometry.core.shapes.curves.nurbs import NURBSCurve
+
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create sweep body."
+
+    if len(path_points) < 2:
+        return "At least 2 path waypoints are required."
+
+    if not cross_section:
+        return "cross_section must contain at least one sketch primitive."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        target = design if component_name is None else design.search_component_by_name(component_name)
+        if target is None:
+            return f"Component '{component_name}' not found. Use list_components to see available components."
+
+        # ------------------------------------------------------------------
+        # Step 1: Fit a NURBS curve through the 3D path waypoints.
+        # Clamp degree to avoid an invalid NURBS when the path has few points.
+        # ------------------------------------------------------------------
+        degree = min(3, len(path_points) - 1)
+        path_pts_3d = [Point3D(p) for p in path_points]
+        nurbs_path = NURBSCurve.fit_curve_from_points(path_pts_3d, degree=degree)
+
+        # Trim the full parametric domain to get a TrimmedCurve for sweep_sketch
+        param_interval = nurbs_path.parameterization().interval
+        trimmed_path = nurbs_path.trim(param_interval)
+
+        # ------------------------------------------------------------------
+        # Step 2: Build a sketch plane perpendicular to the path at its start.
+        # Use the direction from the first to the second waypoint as the tangent
+        # approximation (reliable even for short paths).
+        # ------------------------------------------------------------------
+        p0 = path_points[0]
+        p1 = path_points[1]
+        dx, dy, dz = p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]
+        mag = math.sqrt(dx * dx + dy * dy + dz * dz)
+        tangent = [dx / mag, dy / mag, dz / mag]
+
+        # Pick an arbitrary vector not (nearly) parallel to the tangent
+        arbitrary = [0.0, 0.0, 1.0] if abs(tangent[2]) < 0.9 else [1.0, 0.0, 0.0]
+
+        # dir_x = cross(arbitrary, tangent), normalised
+        dir_x = [
+            arbitrary[1] * tangent[2] - arbitrary[2] * tangent[1],
+            arbitrary[2] * tangent[0] - arbitrary[0] * tangent[2],
+            arbitrary[0] * tangent[1] - arbitrary[1] * tangent[0],
+        ]
+        mag_x = math.sqrt(sum(c * c for c in dir_x))
+        dir_x = [c / mag_x for c in dir_x]
+
+        # dir_y = cross(tangent, dir_x), normalised
+        dir_y = [
+            tangent[1] * dir_x[2] - tangent[2] * dir_x[1],
+            tangent[2] * dir_x[0] - tangent[0] * dir_x[2],
+            tangent[0] * dir_x[1] - tangent[1] * dir_x[0],
+        ]
+        mag_y = math.sqrt(sum(c * c for c in dir_y))
+        dir_y = [c / mag_y for c in dir_y]
+
+        # ------------------------------------------------------------------
+        # Step 3: Build the cross-section sketch on the perpendicular plane,
+        # reusing _build_sketch so all primitive types are supported.
+        # ------------------------------------------------------------------
+        sketch, sketch_cmds = _build_sketch(cross_section, p0, dir_x, dir_y)
+
+        # ------------------------------------------------------------------
+        # Step 4: Sweep the profile along the NURBS path.
+        # ------------------------------------------------------------------
+        body = target.sweep_sketch(name=name, sketch=sketch, path=[trimmed_path])
+
+        # Transcript
+        app_context.command_history.append(
+            "import math\n"
+            "from ansys.geometry.core.math import Plane, Point3D\n"
+            "from ansys.geometry.core.shapes.curves.nurbs import NURBSCurve\n"
+            "from ansys.geometry.core.sketch import Sketch"
+        )
+        app_context.command_history.append(
+            f"design = instance.get_active_design()\n"
+            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
+        )
+        app_context.command_history.append(
+            f"degree = min(3, len({path_points!r}) - 1)\n"
+            f"path_pts_3d = [Point3D(p) for p in {path_points!r}]\n"
+            "nurbs_path = NURBSCurve.fit_curve_from_points(path_pts_3d, degree=degree)\n"
+            "trimmed_path = nurbs_path.trim(nurbs_path.parameterization().interval)"
+        )
+        app_context.command_history.append(
+            f"# Perpendicular plane at path start — tangent from {p0!r} → {p1!r}\n"
+            f"plane = Plane(origin=Point3D({p0!r}), "
+            f"direction_x=UnitVector3D({dir_x!r}), direction_y=UnitVector3D({dir_y!r}))"
+        )
+        app_context.command_history.extend(sketch_cmds)
+        app_context.command_history.append(
+            f"target.sweep_sketch(name={name!r}, sketch=sketch, path=[trimmed_path])"
+        )
+
+        logger.info(
+            f"create_sweep_pipe: name={name!r}, waypoints={len(path_points)}, "
+            f"primitives={len(cross_section)}"
+        )
+        return (
+            f"Body '{name}' swept through {len(path_points)} waypoints "
+            f"with {len(cross_section)}-primitive cross-section: {body}"
+        )
+    except Exception as e:
+        logger.error(f"create_sweep_pipe failed: {e}")
+        return f"Error creating sweep body '{name}': {e}"
+
+
+# ---------------------------------------------------------------------------
+# Export and visualization tools
+# ---------------------------------------------------------------------------
 
 
 @app.tool()
@@ -520,133 +802,6 @@ def get_design_3d_scene(ctx: Context) -> None:
         logger.error(f"get_design_3d_scene failed: {e}")
         return f"Error getting 3D scene window: {e}"
 
-# ---------------------------------------------------------------------------
-# Private helpers
-# ---------------------------------------------------------------------------
-
-
-def _find_body(design, body_name: str):
-    """Find a body by name across the full design tree.
-
-    Uses ``Component.get_all_bodies()``, which recursively collects every body
-    in the component hierarchy.
-    """
-    for body in design.get_all_bodies():
-        if body.name == body_name:
-            return body
-    return None
-
-
-def _find_component(design, component_name: str):
-    """Find a component by name across the full design tree.
-
-    Uses ``Design._get_all_components()``, which recursively collects every
-    component in the design hierarchy.
-    """
-    for comp in design._get_all_components():
-        if comp.name == component_name:
-            return comp
-    return None
-
-
-def _build_sketch(
-    sketch_primitives: list[dict],
-    plane_origin: list[float] | None = None,
-    plane_dir_x: list[float] | None = None,
-    plane_dir_y: list[float] | None = None,
-):
-    """Build a Sketch from a list of primitive dicts and an optional plane definition.
-
-    Parameters
-    ----------
-    sketch_primitives : list of dict
-        Each dict must have a ``"type"`` key. See ``extrude_sketch`` for supported types.
-    plane_origin : list of float, optional
-        ``[x, y, z]`` origin of the sketch plane.
-    plane_dir_x : list of float, optional
-        ``[x, y, z]`` X direction of the sketch plane.
-    plane_dir_y : list of float, optional
-        ``[x, y, z]`` Y direction of the sketch plane.
-
-    Returns
-    -------
-    Sketch
-        The populated sketch object.
-
-    """
-    from ansys.geometry.core.math import Plane, Point2D, Point3D, UnitVector3D
-    from ansys.geometry.core.sketch import Sketch
-
-    accumulated_commands: list[str] = []
-
-    if plane_origin is not None and plane_dir_x is not None and plane_dir_y is not None:
-        sketch = Sketch(
-            Plane(
-                origin=Point3D(plane_origin),
-                direction_x=UnitVector3D(plane_dir_x),
-                direction_y=UnitVector3D(plane_dir_y),
-            )
-        )
-        accumulated_commands.append(
-            f"sketch = Sketch(Plane(origin=Point3D({plane_origin}), "
-            f"direction_x=UnitVector3D({plane_dir_x}), "
-            f"direction_y=UnitVector3D({plane_dir_y})))"
-        )
-    else:
-        sketch = Sketch()
-        accumulated_commands.append("sketch = Sketch()")
-
-    for prim in sketch_primitives:
-        prim_type = prim.get("type", "").lower()
-        center = Point2D([prim.get("center_x", 0.0), prim.get("center_y", 0.0)])
-
-        if prim_type == "circle":
-            sketch.circle(center=center, radius=prim["radius"])
-            accumulated_commands.append(
-                f"sketch.circle(center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), radius={prim['radius']})"
-            )
-        elif prim_type == "box":
-            sketch.box(center=center, width=prim["width"], height=prim["height"])
-            accumulated_commands.append(
-                f"sketch.box(center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), width={prim['width']}, height={prim['height']})"
-            )
-        elif prim_type == "polygon":
-            # inner_radius is the apothem (distance from centre to midpoint of a side)
-            sketch.polygon(
-                center=center,
-                inner_radius=prim["inner_radius"],
-                sides=int(prim["sides"]),
-            )
-            accumulated_commands.append(
-                f"sketch.polygon(center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), inner_radius={prim['inner_radius']}, sides={int(prim['sides'])})"
-            )
-        elif prim_type == "segment":
-            sketch.segment(
-                start=Point2D([prim["start_x"], prim["start_y"]]),
-                end=Point2D([prim["end_x"], prim["end_y"]]),
-            )
-            accumulated_commands.append(
-                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}])"
-            )
-        elif prim_type == "arc":
-            # arc requires start, end, and center points
-            sketch.arc(
-                start=Point2D([prim["start_x"], prim["start_y"]]),
-                end=Point2D([prim["end_x"], prim["end_y"]]),
-                center=center,
-                clockwise=prim.get("clockwise", False),
-            )
-            accumulated_commands.append(
-                f"sketch.arc(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}]), center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), clockwise={prim.get('clockwise', False)})"
-            )
-        else:
-            raise ValueError(
-                f"Unsupported sketch primitive type: {prim_type!r}. "
-                "Supported types: circle, box, polygon, segment, arc."
-            )
-
-    return sketch, accumulated_commands
-
 
 # ---------------------------------------------------------------------------
 # Component management tools
@@ -685,7 +840,7 @@ def add_component(ctx: Context, name: str, parent_component_name: str | None = N
         design = app_context.product_instance.get_active_design()
 
         if parent_component_name:
-            parent = _find_component(design, parent_component_name)
+            parent = design.search_component_by_name(parent_component_name)
             if parent is None:
                 return f"Parent component '{parent_component_name}' not found in the active design."
             comp = parent.add_component(name)
@@ -770,7 +925,7 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
 
     try:
         design = app_context.product_instance.get_active_design()
-        root = design if component_name is None else _find_component(design, component_name)
+        root = design if component_name is None else design.search_component_by_name(component_name)
         if root is None:
             return f"Component '{component_name}' not found."
 
@@ -786,6 +941,56 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
     except Exception as e:
         logger.error(f"list_bodies failed: {e}")
         return f"Error listing bodies: {e}"
+
+
+@app.tool()
+def move_body_to_component(ctx: Context, body_name: str, target_component_name: str) -> str:
+    """Move an existing body into a named component.
+
+    Use this tool when asked to move, reassign, or place a body inside a component.
+    Use ``list_bodies`` and ``list_components`` first to confirm exact names.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Exact name of the body to move (use ``list_bodies`` to find it).
+    target_component_name : str
+        Exact name of the destination component (use ``list_components`` to find it).
+
+    Returns
+    -------
+    str
+        Result message indicating success or failure.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot move body."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+
+        body = _find_body(design, body_name.split("/")[-1])
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+        comp = design.search_component_by_name(target_component_name)
+        if comp is None:
+            return f"Component '{target_component_name}' not found. Use list_components to see available components."
+        comp.move_bodies_to_component([body])
+
+        # Perform transcript
+        app_context.command_history.append(f"body = design.get_body({body_name.split('/')[-1]!r})")
+        app_context.command_history.append(f"comp = design.search_component_by_name({target_component_name!r})")
+        app_context.command_history.append(f"comp.move_bodies_to_component([body])")
+
+        logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
+        return f"Body '{body_name}' moved to component '{target_component_name}' successfully."
+    except Exception as e:
+        logger.error(f"move_body_to_component failed: {e}")
+        return f"Error moving body '{body_name}': {e}"
 
 
 # ---------------------------------------------------------------------------
@@ -855,7 +1060,7 @@ def extrude_sketch(
 
     try:
         design = app_context.product_instance.get_active_design()
-        target = design if component_name is None else _find_component(design, component_name)
+        target = design if component_name is None else design.search_component_by_name(component_name)
         if target is None:
             return f"Component '{component_name}' not found."
 
@@ -865,7 +1070,7 @@ def extrude_sketch(
         # Perform transcript
         app_context.command_history.append("from pint import Quantity")
         app_context.command_history.append(
-            f"target = design if {component_name!r} is None else design.get_component({component_name!r})"
+            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
         )
         app_context.command_history.extend(commands)
         app_context.command_history.append(
@@ -937,7 +1142,7 @@ def revolve_sketch(
 
     try:
         design = app_context.product_instance.get_active_design()
-        target = design if component_name is None else _find_component(design, component_name)
+        target = design if component_name is None else design.search_component_by_name(component_name)
         if target is None:
             return f"Component '{component_name}' not found."
 
@@ -954,7 +1159,7 @@ def revolve_sketch(
             "from ansys.geometry.core.math import Point3D, Vector3D; from pint import Quantity"
         )
         app_context.command_history.append(
-            f"target = design if {component_name!r} is None else design.get_component({component_name!r})"
+            f"target = design if {component_name!r} is None else design.search_component_by_name({component_name!r})"
         )
         app_context.command_history.extend(commands)
         app_context.command_history.append(
