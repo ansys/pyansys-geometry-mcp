@@ -43,7 +43,22 @@ dependencies = [
   "black",
   "isort",
 ]
-optional-dependencies.doc = [
+urls.Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
+urls.Homepage = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+urls.Issues = "https://github.com/ansys-internal/pyansys-geometry-mcp/issues"
+urls.Repository = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
+
+[dependency-groups]
+# NOTE: The `dependency-groups` section is used to define groups of dependencies
+# only available when a developer clones the repository and installs the package
+# for local development.
+dev = [
+  "pre-commit==4.6.0",
+  { include-group = "doc" },
+  { include-group = "tests" },
+]
+doc = [
   "ansys-sphinx-theme>=0.14",
   "pypdf>=4.0",
   "sphinx>=7.0",
@@ -52,23 +67,22 @@ optional-dependencies.doc = [
   "sphinx-design>=0.5",
   "sphinx-jinja>=0.2",
 ]
-optional-dependencies.tests = [
+tests = [
   "pytest>=7.0",
   "pytest-asyncio>=0.21",
   "pytest-cov>=4.0",
   "pytest-mock>=3.10",
 ]
-urls.Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
-urls.Homepage = "https://github.com/ansys-internal/pyansys-geometry-mcp"
-urls.Issues = "https://github.com/ansys-internal/pyansys-geometry-mcp/issues"
-urls.Repository = "https://github.com/ansys-internal/pyansys-geometry-mcp"
-scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
 
 [tool.hatch]
 build.targets.editable.packages = [ "src/ansys/geometry/mcp" ]
 build.targets.editable.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
 build.targets.wheel.packages = [ "src/ansys/geometry/mcp" ]
 build.targets.wheel.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
+
+[tool.uv]
+default-groups = []
+package = true
 
 [tool.ruff]
 line-length = 100

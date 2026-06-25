@@ -674,6 +674,56 @@ def create_sweep_pipe(
 
 
 @app.tool()
+def move_body_to_component(ctx: Context, body_name: str, target_component_name: str) -> str:
+    """Move an existing body into a named component.
+
+    Use this tool when asked to move, reassign, or place a body inside a component.
+    Use ``list_bodies`` and ``list_components`` first to confirm exact names.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Exact name of the body to move (use ``list_bodies`` to find it).
+    target_component_name : str
+        Exact name of the destination component (use ``list_components`` to find it).
+
+    Returns
+    -------
+    str
+        Result message indicating success or failure.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot move body."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+
+        body = _find_body(design, body_name)
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+        comp = _find_component(design, target_component_name)
+        if comp is None:
+            return f"Component '{target_component_name}' not found. Use list_components to see available components."
+        comp.move_bodies_to_component([body])
+
+        # Perform transcript
+        app_context.command_history.append(
+            f"{target_component_name}_comp.move_bodies_to_component([{body_name}_body])"
+        )
+
+        logger.info(f"move_body_to_component: body={body_name!r}, target={target_component_name!r}")
+        return f"Body '{body_name}' moved to component '{target_component_name}' successfully."
+    except Exception as e:
+        logger.error(f"move_body_to_component failed: {e}")
+        return f"Error moving body '{body_name}': {e}"
+
+
+@app.tool()
 def export_design_to(ctx: Context, file_format: str, folder: str | None = None) -> str:
     """Export the current active design to a specified format.
 
