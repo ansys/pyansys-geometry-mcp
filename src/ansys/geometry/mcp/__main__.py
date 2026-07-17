@@ -38,6 +38,17 @@ def _build_parser() -> argparse.ArgumentParser:
         description="PyAnsys Geometry MCP server",
     )
     parser.add_argument(
+        "--mode",
+        default=None,
+        choices=["pypim", "docker", "geometry_service", "spaceclaim", "discovery"],
+        help=(
+            "Launch mode for the geometry service (default: auto-detect). "
+            "Options are 'pypim' (remote via PIM API), 'docker' (local Docker), "
+            "'geometry_service' (local Ansys Geometry Service), "
+            "'spaceclaim' (local Ansys SpaceClaim), and 'discovery' (local Ansys Discovery)."
+        ),
+    )
+    parser.add_argument(
         "--transport-mode",
         default=None,
         choices=["insecure", "mtls", "wnua", "uds"],
@@ -78,6 +89,7 @@ def main():
     # Pre-create the context and apply CLI configuration before the server
     # starts, so product_startup() picks up the correct values.
     app.context = app.create_context()
+    app.context.mode = args.mode
     app.context.transport_mode = args.transport_mode
     app.context.host = args.host
     app.context.port = args.port

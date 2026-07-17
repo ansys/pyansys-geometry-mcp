@@ -36,6 +36,8 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     ----------
     product_instance : Optional[Any]
         The connected product instance.
+    mode : Optional[str]
+        Launch mode for the geometry service (e.g. ``"docker"``, ``"spaceclaim"``).
     transport_mode : Optional[str]
         Transport mode for the geometry service connection.
     host : str
@@ -54,6 +56,7 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     """
 
     product_instance: Optional[Modeler] = None
+    mode: Optional[str] = None
     transport_mode: Optional[str] = None
     host: str = "localhost"
     port: int = 50051

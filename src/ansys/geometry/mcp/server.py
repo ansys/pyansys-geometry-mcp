@@ -110,10 +110,14 @@ instance = Modeler(
         else:
             from ansys.geometry.core import launch_modeler
 
-            instance = launch_modeler(transport_mode=self.context.transport_mode)
+            instance = launch_modeler(
+                mode=self.context.mode,
+                transport_mode=self.context.transport_mode,
+            )
             self.context.command_history.append("from ansys.geometry.core import launch_modeler")
             self.context.command_history.append(
-                f"instance=launch_modeler(transport_mode={self.context.transport_mode!r})"
+                f"instance=launch_modeler(mode={self.context.mode!r}, "
+                f"transport_mode={self.context.transport_mode!r})"
             )
 
             # Mirror instance into the persistent Python session so that

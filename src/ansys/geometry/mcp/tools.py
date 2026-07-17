@@ -266,7 +266,7 @@ def create_box(
     width: float,
     depth: float,
     height: float,
-    parent_component_name: str | None = None
+    parent_component_name: str | None = None,
 ) -> str:
     """Create a 3D box (rectangular solid) body in the active design or inside a named parent component.
 
@@ -294,6 +294,7 @@ def create_box(
     -------
     str
         Result message indicating success or failure.
+
     """
     from ansys.geometry.core.math import Point2D
     from ansys.geometry.core.misc import Distance
@@ -307,7 +308,11 @@ def create_box(
 
     try:
         design = app_context.product_instance.get_active_design()
-        parent = design if parent_component_name is None else _find_component(design, parent_component_name)
+        parent = (
+            design
+            if parent_component_name is None
+            else _find_component(design, parent_component_name)
+        )
 
         sketch = Sketch()
         sketch.box(center=Point2D([0, 0]), width=width, height=depth)
@@ -514,6 +519,7 @@ def get_design_3d_scene(ctx: Context) -> None:
     except Exception as e:
         logger.error(f"get_design_3d_scene failed: {e}")
         return f"Error getting 3D scene window: {e}"
+
 
 # ---------------------------------------------------------------------------
 # Private helpers
