@@ -119,6 +119,7 @@ instance = Modeler(
                 f"instance=launch_modeler(mode={self.context.mode!r}, "
                 f"transport_mode={self.context.transport_mode!r})"
             )
+            self._guard_local_backend_process(instance)
 
             # Mirror instance into the persistent Python session so that
             # run_python_code() can reference it via the 'instance' variable.
@@ -141,6 +142,32 @@ instance = Modeler(
         # Log the successful launch of the product instance
         logger.info("PyAnsys Geometry MCP backend launched successfully.")
         logger.info(f"Product instance details:\n\n{self.context.product_instance}")
+
+    @staticmethod
+    def _guard_local_backend_process(instance) -> None:
+        """Protect a locally-launched backend process against orphaning.
+
+        Only applies to backends started via ``launch_modeler()`` on a local
+        machine (Discovery, SpaceClaim, the Geometry Service exe), where
+        ``ansys-geometry-core`` tracks the OS process directly. Docker-based,
+        remote (PIM), and ``connect_to_existing_service`` backends manage
+        their own lifecycle and are intentionally left untouched here.
+
+        Reaches into a private ``ansys-geometry-core`` attribute
+        (``client._product_instance._pid``) since no public accessor exists;
+        failures are caught and logged rather than raised, so a future
+        internal change upstream cannot break server startup.
+        """
+        try:
+            product_instance = instance.client._product_instance
+            pid = product_instance._pid if product_instance is not None else None
+        except AttributeError:
+            pid = None
+
+        if pid is not None:
+            from ansys.geometry.mcp._process_guard import guard_process
+
+            guard_process(pid)
 
     def product_cleanup(self):
         """Clean up the product instance when the server stops.
