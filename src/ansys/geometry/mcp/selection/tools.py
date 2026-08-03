@@ -24,14 +24,24 @@
 ``build_selection`` is the main entry point: it walks a list of steps against
 a starting entity type (body, face, or edge), dispatching each step's action
 through the corresponding handler's registry (see
-:mod:`ansys.geometry.mcp.selection._base`). A special ``"transition"`` action
-switches the pipeline to a child entity type (body -> face, body -> edge, or
-face -> edge), carrying over the child entities of the current selection.
+:mod:`ansys.geometry.mcp.selection._base`).
+
+``get_child_entities`` moves from a selection of bodies (or faces) to the
+faces (or edges) that belong to them, so a pipeline can filter at one entity
+type and then continue filtering at a finer-grained child type. For example,
+to find only the circular edges of bodies that contain at least one circular
+edge: filter bodies with ``filter_containing_curve_types``, call
+``get_child_entities`` to get their edges, then filter those edges with
+``filter_by_curve_type``.
 
 ``combine_selections`` performs set operations (union/difference/intersection)
 between two selections of the same entity type. ``select_all_bodies`` /
 ``select_all_faces`` / ``select_all_edges`` are convenience shortcuts for the
 most common first step.
+
+``create_named_selection`` saves a selection's entities under a name on the
+active design, persisting it beyond the current tool call (unlike the
+transient lists returned by the other tools above).
 """
 
 from ansys.common.mcp.logging_config import get_logger
@@ -67,7 +77,6 @@ def _run_pipeline(
         design = app_context.product_instance.get_active_design()
         grpc_client = app_context.product_instance.client
 
-        current_type = entity_type
         selection = (
             handler.build_from_ids(design, grpc_client, entity_ids)
             if entity_ids
@@ -75,20 +84,14 @@ def _run_pipeline(
         )
 
         for step in steps:
-            if step.get("action") == "transition":
-                target_type = step.get("to")
-                selection = transition(design, grpc_client, current_type, selection, target_type)
-                current_type = target_type
-                handler = HANDLER_REGISTRY[current_type]
-                continue
             selection = handler.apply_step(selection, step)
 
         items = handler.serialize(selection)
         app_context.command_history.append(
             f"# build_selection(entity_type={entity_type!r}, steps={steps!r}) "
-            f"-> {len(items)} {current_type}(s)"
+            f"-> {len(items)} {entity_type}(s)"
         )
-        return {"entity_type": current_type, "items": items}
+        return {"entity_type": entity_type, "items": items}
     except Exception as e:
         logger.error(f"build_selection failed: {e}")
         return {"error": f"Error building selection: {e}"}
@@ -105,11 +108,11 @@ def build_selection(
 
     Each entry in ``steps`` is a dict of the form ``{"action": <name>, **params}``.
     Steps are applied in order, each one narrowing, extending, ordering, or
-    inverting the current selection. A step with ``{"action": "transition", "to":
-    "face"}`` (or ``"edge"``) switches the pipeline to the child entity type,
-    carrying over the child entities (faces or edges) belonging to the bodies
-    (or faces) currently selected. Only downward transitions are supported:
-    body -> face, body -> edge, face -> edge. There is no way back up.
+    inverting the current selection. All steps operate on a single entity type
+    (bodies, faces, or edges) for a given call. To filter at a different,
+    finer-grained entity type (for example, the edges of bodies matching some
+    criterion), call ``get_child_entities`` between two ``build_selection``
+    calls -- see the Examples section below.
 
     Parameters
     ----------
@@ -127,8 +130,7 @@ def build_selection(
     -------
     dict
         ``{"entity_type": str, "items": list[dict]}`` on success, where
-        ``entity_type`` reflects the final entity type after any transitions
-        and ``items`` is a list of ``{"id": ..., ...}`` summaries. On failure,
+        ``items`` is a list of ``{"id": ..., ...}`` summaries. On failure,
         ``{"error": str}``.
 
     Body actions
@@ -234,21 +236,122 @@ def build_selection(
 
     Examples
     --------
-    Bodies with volume above 0.001 m3, transitioned to their faces with area
-    above 0.0001 m2::
+    Bodies with volume above 0.001 m3::
 
         build_selection(
+            entity_type="body",
             steps=[
                 {"action": "get_all"},
                 {"action": "filter_by_volume", "min": 0.001},
-                {"action": "transition", "to": "face"},
-                {"action": "filter_by_area", "min": 0.0001},
-            ]
+            ],
+        )
+
+    The circular edges of bodies that contain at least one circular edge --
+    chaining ``build_selection`` and ``get_child_entities`` across entity
+    types::
+
+        bodies = build_selection(
+            entity_type="body",
+            steps=[
+                {"action": "get_all"},
+                {"action": "filter_containing_curve_types", "curve_type": "circle"},
+            ],
+        )
+        edges = get_child_entities(
+            parent_entity_type="body",
+            parent_entity_ids=[b["id"] for b in bodies["items"]],
+            child_entity_type="edge",
+        )
+        circular_edges = build_selection(
+            entity_type="edge",
+            entity_ids=[e["id"] for e in edges["items"]],
+            steps=[{"action": "filter_by_curve_type", "curve_type": "circle"}],
         )
 
     """
     app_context = get_geometry_ctx(ctx)
     return _run_pipeline(app_context, entity_type, steps, entity_ids)
+
+
+@app.tool()
+def get_child_entities(
+    ctx: Context,
+    parent_entity_type: str,
+    parent_entity_ids: list[str],
+    child_entity_type: str,
+) -> dict:
+    """Get the faces or edges that belong to a set of bodies or faces.
+
+    Use this to move from a selection of one entity type to the "child"
+    entities that make it up, so a pipeline can filter at one granularity and
+    then continue filtering at a finer one. Supported combinations:
+    body -> face, body -> edge, face -> edge. There is no way back up
+    (edge -> face, face -> body).
+
+    Typical usage: filter bodies/faces with ``build_selection``, pass the
+    resulting IDs here to get their child faces/edges, then pass those IDs to
+    another ``build_selection`` call to filter the children. See the
+    Examples section of ``build_selection`` for a full walkthrough.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    parent_entity_type : str
+        Entity type of ``parent_entity_ids``: ``"body"`` or ``"face"``.
+    parent_entity_ids : list of str
+        IDs of the parent entities to extract children from.
+    child_entity_type : str
+        Entity type of the children to extract: ``"face"`` or ``"edge"``.
+
+    Returns
+    -------
+    dict
+        ``{"entity_type": str, "items": list[dict]}`` on success -- the
+        children are deduplicated across all parents. On failure,
+        ``{"error": str}``.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return {"error": "Product backend is not connected. Cannot get child entities."}
+
+    parent_handler = HANDLER_REGISTRY.get(parent_entity_type)
+    if parent_handler is None:
+        return {
+            "error": (
+                f"Unknown parent_entity_type '{parent_entity_type}'. "
+                f"Valid values: {', '.join(sorted(HANDLER_REGISTRY))}"
+            )
+        }
+    if child_entity_type not in parent_handler.CHILD_TYPES:
+        return {
+            "error": (
+                f"Cannot get '{child_entity_type}' children of '{parent_entity_type}'. "
+                f"Supported child types: {', '.join(parent_handler.CHILD_TYPES) or 'none'}."
+            )
+        }
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        grpc_client = app_context.product_instance.client
+
+        parent_selection = parent_handler.build_from_ids(design, grpc_client, parent_entity_ids)
+        child_selection = transition(
+            design, grpc_client, parent_entity_type, parent_selection, child_entity_type
+        )
+        child_handler = HANDLER_REGISTRY[child_entity_type]
+        items = child_handler.serialize(child_selection)
+
+        app_context.command_history.append(
+            f"# get_child_entities(parent_entity_type={parent_entity_type!r}, "
+            f"child_entity_type={child_entity_type!r}) -> {len(items)} {child_entity_type}(s)"
+        )
+        return {"entity_type": child_entity_type, "items": items}
+    except Exception as e:
+        logger.error(f"get_child_entities failed: {e}")
+        return {"error": f"Error getting child entities: {e}"}
 
 
 @app.tool()
@@ -323,6 +426,92 @@ def combine_selections(
     except Exception as e:
         logger.error(f"combine_selections failed: {e}")
         return {"error": f"Error combining selections: {e}"}
+
+
+#: Maps a selection entity type to the plural keyword argument accepted by
+#: ``Design.create_named_selection`` (e.g. "body" -> "bodies").
+_NAMED_SELECTION_KWARGS = {"body": "bodies", "face": "faces", "edge": "edges"}
+
+
+@app.tool()
+def create_named_selection(
+    ctx: Context,
+    name: str,
+    entity_type: str,
+    entity_ids: list[str],
+) -> dict:
+    """Create a persistent named selection in the active design.
+
+    Unlike ``build_selection``/``get_child_entities``, which return transient,
+    in-memory lists of entities, a named selection is saved on the design
+    itself -- it survives across tool calls, shows up in the Geometry
+    service and any exported file, and can later be recalled by name (for
+    example with the ``get_from_named_selection`` action in
+    ``build_selection``).
+
+    Typical usage: build up a selection of bodies/faces/edges with
+    ``build_selection`` (and optionally ``get_child_entities`` /
+    ``combine_selections``), then pass the resulting IDs here to save it
+    under a name.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    name : str
+        Name to give the new named selection.
+    entity_type : str
+        Entity type of ``entity_ids``: ``"body"``, ``"face"``, or ``"edge"``.
+    entity_ids : list of str
+        IDs of the entities to include, typically the IDs of the ``items``
+        returned by a prior ``build_selection``, ``get_child_entities``, or
+        ``combine_selections`` call.
+
+    Returns
+    -------
+    dict
+        ``{"name": str, "id": str, "entity_type": str, "count": int}`` on
+        success. On failure, ``{"error": str}``.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return {"error": "Product backend is not connected. Cannot create named selection."}
+
+    handler = HANDLER_REGISTRY.get(entity_type)
+    if handler is None:
+        return {
+            "error": (
+                f"Unknown entity_type '{entity_type}'. "
+                f"Valid values: {', '.join(sorted(HANDLER_REGISTRY))}"
+            )
+        }
+    if not entity_ids:
+        return {"error": "entity_ids must contain at least one ID."}
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        grpc_client = app_context.product_instance.client
+        selection = handler.build_from_ids(design, grpc_client, entity_ids)
+
+        named_selection = design.create_named_selection(
+            name, **{_NAMED_SELECTION_KWARGS[entity_type]: selection.items}
+        )
+
+        app_context.command_history.append(
+            f"# create_named_selection(name={name!r}, entity_type={entity_type!r}) "
+            f"-> {len(selection.items)} {entity_type}(s)"
+        )
+        return {
+            "name": named_selection.name,
+            "id": named_selection.id,
+            "entity_type": entity_type,
+            "count": len(selection.items),
+        }
+    except Exception as e:
+        logger.error(f"create_named_selection failed: {e}")
+        return {"error": f"Error creating named selection: {e}"}
 
 
 @app.tool()

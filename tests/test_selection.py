@@ -153,15 +153,11 @@ class TestRunPipeline:
         assert "error" in result
         assert "solid" in result["error"]
 
-    def test_pipeline_with_transition_switches_entity_type_and_logs_history(self, mocker):
-        """Filtering then transitioning body -> face returns serialized faces."""
-        face = MagicMock()
-        face.id = "F1"
-        face.surface_type.name = "PLANE"
-        face.area = "0.5 m^2"
-
+    def test_pipeline_applies_steps_and_logs_history(self, mocker):
+        """Filtering bodies returns serialized items and logs command history."""
         body = MagicMock()
-        body.faces = [face]
+        body.id = "B1"
+        body.name = "Body1"
 
         initial_selection = MagicMock(items=[body])
         filtered_selection = MagicMock(items=[body])
@@ -175,14 +171,116 @@ class TestRunPipeline:
         result = selection_tools._run_pipeline(
             app_context,
             "body",
-            [
-                {"action": "filter_by_volume", "min": 0.001},
-                {"action": "transition", "to": "face"},
-            ],
+            [{"action": "filter_by_volume", "min": 0.001}],
         )
 
         assert result == {
-            "entity_type": "face",
-            "items": [{"id": "F1", "surface_type": "PLANE", "area": "0.5 m^2"}],
+            "entity_type": "body",
+            "items": [{"id": "B1", "name": "Body1"}],
+        }
+        assert len(app_context.command_history) == 1
+
+
+class TestGetChildEntities:
+    """Tests for the ``get_child_entities`` MCP tool."""
+
+    def test_no_product_instance_returns_error(self):
+        """Running without a connected product returns an error dict."""
+        app_context = MagicMock(product_instance=None)
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+        result = selection_tools.get_child_entities(ctx, "body", ["B1"], "edge")
+        assert "error" in result
+
+    def test_unknown_parent_entity_type_returns_error(self):
+        """An unregistered parent entity type returns an error dict."""
+        app_context = MagicMock()
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+        result = selection_tools.get_child_entities(ctx, "solid", ["S1"], "edge")
+        assert "error" in result
+        assert "solid" in result["error"]
+
+    def test_unsupported_child_type_returns_error(self):
+        """Requesting a child type not in CHILD_TYPES returns an error dict."""
+        app_context = MagicMock()
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+        result = selection_tools.get_child_entities(ctx, "edge", ["E1"], "face")
+        assert "error" in result
+
+    def test_body_to_edge_returns_deduped_child_edges(self, mocker):
+        """Getting edges of bodies returns deduplicated, serialized edges."""
+        edge = MagicMock()
+        edge.id = "E1"
+        edge.curve_type.name = "CIRCLE"
+        edge.length = "0.1 m"
+
+        body = MagicMock()
+        body.edges = [edge, edge]
+
+        body_handler = HANDLER_REGISTRY["body"]
+        parent_selection = MagicMock(items=[body])
+        mocker.patch.object(body_handler, "build_from_ids", return_value=parent_selection)
+
+        app_context = MagicMock(command_history=[])
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+
+        result = selection_tools.get_child_entities(ctx, "body", ["B1"], "edge")
+
+        assert result == {
+            "entity_type": "edge",
+            "items": [{"id": "E1", "curve_type": "CIRCLE", "length": "0.1 m"}],
+        }
+        assert len(app_context.command_history) == 1
+
+
+class TestCreateNamedSelection:
+    """Tests for the ``create_named_selection`` MCP tool."""
+
+    def test_no_product_instance_returns_error(self):
+        """Running without a connected product returns an error dict."""
+        app_context = MagicMock(product_instance=None)
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+        result = selection_tools.create_named_selection(ctx, "MyNS", "body", ["B1"])
+        assert "error" in result
+
+    def test_unknown_entity_type_returns_error(self):
+        """An unregistered entity type returns an error dict."""
+        app_context = MagicMock()
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+        result = selection_tools.create_named_selection(ctx, "MyNS", "solid", ["S1"])
+        assert "error" in result
+        assert "solid" in result["error"]
+
+    def test_empty_entity_ids_returns_error(self):
+        """An empty entity_ids list returns an error dict."""
+        app_context = MagicMock()
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+        result = selection_tools.create_named_selection(ctx, "MyNS", "body", [])
+        assert "error" in result
+
+    def test_creates_named_selection_from_bodies(self, mocker):
+        """Creating a named selection from body IDs passes bodies= to the design."""
+        body = MagicMock()
+        body_handler = HANDLER_REGISTRY["body"]
+        selection = MagicMock(items=[body])
+        mocker.patch.object(body_handler, "build_from_ids", return_value=selection)
+
+        named_selection = MagicMock()
+        named_selection.name = "MyNS"
+        named_selection.id = "NS1"
+        design = MagicMock()
+        design.create_named_selection.return_value = named_selection
+
+        app_context = MagicMock(command_history=[])
+        app_context.product_instance.get_active_design.return_value = design
+        ctx = MagicMock(fastmcp=MagicMock(_lifespan_result=app_context))
+
+        result = selection_tools.create_named_selection(ctx, "MyNS", "body", ["B1"])
+
+        design.create_named_selection.assert_called_once_with("MyNS", bodies=[body])
+        assert result == {
+            "name": "MyNS",
+            "id": "NS1",
+            "entity_type": "body",
+            "count": 1,
         }
         assert len(app_context.command_history) == 1
