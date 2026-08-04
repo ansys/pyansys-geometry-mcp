@@ -226,6 +226,8 @@ def select_bodies(
         else:
             return f"Unknown selection criterion: {criteria}"
 
+        selection_builder.bodies = matching_bodies
+        app_context.command_history.append(f"selection_builder.bodies = matching_bodies")
         logger.info(f"Selected {len(matching_bodies.items)} bodies using criterion '{criteria}'.")
         return [body.name for body in matching_bodies.items]
     except Exception as e:
@@ -234,7 +236,8 @@ def select_bodies(
 
 
 @app.tool()
-def filter_bodies(ctx: Context,
+def filter_bodies(
+    ctx: Context,
     selection_handle: str,
     criteria: Literal[
         "volume",
@@ -370,10 +373,21 @@ def filter_bodies(ctx: Context,
             else:
                 if min_value is None and max_value is None:
                     return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
+                # Count-based criteria require int
+                _int_criteria = ("face_count", "edge_count", "loop_count")
+                if criteria in _int_criteria:
+                    # TODO(BUG): despite this int() conversion, calling filter_bodies_by_face_count
+                    # (or edge_count / loop_count) still raises "'float' object cannot be interpreted
+                    # as an integer". Root cause not yet determined — likely related to how the
+                    # empty BodySelection (see Bug above) interacts with the gRPC protobuf layer.
+                    min_val = int(min_value) if min_value is not None else None
+                    max_val = int(max_value) if max_value is not None else None
+                else:
+                    min_val, max_val = min_value, max_value
                 method = getattr(selection_builder.bodies, f"filter_bodies_by_{criteria}")
-                matching_bodies = method(min_value, max_value)
+                matching_bodies = method(min_val, max_val)
                 app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_by_{criteria}({min_value}, {max_value})"
+                    f"selection_builder.bodies.filter_bodies_by_{criteria}({min_val}, {max_val})"
                 )
         elif criteria in ("number_surfaces", "number_curves"):
             enum_key = "surface_type" if criteria == "number_surfaces" else "curve_type"
@@ -395,11 +409,14 @@ def filter_bodies(ctx: Context,
             else:
                 if min_value is None and max_value is None:
                     return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
+                # number_surfaces / number_curves also take int counts
+                min_val = int(min_value) if min_value is not None else None
+                max_val = int(max_value) if max_value is not None else None
                 matching_bodies = getattr(selection_builder.bodies, f"filter_bodies_by_{criteria}")(
-                    enum_val, min_value, max_value
+                    enum_val, min_val, max_val
                 )
                 app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_by_{criteria}('{enum_val_str}', {min_value}, {max_value})"
+                    f"selection_builder.bodies.filter_bodies_by_{criteria}('{enum_val_str}', {min_val}, {max_val})"
                 )
         elif criteria == "color":
             if not color:
@@ -436,6 +453,8 @@ def filter_bodies(ctx: Context,
         else:
             return f"Unknown filter criterion: {criteria}"
 
+        selection_builder.bodies = matching_bodies
+        app_context.command_history.append(f"selection_builder.bodies = matching_bodies")
         logger.info(f"Filtered {len(matching_bodies.items)} bodies using criterion '{criteria}'.")
         return [body.name for body in matching_bodies.items]
     except Exception as e:
@@ -517,6 +536,8 @@ def order_bodies(
         ordered_bodies = method()
         app_context.command_history.append(f"selection_builder.bodies.order_bodies_by_{criteria}()")
 
+        selection_builder.bodies = ordered_bodies
+        app_context.command_history.append(f"selection_builder.bodies = ordered_bodies")
         logger.info(f"Ordered {len(ordered_bodies.items)} bodies by '{criteria}'.")
         return [body.name for body in ordered_bodies.items]
     except Exception as e:
@@ -597,6 +618,8 @@ def group_bodies(
         groups = method()
         app_context.command_history.append(f"selection_builder.bodies.group_bodies_by_{criteria}()")
 
+        selection_builder.bodies = groups
+        app_context.command_history.append(f"selection_builder.bodies = groups")
         logger.info(f"Grouped bodies into {len(groups)} groups by '{criteria}'.")
         return [[body.name for body in group.items] for group in groups]
     except Exception as e:
@@ -696,7 +719,8 @@ def extend_body_selection(
                 f"selection_builder.bodies.extend_to_same_{criteria}('{scope}')"
             )
             
-
+        selection_builder.bodies = extended
+        app_context.command_history.append(f"selection_builder.bodies = extended")
         logger.info(f"Extended body selection to {len(extended.items)} bodies using '{criteria}'.")
         return [body.name for body in extended.items]
     except Exception as e:
