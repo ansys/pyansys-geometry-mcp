@@ -49,7 +49,11 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.selection.selection_enums import _CURVE_TYPE_MAP, _SURFACE_TYPE_MAP
+from ansys.geometry.mcp.selection.selection_enums import (
+    _CURVE_TYPE_MAP,
+    _SCOPE_MAP,
+    _SURFACE_TYPE_MAP,
+)
 from ansys.geometry.mcp.tools import get_geometry_ctx
 
 logger = get_logger(__name__)
@@ -335,6 +339,8 @@ def filter_bodies(ctx: Context,
         Surface type for the ``"containing_surface_type"`` criterion.
     curve_type : str, optional
         Curve type for the ``"containing_curve_type"`` criterion.
+    color : str, optional
+        Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
     
     Returns
     -------
@@ -437,13 +443,262 @@ def filter_bodies(ctx: Context,
         return f"Error filtering bodies: {e}"
 
 
-# @app.tool()
-# def order_bodies()
+@app.tool()
+def order_bodies(
+    ctx: Context,
+    selection_handle: str,
+    criteria: Literal[
+        "volume",
+        "surface_area",
+        "face_count",
+        "edge_count",
+        "loop_count",
+        "number_of_surfaces",
+        "number_of_curves",
+    ],
+) -> list[str]:
+    """Order bodies in a selection builder by a numeric property (ascending).
+
+    Use this tool when you want to sort bodies based on a specific numeric property.
+    Pass one ``criteria`` value from the table below.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    selection_handle : str
+        Handle of the selection builder to use for this query.
+    criteria : str
+        Property to sort by. Accepted values:
+
+        ``"volume"``
+            Sort bodies from smallest to largest volume.
+        ``"surface_area"``
+            Sort bodies from smallest to largest surface area.
+        ``"face_count"``
+            Sort bodies from fewest to most faces.
+        ``"edge_count"``
+            Sort bodies from fewest to most edges.
+        ``"loop_count"``
+            Sort bodies from fewest to most loops.
+        ``"number_of_surfaces"``
+            Sort bodies from fewest to most surfaces.
+        ``"number_of_curves"``
+            Sort bodies from fewest to most curves.
+
+    Returns
+    -------
+    list of str
+        Body names in ascending order of the specified property.
+
+    Examples
+    --------
+    Bodies sorted by volume (smallest first):
+        ``order_bodies(criteria="volume")``
+
+    Bodies sorted by face count:
+        ``order_bodies(criteria="face_count")``
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot order bodies."
+
+    try:
+        selection_builder = app_context.selection_registry.get(selection_handle)
+        if selection_builder is None:
+            return f"Invalid selection handle: {selection_handle}"
+
+        method = getattr(selection_builder.bodies, f"order_bodies_by_{criteria}", None)
+        if method is None:
+            return f"Unknown order criterion: {criteria}"
+
+        ordered_bodies = method()
+        app_context.command_history.append(f"selection_builder.bodies.order_bodies_by_{criteria}()")
+
+        logger.info(f"Ordered {len(ordered_bodies.items)} bodies by '{criteria}'.")
+        return [body.name for body in ordered_bodies.items]
+    except Exception as e:
+        logger.error(f"Error ordering bodies: {e}")
+        return f"Error ordering bodies: {e}"
 
 
-# @app.tool()
-# def group_bodies()
+@app.tool()
+def group_bodies(
+    ctx: Context,
+    selection_handle: str,
+    criteria: Literal[
+        "volume",
+        "surface_area",
+        "face_count",
+        "edge_count",
+        "loop_count",
+        "color",
+        "name",
+    ],
+) -> list[list[str]]:
+    """Group bodies in a selection builder by a shared property.
+
+    Each returned group contains bodies that are equal in the chosen property.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    selection_handle : str
+        Handle of the selection builder to use for this query.
+    criteria : str
+        Property to group by. Accepted values:
+
+        ``"volume"``
+            Group bodies with identical volumes.
+        ``"surface_area"``
+            Group bodies with identical surface areas.
+        ``"face_count"``
+            Group bodies with the same number of faces.
+        ``"edge_count"``
+            Group bodies with the same number of edges.
+        ``"loop_count"``
+            Group bodies with the same number of loops.
+        ``"color"``
+            Group bodies that share the same display color.
+        ``"name"``
+            Group bodies that share the same name.
+
+    Returns
+    -------
+    list of list of str
+        Each inner list contains the names of bodies belonging to one group.
+
+    Examples
+    --------
+    Group all bodies by color:
+        ``group_bodies(criteria="color")``
+
+    Group all bodies by face count:
+        ``group_bodies(criteria="face_count")``
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot group bodies."
+
+    try:
+        selection_builder = app_context.selection_registry.get(selection_handle)
+        if selection_builder is None:
+            return f"Invalid selection handle: {selection_handle}"
+
+        method = getattr(selection_builder.bodies, f"group_bodies_by_{criteria}", None)
+        if method is None:
+            return f"Unknown group criterion: {criteria}"
+
+        groups = method()
+        app_context.command_history.append(f"selection_builder.bodies.group_bodies_by_{criteria}()")
+
+        logger.info(f"Grouped bodies into {len(groups)} groups by '{criteria}'.")
+        return [[body.name for body in group.items] for group in groups]
+    except Exception as e:
+        logger.error(f"Error grouping bodies: {e}")
+        return f"Error grouping bodies: {e}"
 
 
-# @app.tool()
-# def extend_body_selection()
+@app.tool()
+def extend_body_selection(
+    ctx: Context,
+    selection_handle: str,
+    criteria: Literal[
+        "volume",
+        "surface_area",
+        "number_of_faces",
+        "number_of_edges",
+        "color",
+        "name",
+        "nearby",
+    ],
+    scope: Literal["all", "visible", "body"] = "all",
+    distance: float | None = None,
+) -> list[str]:
+    """Extend a body selection with additional bodies sharing a common property.
+
+    The current selection is kept and matching bodies from the specified scope
+    are added to it.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    selection_handle : str
+        Handle of the selection builder to use for this query.
+    criteria : str
+        Rule used to find additional bodies. Accepted values:
+
+        ``"volume"``
+            Add bodies with the same volume as any body in the selection.
+        ``"surface_area"``
+            Add bodies with the same surface area.
+        ``"number_of_faces"``
+            Add bodies with the same number of faces.
+        ``"number_of_edges"``
+            Add bodies with the same number of edges.
+        ``"color"``
+            Add bodies sharing the same display color.
+        ``"name"``
+            Add bodies sharing the same name.
+        ``"nearby"``
+            Add bodies within a given distance. Requires ``distance``.
+    scope : str, default: ``"all"``
+        Which bodies to search when extending. Accepted values:
+        ``"all"``, ``"visible"``, ``"body"``.
+    distance : float, optional
+        Maximum proximity distance in metres for the ``"nearby"`` criterion.
+
+    Returns
+    -------
+    list of str
+        Names of all bodies in the extended selection.
+
+    Examples
+    --------
+    Add bodies that share the same color:
+        ``extend_body_selection(criteria="color")``
+
+    Add bodies within 0.01 m:
+        ``extend_body_selection(criteria="nearby", distance=0.01)``
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot extend body selection."
+
+    try:
+        selection_builder = app_context.selection_registry.get(selection_handle)
+        if selection_builder is None:
+            return f"Invalid selection handle: {selection_handle}"
+
+        scope_val = _SCOPE_MAP[scope]
+
+        if criteria == "nearby":
+            if distance is None:
+                return "distance must be provided for 'nearby' criterion."
+            extended = selection_builder.bodies.extend_nearby_bodies(distance, scope_val)
+            app_context.command_history.append(
+                f"selection_builder.bodies.extend_nearby_bodies({distance}, '{scope}')"
+            )
+        else:
+            method = getattr(selection_builder.bodies, f"extend_to_same_{criteria}", None)
+            if method is None:
+                return f"Unknown extend criterion: {criteria}"
+            extended = method(scope_val)
+            app_context.command_history.append(
+                f"selection_builder.bodies.extend_to_same_{criteria}('{scope}')"
+            )
+            
+
+        logger.info(f"Extended body selection to {len(extended.items)} bodies using '{criteria}'.")
+        return [body.name for body in extended.items]
+    except Exception as e:
+        logger.error(f"Error extending body selection: {e}")
+        return f"Error extending body selection: {e}"

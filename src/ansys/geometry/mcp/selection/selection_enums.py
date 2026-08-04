@@ -23,6 +23,7 @@
 
 from ansys.geometry.core.designer.edge import CurveType
 from ansys.geometry.core.designer.face import SurfaceType
+from ansys.geometry.core.selection_builder.selection_builder import ExtendScope
 
 _SURFACE_TYPE_MAP = {
     "plane":      SurfaceType.SURFACETYPE_PLANE,
@@ -43,4 +44,10 @@ _CURVE_TYPE_MAP = {
     "procedural": CurveType.CURVETYPE_PROCEDURAL,
     "helix":      CurveType.CURVETYPE_HELIX,
     "spline":     CurveType.CURVETYPE_SPLINECURVE,
+}
+
+_SCOPE_MAP = {
+    "all":     ExtendScope.EXTENDSCOPE_ALL,
+    "visible": ExtendScope.EXTENDSCOPE_VISIBLE,
+    "body":    ExtendScope.EXTENDSCOPE_BODY,
 }
