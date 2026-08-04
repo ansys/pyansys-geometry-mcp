@@ -44,6 +44,7 @@ with the server before it starts.
 """
 
 import time
+import uuid
 
 from ansys.common.mcp.logging_config import get_logger
 import ansys.common.mcp.tools as shared_tools
@@ -257,6 +258,48 @@ def get_design_info(ctx: Context) -> str:
     except Exception as e:
         logger.error(f"get_design_info failed: {e}")
         return f"Error retrieving info for design: {e}"
+
+
+@app.tool()
+def create_selection_builder(ctx: Context) -> str:
+    """Create an empty selection builder in the product backend.
+
+    The SelectionBuilder is used to build complex selections of geometry entities
+    (bodies, faces, edges) via query, filter, order, group, and extend operations.
+    Selections can also be combined, subtracted, or intersected.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+
+    Returns
+    -------
+    str
+        Selection handle (opaque ID string) that can be used in subsequent selection tools, or an
+        error message if creation fails.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create selection builder."
+
+    try:
+        selection_builder = app_context.product_instance.create_selection_builder()
+
+        # Create a handle for the selection builder to be used in other tools
+        handle = str(uuid.uuid4())
+        app_context.selection_registry[handle] = selection_builder
+
+        # Perform transcript
+        app_context.command_history.append("selection_builder=instance.create_selection_builder()")
+
+        logger.info("create_selection_builder called")
+        return handle
+    except Exception as e:
+        logger.error(f"create_selection_builder failed: {e}")
+        return f"Error creating selection builder: {e}"
 
 
 @app.tool()

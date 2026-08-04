@@ -21,11 +21,12 @@
 
 """Context for PyAnsys Geometry MCP server."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from ansys.common.mcp import PyAnsysBaseAppContext
 from ansys.geometry.core import Modeler
+from ansys.geometry.core.selection_builder.selection_builder import SelectionBuilder
 
 
 @dataclass
@@ -47,6 +48,8 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     connect_to_existing_service : bool
         When ``True``, connect to a running geometry service instead of
         launching a new one.
+    selection_registry: Optional[dict[str, Any]]
+
 
     Examples
     --------
@@ -61,3 +64,4 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     host: str = "localhost"
     port: int = 50051
     connect_to_existing_service: bool = False
+    selection_registry: Optional[dict[str, SelectionBuilder]] = field(default_factory=dict)
