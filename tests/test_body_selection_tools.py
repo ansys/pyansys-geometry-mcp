@@ -22,12 +22,16 @@
 
 """Unit tests for BodySelection tools."""
 
+from ansys.geometry.mcp import tools
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 from ansys.geometry.mcp.selection.body_selection_tools import select_bodies
 
 
-def test_select_bodies_all(ctx: PyAnsysGeometryContext, selection_handle: str):
+def test_select_bodies_all(ctx: PyAnsysGeometryContext):
     """select_bodies with criteria='all' returns a list of body name strings."""
-    result = select_bodies(ctx, selection_handle, criteria="all")
+    tools.create_design(ctx, "test_select_bodies_all")
+    handle = tools.create_selection_builder(ctx)
+
+    result = select_bodies(ctx, handle, criteria="all")
     assert isinstance(result, list)
     assert all(isinstance(name, str) for name in result)

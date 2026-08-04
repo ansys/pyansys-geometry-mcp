@@ -226,8 +226,8 @@ def select_bodies(
         else:
             return f"Unknown selection criterion: {criteria}"
 
-        selection_builder.bodies = matching_bodies
-        app_context.command_history.append(f"selection_builder.bodies = matching_bodies")
+        selection_builder._bodies = matching_bodies
+        app_context.command_history.append(f"selection_builder._bodies = matching_bodies")
         logger.info(f"Selected {len(matching_bodies.items)} bodies using criterion '{criteria}'.")
         return [body.name for body in matching_bodies.items]
     except Exception as e:
@@ -453,8 +453,8 @@ def filter_bodies(
         else:
             return f"Unknown filter criterion: {criteria}"
 
-        selection_builder.bodies = matching_bodies
-        app_context.command_history.append(f"selection_builder.bodies = matching_bodies")
+        selection_builder._bodies = matching_bodies
+        app_context.command_history.append(f"selection_builder._bodies = matching_bodies")
         logger.info(f"Filtered {len(matching_bodies.items)} bodies using criterion '{criteria}'.")
         return [body.name for body in matching_bodies.items]
     except Exception as e:
@@ -536,8 +536,8 @@ def order_bodies(
         ordered_bodies = method()
         app_context.command_history.append(f"selection_builder.bodies.order_bodies_by_{criteria}()")
 
-        selection_builder.bodies = ordered_bodies
-        app_context.command_history.append(f"selection_builder.bodies = ordered_bodies")
+        selection_builder._bodies = ordered_bodies
+        app_context.command_history.append(f"selection_builder._bodies = ordered_bodies")
         logger.info(f"Ordered {len(ordered_bodies.items)} bodies by '{criteria}'.")
         return [body.name for body in ordered_bodies.items]
     except Exception as e:
@@ -618,8 +618,8 @@ def group_bodies(
         groups = method()
         app_context.command_history.append(f"selection_builder.bodies.group_bodies_by_{criteria}()")
 
-        selection_builder.bodies = groups
-        app_context.command_history.append(f"selection_builder.bodies = groups")
+        selection_builder._bodies = groups
+        app_context.command_history.append(f"selection_builder._bodies = groups")
         logger.info(f"Grouped bodies into {len(groups)} groups by '{criteria}'.")
         return [[body.name for body in group.items] for group in groups]
     except Exception as e:
@@ -719,8 +719,8 @@ def extend_body_selection(
                 f"selection_builder.bodies.extend_to_same_{criteria}('{scope}')"
             )
             
-        selection_builder.bodies = extended
-        app_context.command_history.append(f"selection_builder.bodies = extended")
+        selection_builder._bodies = extended
+        app_context.command_history.append(f"selection_builder._bodies = extended")
         logger.info(f"Extended body selection to {len(extended.items)} bodies using '{criteria}'.")
         return [body.name for body in extended.items]
     except Exception as e:

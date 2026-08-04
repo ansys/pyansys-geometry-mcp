@@ -54,12 +54,3 @@ def ctx(context):
     mock_ctx.fastmcp._lifespan_result = context
     return mock_ctx
 
-
-@pytest.fixture
-def selection_handle(context):
-    """Register a fresh SelectionBuilder and return its handle."""
-    sb = context.product_instance.create_selection_builder()
-    handle = str(uuid.uuid4())
-    context.selection_registry[handle] = sb
-    yield handle
-    context.selection_registry.pop(handle, None)
