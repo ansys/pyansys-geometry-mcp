@@ -379,10 +379,6 @@ def filter_bodies(
                 # Count-based criteria require int
                 _int_criteria = ("face_count", "edge_count", "loop_count")
                 if criteria in _int_criteria:
-                    # TODO(BUG): despite this int() conversion, calling filter_bodies_by_face_count
-                    # (or edge_count / loop_count) still raises "'float' object cannot be interpreted
-                    # as an integer". Root cause not yet determined — likely related to how the
-                    # empty BodySelection (see Bug above) interacts with the gRPC protobuf layer.
                     min_val = int(min_value) if min_value is not None else None
                     max_val = int(max_value) if max_value is not None else None
                 else:
