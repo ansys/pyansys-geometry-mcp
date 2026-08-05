@@ -200,23 +200,26 @@ def select_bodies(
                 return "Body name must be provided for 'name' criterion."
             matching_bodies = selection_builder.bodies.get_bodies_with_name(name)
             app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_name('{name}')")
-        elif criteria in ["volume", "surface_area", "x_location", "y_location", "z_location"]:
-            if min_value is None and max_value is None:
-                return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
+        elif criteria in ["volume", "surface_area"]:
+            if min_value is None:
+                return f"min_value must be provided for '{criteria}' criterion."
             if criteria == "volume":
                 matching_bodies = selection_builder.bodies.get_bodies_with_volume(min_value, max_value)
                 app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_volume({min_value}, {max_value})")
             elif criteria == "surface_area":
                 matching_bodies = selection_builder.bodies.get_bodies_with_surface_area(min_value, max_value)
                 app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_surface_area({min_value}, {max_value})")
+        elif criteria in ["x_location", "y_location", "z_location"]:
+            if min_value is None and max_value is None:
+                return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
             elif criteria == "x_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_x_location(min_value, max_value)
+                matching_bodies = selection_builder.bodies.get_bodies_with_x_location(min=min_value, max=max_value)
                 app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_x_location({min_value}, {max_value})")
             elif criteria == "y_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_y_location(min_value, max_value)
+                matching_bodies = selection_builder.bodies.get_bodies_with_y_location(min=min_value, max=max_value)
                 app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_y_location({min_value}, {max_value})")
             elif criteria == "z_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_z_location(min_value, max_value)
+                matching_bodies = selection_builder.bodies.get_bodies_with_z_location(min=min_value, max=max_value)
                 app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_z_location({min_value}, {max_value})")
         elif criteria == "color":
             if not color:
