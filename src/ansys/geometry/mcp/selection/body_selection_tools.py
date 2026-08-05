@@ -82,7 +82,7 @@ def select_bodies(
     min_value: float | None = None,
     max_value: float | None = None,
     color: str | None = None,
-) -> list[str]:
+) -> list[str] | str:
     """Select bodies from a selection builder.
 
     Use this tool whenever you need to find bodies that match a specific
@@ -114,10 +114,10 @@ def select_bodies(
             Requires ``name``.
         ``"volume"``
             Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
-            Requires at least one of ``min_value`` or ``max_value``.
+            Requires ``min_value`` (``max_value`` optional).
         ``"surface_area"``
             Bodies whose surface area falls in [``min_value``, ``max_value``] (m²).
-            Requires at least one of ``min_value`` or ``max_value``.
+            Requires ``min_value`` (``max_value`` optional).
         ``"x_location"``
             Bodies whose centroid X coordinate falls in
             [``min_value``, ``max_value``] (m).
@@ -149,8 +149,10 @@ def select_bodies(
 
     Returns
     -------
-    list of str
+    list of str | str
         Names of all matching bodies, or an empty list if none match.
+        Returns a string error message if the selection handle is invalid or if required arguments
+        are missing.
 
     Examples
     --------
@@ -265,7 +267,7 @@ def filter_bodies(
     surface_type: Literal["plane", "cylinder", "cone", "torus", "sphere", "nurbs", "procedural", "spline"] | None = None,
     curve_type: Literal["line", "circle", "ellipse", "nurbs", "procedural", "helix", "spline"] | None = None,
     color: str | None = None,
-) -> list[str]:
+) -> list[str] | str:
     """Filter bodies in a Selection Builder based on a user-defined condition.
 
     This tool allows users to apply a custom filter function to the bodies
@@ -350,8 +352,10 @@ def filter_bodies(
     
     Returns
     -------
-    list of str
+    list of str | str
         Names of all bodies that satisfy the filter condition, or an empty list if none match.
+        Returns a string error message if the selection handle is invalid or if required arguments
+        are missing.
 
     """
     app_context = get_geometry_ctx(ctx)
@@ -365,7 +369,9 @@ def filter_bodies(
             return f"Invalid selection handle: {selection_handle}"
 
         if criteria in ("volume", "surface_area", "face_count", "edge_count", "loop_count"):
-            if find_max:
+            if find_max and find_min:
+                return "Cannot set both find_max and find_min to True."
+            elif find_max:
                 method = getattr(selection_builder.bodies, f"filter_bodies_max_{criteria}")
                 matching_bodies = method()
                 app_context.command_history.append(f"selection_builder.bodies.filter_bodies_max_{criteria}()")
@@ -474,7 +480,7 @@ def order_bodies(
         "number_of_surfaces",
         "number_of_curves",
     ],
-) -> list[str]:
+) -> list[str] | str:
     """Order bodies in a selection builder by a numeric property (ascending).
 
     Use this tool when you want to sort bodies based on a specific numeric property.
@@ -506,8 +512,10 @@ def order_bodies(
 
     Returns
     -------
-    list of str
+    list of str | str
         Body names in ascending order of the specified property.
+        Returns a string error message if the selection handle is invalid or if required arguments
+        are missing.
 
     Examples
     --------
@@ -557,7 +565,7 @@ def group_bodies(
         "color",
         "name",
     ],
-) -> list[list[str]]:
+) -> list[list[str]] | str:
     """Group bodies in a selection builder by a shared property.
 
     Each returned group contains bodies that are equal in the chosen property.
@@ -588,8 +596,10 @@ def group_bodies(
 
     Returns
     -------
-    list of list of str
+    list of list of str | str
         Each inner list contains the names of bodies belonging to one group.
+        Returns a string error message if the selection handle is invalid or if required arguments
+        are missing.
 
     Examples
     --------
@@ -641,7 +651,7 @@ def extend_body_selection(
     ],
     scope: Literal["all", "visible", "body"] = "all",
     distance: float | None = None,
-) -> list[str]:
+) -> list[str] | str:
     """Extend a body selection with additional bodies sharing a common property.
 
     The current selection is kept and matching bodies from the specified scope
@@ -678,8 +688,10 @@ def extend_body_selection(
 
     Returns
     -------
-    list of str
+    list of str | str
         Names of all bodies in the extended selection.
+        Returns a string error message if the selection handle is invalid or if required arguments
+        are missing.
 
     Examples
     --------

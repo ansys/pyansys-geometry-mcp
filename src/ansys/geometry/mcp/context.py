@@ -64,4 +64,4 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     host: str = "localhost"
     port: int = 50051
     connect_to_existing_service: bool = False
-    selection_registry: Optional[dict[str, SelectionBuilder]] = field(default_factory=dict)
+    selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)

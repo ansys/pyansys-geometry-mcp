@@ -23,7 +23,6 @@
 """Configuration for MCP tool test modules."""
 
 from unittest.mock import MagicMock
-import uuid
 
 import pytest
 
