@@ -176,6 +176,7 @@ def select_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
+        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -365,6 +366,7 @@ def filter_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
+        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -533,6 +535,7 @@ def order_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
+        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -617,6 +620,7 @@ def group_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
+        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -709,6 +713,7 @@ def extend_body_selection(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
+        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 

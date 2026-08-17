@@ -294,6 +294,8 @@ def create_selection_builder(ctx: Context) -> str:
 
         # Perform transcript
         app_context.command_history.append("selection_builder=instance.create_selection_builder()")
+        app_context.command_history.append("handle = str(uuid.uuid4())")
+        app_context.command_history.append(f"selection_registry['{handle}'] = selection_builder")
 
         logger.info("create_selection_builder called")
         return handle

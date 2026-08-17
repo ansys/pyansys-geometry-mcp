@@ -58,11 +58,13 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         if getattr(self, "context", None) is not None:
             return self.context
 
+        setup_commands = ["selection_registry = {}"]
+
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
                 python_executable=self.python_executable, working_directory=self.working_directory
             ),
-            command_history=[],
+            command_history=setup_commands,
         )
 
     def product_startup(self):
