@@ -28,11 +28,23 @@ import pytest
 
 from ansys.geometry.mcp import PyAnsysGeometryContext
 from ansys.geometry.mcp.tools import (
+    _build_sketch,
+    add_component,
     create_box,
     create_design,
     export_design_to,
+    extrude_sketch,
+    get_design_3d_scene,
     get_design_info,
     get_product_status,
+    get_screenshot,
+    intersect_body,
+    list_bodies,
+    list_components,
+    move_body_to_component,
+    revolve_sketch,
+    subtract_body,
+    unite_body,
 )
 
 
@@ -106,4 +118,156 @@ def test_export_design_to_not_connected():
     mock_ctx.fastmcp._lifespan_result.product_instance = None
     result = export_design_to(mock_ctx, file_format="scdocx")
     assert "not connected" in result
+
+
+def test_move_body_to_component(ctx: PyAnsysGeometryContext):
+    """Test moving a body into a component."""
+    create_design(ctx, "test_move_body_001")
+    create_box(ctx, name="movable_box", width=1.0, depth=1.0, height=1.0)
+    add_component(ctx, name="target_comp")
+    result = move_body_to_component(ctx, body_name="movable_box", target_component_name="target_comp")
+    assert "moved to component" in result
+    assert "successfully" in result
+
+
+def test_move_body_to_component_not_found(ctx: PyAnsysGeometryContext):
+    """Test that a missing body or missing component each return a not-found error."""
+    create_design(ctx, "test_move_body_not_found_001")
+    add_component(ctx, name="target_comp_not_found")
+    create_box(ctx, name="orphan_box", width=1.0, depth=1.0, height=1.0)
+
+    assert "not found" in move_body_to_component(ctx, body_name="nonexistent_box", target_component_name="target_comp_not_found")
+    assert "not found" in move_body_to_component(ctx, body_name="orphan_box", target_component_name="nonexistent_comp")
+
+
+def test_move_body_to_component_not_connected():
+    """Test that moving a body when not connected returns an error message."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    result = move_body_to_component(mock_ctx, body_name="box", target_component_name="comp")
+    assert "not connected" in result
+
+
+def test_get_screenshot(ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.TempPathFactory):
+    """Test capturing a screenshot of the active design."""
+    create_design(ctx, "test_screenshot_001")
+    create_box(ctx, name="screenshot_box", width=1.0, depth=1.0, height=1.0)
+    path = str(tmp_path_factory.mktemp("screenshots") / "scene.png")
+    result = get_screenshot(ctx, path=path)
+    assert "3D scene screenshot saved:" in result
+
+
+def test_get_screenshot_not_connected():
+    """Test that getting a screenshot when not connected returns an error message."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    result = get_screenshot(mock_ctx)
+    assert "not connected" in result
+
+
+@pytest.mark.skip(reason="design.plot() opens a blocking GUI window; cannot be automated")
+def test_get_design_3d_scene(ctx: PyAnsysGeometryContext):
+    """Test opening the 3D scene window of the active design."""
+    create_design(ctx, "test_3d_scene_001")
+    create_box(ctx, name="scene_box", width=1.0, depth=1.0, height=1.0)
+    result = get_design_3d_scene(ctx)
+    assert "3D scene window opened" in result
+
+
+def test_get_design_3d_scene_not_connected():
+    """Test that opening the 3D scene when not connected returns an error message."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    result = get_design_3d_scene(mock_ctx)
+    assert "not connected" in result
+
+
+def test_build_sketch_primitives():
+    """Test all _build_sketch branches: default plane, custom plane, every primitive type, and invalid type."""
+    sketch, _ = _build_sketch([
+        {"type": "circle", "center_x": 0.0, "center_y": 0.0, "radius": 1.0},
+        {"type": "box", "center_x": 0.0, "center_y": 0.0, "width": 2.0, "height": 2.0},
+        {"type": "polygon", "center_x": 0.0, "center_y": 0.0, "inner_radius": 0.5, "sides": 6},
+        {"type": "segment", "start_x": 0.0, "start_y": 0.0, "end_x": 1.0, "end_y": 0.0},
+        {"type": "arc", "center_x": 0.5, "center_y": 0.0, "start_x": 0.0, "start_y": 0.0, "end_x": 1.0, "end_y": 0.0},
+    ])
+    assert sketch is not None
+
+    sketch2, _ = _build_sketch(
+        [{"type": "circle", "center_x": 0.0, "center_y": 0.0, "radius": 1.0}],
+        plane_origin=[0.0, 0.0, 1.0],
+        plane_dir_x=[1.0, 0.0, 0.0],
+        plane_dir_y=[0.0, 1.0, 0.0],
+    )
+    assert sketch2 is not None
+
+    with pytest.raises(ValueError, match="Unsupported sketch primitive type"):
+        _build_sketch([{"type": "triangle"}])
+
+
+def test_extrude_sketch(ctx: PyAnsysGeometryContext):
+    """Test extruding a circular sketch into a cylinder."""
+    create_design(ctx, "test_extrude_001")
+    result = extrude_sketch(
+        ctx,
+        name="extruded_cylinder",
+        sketch_primitives=[{"type": "circle", "center_x": 0.0, "center_y": 0.0, "radius": 0.5}],
+        distance=1.0,
+    )
+    assert "extruded successfully" in result
+
+
+def test_revolve_sketch(ctx: PyAnsysGeometryContext):
+    """Test revolving a circular sketch around an axis to create a torus."""
+    create_design(ctx, "test_revolve_001")
+    result = revolve_sketch(
+        ctx,
+        name="revolved_torus",
+        sketch_primitives=[{"type": "circle", "center_x": 2.0, "center_y": 0.0, "radius": 0.5}],
+        axis_direction=[0.0, 1.0, 0.0],
+        rotation_origin=[0.0, 0.0, 0.0],
+    )
+    assert "revolved successfully" in result
+
+
+def test_add_and_list_components(ctx: PyAnsysGeometryContext):
+    """Test adding root and nested components, a missing-parent error, and listing them."""
+    create_design(ctx, "test_components_001")
+
+    assert "added successfully" in add_component(ctx, name="parent_comp")
+    assert "added successfully" in add_component(ctx, name="child_comp", parent_component_name="parent_comp")
+    assert "not found" in add_component(ctx, name="orphan", parent_component_name="nonexistent_parent")
+
+    result = list_components(ctx)
+    assert "parent_comp" in result
+    assert "child_comp" in result
+
+
+def test_list_bodies(ctx: PyAnsysGeometryContext):
+    """Test listing bodies for the full design, a specific component, an empty component, and a missing component."""
+    create_design(ctx, "test_list_bodies_001")
+    add_component(ctx, name="body_comp")
+    add_component(ctx, name="empty_comp")
+    create_box(ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp")
+
+    full = list_bodies(ctx)
+    assert "listed_box" in full
+
+    scoped = list_bodies(ctx, component_name="body_comp")
+    assert "listed_box" in scoped
+
+    assert "No bodies found" in list_bodies(ctx, component_name="empty_comp")
+    assert "not found" in list_bodies(ctx, component_name="nonexistent_comp")
+
+
+def test_boolean_operations(ctx: PyAnsysGeometryContext):
+    """Test subtract, unite, and intersect boolean operations on overlapping boxes."""
+    create_design(ctx, "test_boolean_ops_001")
+    for prefix in ("subtract", "unite", "intersect"):
+        create_box(ctx, name=f"{prefix}_target", width=2.0, depth=2.0, height=2.0)
+        create_box(ctx, name=f"{prefix}_tool", width=1.0, depth=1.0, height=1.0)
+
+    assert "complete" in subtract_body(ctx, target_body_name="subtract_target", tool_body_name="subtract_tool")
+    assert "complete" in unite_body(ctx, target_body_name="unite_target", tool_body_name="unite_tool")
+    assert "complete" in intersect_body(ctx, target_body_name="intersect_target", tool_body_name="intersect_tool")
 
