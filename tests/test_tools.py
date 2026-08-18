@@ -1,6 +1,6 @@
-# Copyright (C) 2023 - 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
+# Copyright (C) 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
+# Copyright (C) 2026 ANSYS, Inc. and/or its affiliates.
 # SPDX-License-Identifier: MIT
-#
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -86,7 +86,9 @@ def test_export_design_to(ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.
     "file_format",
     ["fmd", "step", "iges", "disco", "parasolid_text", "parasolid_bin"],
 )
-def test_export_design_to_formats(ctx: PyAnsysGeometryContext, file_format: str, tmp_path_factory: pytest.TempPathFactory):
+def test_export_design_to_formats(
+    ctx: PyAnsysGeometryContext, file_format: str, tmp_path_factory: pytest.TempPathFactory
+):
     """Test exporting the active design to each supported file format."""
     design_name = f"test_export_{file_format}_001"
     create_design(ctx, design_name)
@@ -99,7 +101,9 @@ def test_export_design_to_formats(ctx: PyAnsysGeometryContext, file_format: str,
     assert f"Design exported to {file_format.upper()} file:" in result
 
 
-def test_export_design_to_unsupported_format(ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.TempPathFactory):
+def test_export_design_to_unsupported_format(
+    ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.TempPathFactory
+):
     """Test that an unsupported format returns an error message."""
     design_name = "test_export_unsupported_001"
     create_design(ctx, design_name)
@@ -125,7 +129,9 @@ def test_move_body_to_component(ctx: PyAnsysGeometryContext):
     create_design(ctx, "test_move_body_001")
     create_box(ctx, name="movable_box", width=1.0, depth=1.0, height=1.0)
     add_component(ctx, name="target_comp")
-    result = move_body_to_component(ctx, body_name="movable_box", target_component_name="target_comp")
+    result = move_body_to_component(
+        ctx, body_name="movable_box", target_component_name="target_comp"
+    )
     assert "moved to component" in result
     assert "successfully" in result
 
@@ -136,8 +142,12 @@ def test_move_body_to_component_not_found(ctx: PyAnsysGeometryContext):
     add_component(ctx, name="target_comp_not_found")
     create_box(ctx, name="orphan_box", width=1.0, depth=1.0, height=1.0)
 
-    assert "not found" in move_body_to_component(ctx, body_name="nonexistent_box", target_component_name="target_comp_not_found")
-    assert "not found" in move_body_to_component(ctx, body_name="orphan_box", target_component_name="nonexistent_comp")
+    assert "not found" in move_body_to_component(
+        ctx, body_name="nonexistent_box", target_component_name="target_comp_not_found"
+    )
+    assert "not found" in move_body_to_component(
+        ctx, body_name="orphan_box", target_component_name="nonexistent_comp"
+    )
 
 
 def test_move_body_to_component_not_connected():
@@ -184,13 +194,23 @@ def test_get_design_3d_scene_not_connected():
 
 def test_build_sketch_primitives():
     """Test all _build_sketch branches: default plane, custom plane, every primitive type, and invalid type."""
-    sketch, _ = _build_sketch([
-        {"type": "circle", "center_x": 0.0, "center_y": 0.0, "radius": 1.0},
-        {"type": "box", "center_x": 0.0, "center_y": 0.0, "width": 2.0, "height": 2.0},
-        {"type": "polygon", "center_x": 0.0, "center_y": 0.0, "inner_radius": 0.5, "sides": 6},
-        {"type": "segment", "start_x": 0.0, "start_y": 0.0, "end_x": 1.0, "end_y": 0.0},
-        {"type": "arc", "center_x": 0.5, "center_y": 0.0, "start_x": 0.0, "start_y": 0.0, "end_x": 1.0, "end_y": 0.0},
-    ])
+    sketch, _ = _build_sketch(
+        [
+            {"type": "circle", "center_x": 0.0, "center_y": 0.0, "radius": 1.0},
+            {"type": "box", "center_x": 0.0, "center_y": 0.0, "width": 2.0, "height": 2.0},
+            {"type": "polygon", "center_x": 0.0, "center_y": 0.0, "inner_radius": 0.5, "sides": 6},
+            {"type": "segment", "start_x": 0.0, "start_y": 0.0, "end_x": 1.0, "end_y": 0.0},
+            {
+                "type": "arc",
+                "center_x": 0.5,
+                "center_y": 0.0,
+                "start_x": 0.0,
+                "start_y": 0.0,
+                "end_x": 1.0,
+                "end_y": 0.0,
+            },
+        ]
+    )
     assert sketch is not None
 
     sketch2, _ = _build_sketch(
@@ -235,8 +255,12 @@ def test_add_and_list_components(ctx: PyAnsysGeometryContext):
     create_design(ctx, "test_components_001")
 
     assert "added successfully" in add_component(ctx, name="parent_comp")
-    assert "added successfully" in add_component(ctx, name="child_comp", parent_component_name="parent_comp")
-    assert "not found" in add_component(ctx, name="orphan", parent_component_name="nonexistent_parent")
+    assert "added successfully" in add_component(
+        ctx, name="child_comp", parent_component_name="parent_comp"
+    )
+    assert "not found" in add_component(
+        ctx, name="orphan", parent_component_name="nonexistent_parent"
+    )
 
     result = list_components(ctx)
     assert "parent_comp" in result
@@ -248,7 +272,9 @@ def test_list_bodies(ctx: PyAnsysGeometryContext):
     create_design(ctx, "test_list_bodies_001")
     add_component(ctx, name="body_comp")
     add_component(ctx, name="empty_comp")
-    create_box(ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp")
+    create_box(
+        ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp"
+    )
 
     full = list_bodies(ctx)
     assert "listed_box" in full
@@ -267,7 +293,12 @@ def test_boolean_operations(ctx: PyAnsysGeometryContext):
         create_box(ctx, name=f"{prefix}_target", width=2.0, depth=2.0, height=2.0)
         create_box(ctx, name=f"{prefix}_tool", width=1.0, depth=1.0, height=1.0)
 
-    assert "complete" in subtract_body(ctx, target_body_name="subtract_target", tool_body_name="subtract_tool")
-    assert "complete" in unite_body(ctx, target_body_name="unite_target", tool_body_name="unite_tool")
-    assert "complete" in intersect_body(ctx, target_body_name="intersect_target", tool_body_name="intersect_tool")
-
+    assert "complete" in subtract_body(
+        ctx, target_body_name="subtract_target", tool_body_name="subtract_tool"
+    )
+    assert "complete" in unite_body(
+        ctx, target_body_name="unite_target", tool_body_name="unite_tool"
+    )
+    assert "complete" in intersect_body(
+        ctx, target_body_name="intersect_target", tool_body_name="intersect_tool"
+    )
