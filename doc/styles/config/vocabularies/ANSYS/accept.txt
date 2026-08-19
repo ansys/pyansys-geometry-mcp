@@ -1,1 +1,3 @@
 (?i)Ansys
+Synopsys
+synopsys

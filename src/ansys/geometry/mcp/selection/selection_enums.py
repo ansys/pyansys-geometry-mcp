@@ -1,5 +1,6 @@
-# Copyright (C) 2026 ANSYS, Inc. and/or its affiliates.
+# Copyright (C) 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
 # SPDX-License-Identifier: MIT
+#
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -26,28 +27,28 @@ from ansys.geometry.core.designer.face import SurfaceType
 from ansys.geometry.core.selection_builder.selection_builder import ExtendScope
 
 _SURFACE_TYPE_MAP = {
-    "plane":      SurfaceType.SURFACETYPE_PLANE,
-    "cylinder":   SurfaceType.SURFACETYPE_CYLINDER,
-    "cone":       SurfaceType.SURFACETYPE_CONE,
-    "torus":      SurfaceType.SURFACETYPE_TORUS,
-    "sphere":     SurfaceType.SURFACETYPE_SPHERE,
-    "nurbs":      SurfaceType.SURFACETYPE_NURBS,
+    "plane": SurfaceType.SURFACETYPE_PLANE,
+    "cylinder": SurfaceType.SURFACETYPE_CYLINDER,
+    "cone": SurfaceType.SURFACETYPE_CONE,
+    "torus": SurfaceType.SURFACETYPE_TORUS,
+    "sphere": SurfaceType.SURFACETYPE_SPHERE,
+    "nurbs": SurfaceType.SURFACETYPE_NURBS,
     "procedural": SurfaceType.SURFACETYPE_PROCEDURAL,
-    "spline":     SurfaceType.SURFACETYPE_SPLINESURFACE,
+    "spline": SurfaceType.SURFACETYPE_SPLINESURFACE,
 }
 
 _CURVE_TYPE_MAP = {
-    "line":       CurveType.CURVETYPE_LINE,
-    "circle":     CurveType.CURVETYPE_CIRCLE,
-    "ellipse":    CurveType.CURVETYPE_ELLIPSE,
-    "nurbs":      CurveType.CURVETYPE_NURBS,
+    "line": CurveType.CURVETYPE_LINE,
+    "circle": CurveType.CURVETYPE_CIRCLE,
+    "ellipse": CurveType.CURVETYPE_ELLIPSE,
+    "nurbs": CurveType.CURVETYPE_NURBS,
     "procedural": CurveType.CURVETYPE_PROCEDURAL,
-    "helix":      CurveType.CURVETYPE_HELIX,
-    "spline":     CurveType.CURVETYPE_SPLINECURVE,
+    "helix": CurveType.CURVETYPE_HELIX,
+    "spline": CurveType.CURVETYPE_SPLINECURVE,
 }
 
 _SCOPE_MAP = {
-    "all":     ExtendScope.EXTENDSCOPE_ALL,
+    "all": ExtendScope.EXTENDSCOPE_ALL,
     "visible": ExtendScope.EXTENDSCOPE_VISIBLE,
-    "body":    ExtendScope.EXTENDSCOPE_BODY,
+    "body": ExtendScope.EXTENDSCOPE_BODY,
 }

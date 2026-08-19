@@ -1,4 +1,4 @@
-# Copyright (C) 2023 - 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
+# Copyright (C) 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
 # SPDX-License-Identifier: MIT
 #
 #
@@ -72,15 +72,22 @@ def test_select_bodies_volume(ctx: PyAnsysGeometryContext):
     assert "vol_box" in select_bodies(ctx, handle, criteria="volume", min_value=0.5, max_value=2.0)
     assert select_bodies(ctx, handle, criteria="volume", min_value=100.0, max_value=200.0) == []
     assert isinstance(select_bodies(ctx, handle, criteria="volume", min_value=0.5), list)
-    assert select_bodies(ctx, handle, criteria="volume", max_value=2.0) == "min_value must be provided for 'volume' criterion."
+    assert (
+        select_bodies(ctx, handle, criteria="volume", max_value=2.0)
+        == "min_value must be provided for 'volume' criterion."
+    )
 
 
 def test_select_bodies_surface_area(ctx: PyAnsysGeometryContext):
     """criteria='surface_area' finds the 6 m² box in range and misses it out of range."""
     handle = _setup(ctx, "test_select_bodies_surface_area", box_name="sa_box")
 
-    assert "sa_box" in select_bodies(ctx, handle, criteria="surface_area", min_value=5.0, max_value=7.0)
-    assert select_bodies(ctx, handle, criteria="surface_area", min_value=100.0, max_value=200.0) == []
+    assert "sa_box" in select_bodies(
+        ctx, handle, criteria="surface_area", min_value=5.0, max_value=7.0
+    )
+    assert (
+        select_bodies(ctx, handle, criteria="surface_area", min_value=100.0, max_value=200.0) == []
+    )
 
 
 def test_select_bodies_location(ctx: PyAnsysGeometryContext):
@@ -88,13 +95,19 @@ def test_select_bodies_location(ctx: PyAnsysGeometryContext):
     handle = _setup(ctx, "test_select_bodies_location", box_name="loc_box")
 
     # centroid X=0, Y=0, Z=0.5 for a 1×1×1 m box extruded from the XY plane
-    assert "loc_box" in select_bodies(ctx, handle, criteria="x_location", min_value=-0.1, max_value=0.1)
+    assert "loc_box" in select_bodies(
+        ctx, handle, criteria="x_location", min_value=-0.1, max_value=0.1
+    )
     assert select_bodies(ctx, handle, criteria="x_location", min_value=50.0, max_value=100.0) == []
 
-    assert "loc_box" in select_bodies(ctx, handle, criteria="y_location", min_value=-0.1, max_value=0.1)
+    assert "loc_box" in select_bodies(
+        ctx, handle, criteria="y_location", min_value=-0.1, max_value=0.1
+    )
     assert select_bodies(ctx, handle, criteria="y_location", min_value=50.0, max_value=100.0) == []
 
-    assert "loc_box" in select_bodies(ctx, handle, criteria="z_location", min_value=0.4, max_value=0.6)
+    assert "loc_box" in select_bodies(
+        ctx, handle, criteria="z_location", min_value=0.4, max_value=0.6
+    )
     assert select_bodies(ctx, handle, criteria="z_location", min_value=50.0, max_value=100.0) == []
 
 
@@ -146,8 +159,12 @@ def test_filter_bodies_numeric_range(ctx: PyAnsysGeometryContext):
     select_bodies(ctx, handle, criteria="all")
     assert "num_box" in filter_bodies(ctx, handle, criteria="volume", find_min=True)
 
-    assert "num_box" in filter_bodies(ctx, handle, criteria="surface_area", min_value=5.0, max_value=7.0)
-    assert filter_bodies(ctx, handle, criteria="surface_area", min_value=100.0, max_value=200.0) == []
+    assert "num_box" in filter_bodies(
+        ctx, handle, criteria="surface_area", min_value=5.0, max_value=7.0
+    )
+    assert (
+        filter_bodies(ctx, handle, criteria="surface_area", min_value=100.0, max_value=200.0) == []
+    )
 
     assert isinstance(filter_bodies(ctx, handle, criteria="volume"), str)
 
@@ -169,8 +186,12 @@ def test_filter_bodies_surface_curve_type(ctx: PyAnsysGeometryContext):
     handle = _setup(ctx, "test_filter_bodies_types", box_name="type_box")
     select_bodies(ctx, handle, criteria="all")
 
-    assert "type_box" in filter_bodies(ctx, handle, criteria="containing_surface_type", surface_type="plane")
-    assert "type_box" in filter_bodies(ctx, handle, criteria="containing_curve_type", curve_type="line")
+    assert "type_box" in filter_bodies(
+        ctx, handle, criteria="containing_surface_type", surface_type="plane"
+    )
+    assert "type_box" in filter_bodies(
+        ctx, handle, criteria="containing_curve_type", curve_type="line"
+    )
 
     assert isinstance(filter_bodies(ctx, handle, criteria="containing_surface_type"), str)
     assert isinstance(filter_bodies(ctx, handle, criteria="containing_curve_type"), str)
@@ -181,8 +202,12 @@ def test_filter_bodies_number_surfaces_curves(ctx: PyAnsysGeometryContext):
     handle = _setup(ctx, "test_filter_bodies_num_surf_curves", box_name="ns_box")
     select_bodies(ctx, handle, criteria="all")
 
-    assert "ns_box" in filter_bodies(ctx, handle, criteria="number_surfaces", surface_type="plane", find_max=True)
-    assert "ns_box" in filter_bodies(ctx, handle, criteria="number_curves", curve_type="line", find_max=True)
+    assert "ns_box" in filter_bodies(
+        ctx, handle, criteria="number_surfaces", surface_type="plane", find_max=True
+    )
+    assert "ns_box" in filter_bodies(
+        ctx, handle, criteria="number_curves", curve_type="line", find_max=True
+    )
 
     assert isinstance(filter_bodies(ctx, handle, criteria="number_surfaces"), str)
     assert isinstance(filter_bodies(ctx, handle, criteria="number_curves"), str)

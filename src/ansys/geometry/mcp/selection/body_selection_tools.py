@@ -1,5 +1,6 @@
-# Copyright (C) 2026 ANSYS, Inc. and/or its affiliates.
+# Copyright (C) 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
 # SPDX-License-Identifier: MIT
+#
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -176,7 +177,9 @@ def select_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
-        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
+        app_context.command_history.append(
+            f"selection_builder = selection_registry['{selection_handle}']"
+        )
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -196,39 +199,67 @@ def select_bodies(
         elif criteria == "named_selection":
             if not named_selection:
                 return "Named selection name must be provided for 'named_selection' criterion."
-            matching_bodies = selection_builder.bodies.get_bodies_from_named_selection(named_selection)
-            app_context.command_history.append(f"selection_builder.bodies.get_bodies_from_named_selection('{named_selection}')")
+            matching_bodies = selection_builder.bodies.get_bodies_from_named_selection(
+                named_selection
+            )
+            app_context.command_history.append(
+                f"selection_builder.bodies.get_bodies_from_named_selection('{named_selection}')"
+            )
         elif criteria == "name":
             if not name:
                 return "Body name must be provided for 'name' criterion."
             matching_bodies = selection_builder.bodies.get_bodies_with_name(name)
-            app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_name('{name}')")
+            app_context.command_history.append(
+                f"selection_builder.bodies.get_bodies_with_name('{name}')"
+            )
         elif criteria in ["volume", "surface_area"]:
             if min_value is None:
                 return f"min_value must be provided for '{criteria}' criterion."
             if criteria == "volume":
-                matching_bodies = selection_builder.bodies.get_bodies_with_volume(min_value, max_value)
-                app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_volume({min_value}, {max_value})")
+                matching_bodies = selection_builder.bodies.get_bodies_with_volume(
+                    min_value, max_value
+                )
+                app_context.command_history.append(
+                    f"selection_builder.bodies.get_bodies_with_volume({min_value}, {max_value})"
+                )
             elif criteria == "surface_area":
-                matching_bodies = selection_builder.bodies.get_bodies_with_surface_area(min_value, max_value)
-                app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_surface_area({min_value}, {max_value})")
+                matching_bodies = selection_builder.bodies.get_bodies_with_surface_area(
+                    min_value, max_value
+                )
+                app_context.command_history.append(
+                    f"selection_builder.bodies.get_bodies_with_surface_area({min_value}, {max_value})"
+                )
         elif criteria in ["x_location", "y_location", "z_location"]:
             if min_value is None and max_value is None:
                 return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
             elif criteria == "x_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_x_location(min=min_value, max=max_value)
-                app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_x_location({min_value}, {max_value})")
+                matching_bodies = selection_builder.bodies.get_bodies_with_x_location(
+                    min=min_value, max=max_value
+                )
+                app_context.command_history.append(
+                    f"selection_builder.bodies.get_bodies_with_x_location({min_value}, {max_value})"
+                )
             elif criteria == "y_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_y_location(min=min_value, max=max_value)
-                app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_y_location({min_value}, {max_value})")
+                matching_bodies = selection_builder.bodies.get_bodies_with_y_location(
+                    min=min_value, max=max_value
+                )
+                app_context.command_history.append(
+                    f"selection_builder.bodies.get_bodies_with_y_location({min_value}, {max_value})"
+                )
             elif criteria == "z_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_z_location(min=min_value, max=max_value)
-                app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_z_location({min_value}, {max_value})")
+                matching_bodies = selection_builder.bodies.get_bodies_with_z_location(
+                    min=min_value, max=max_value
+                )
+                app_context.command_history.append(
+                    f"selection_builder.bodies.get_bodies_with_z_location({min_value}, {max_value})"
+                )
         elif criteria == "color":
             if not color:
                 return "Color must be provided for 'color' criterion."
             matching_bodies = selection_builder.bodies.get_bodies_with_color(color)
-            app_context.command_history.append(f"selection_builder.bodies.get_bodies_with_color('{color}')")
+            app_context.command_history.append(
+                f"selection_builder.bodies.get_bodies_with_color('{color}')"
+            )
         else:
             return f"Unknown selection criterion: {criteria}"
 
@@ -265,15 +296,19 @@ def filter_bodies(
     find_min: bool | None = None,
     min_value: float | None = None,
     max_value: float | None = None,
-    surface_type: Literal["plane", "cylinder", "cone", "torus", "sphere", "nurbs", "procedural", "spline"] | None = None,
-    curve_type: Literal["line", "circle", "ellipse", "nurbs", "procedural", "helix", "spline"] | None = None,
+    surface_type: Literal[
+        "plane", "cylinder", "cone", "torus", "sphere", "nurbs", "procedural", "spline"
+    ]
+    | None = None,
+    curve_type: Literal["line", "circle", "ellipse", "nurbs", "procedural", "helix", "spline"]
+    | None = None,
     color: str | None = None,
 ) -> list[str] | str:
     """Filter bodies in a Selection Builder based on a user-defined condition.
 
     This tool allows users to apply a custom filter function to the bodies
     in the selection builder. Pass one  ``criteria`` value from the table below
-    and supply the corresponding extra argument(s). 
+    and supply the corresponding extra argument(s).
 
     Parameters
     ----------
@@ -350,7 +385,7 @@ def filter_bodies(
         Curve type for the ``"containing_curve_type"`` criterion.
     color : str, optional
         Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
-    
+
     Returns
     -------
     list of str | str
@@ -366,7 +401,9 @@ def filter_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
-        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
+        app_context.command_history.append(
+            f"selection_builder = selection_registry['{selection_handle}']"
+        )
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -376,11 +413,15 @@ def filter_bodies(
             elif find_max:
                 method = getattr(selection_builder.bodies, f"filter_bodies_max_{criteria}")
                 matching_bodies = method()
-                app_context.command_history.append(f"selection_builder.bodies.filter_bodies_max_{criteria}()")
+                app_context.command_history.append(
+                    f"selection_builder.bodies.filter_bodies_max_{criteria}()"
+                )
             elif find_min:
                 method = getattr(selection_builder.bodies, f"filter_bodies_min_{criteria}")
                 matching_bodies = method()
-                app_context.command_history.append(f"selection_builder.bodies.filter_bodies_min_{criteria}()")
+                app_context.command_history.append(
+                    f"selection_builder.bodies.filter_bodies_min_{criteria}()"
+                )
             else:
                 if min_value is None and max_value is None:
                     return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
@@ -404,12 +445,16 @@ def filter_bodies(
                 return f"{enum_key} must be provided for '{criteria}' criterion."
             enum_val = type_map[enum_val_str]
             if find_max:
-                matching_bodies = getattr(selection_builder.bodies, f"filter_bodies_max_{criteria}")(enum_val)
+                matching_bodies = getattr(
+                    selection_builder.bodies, f"filter_bodies_max_{criteria}"
+                )(enum_val)
                 app_context.command_history.append(
                     f"selection_builder.bodies.filter_bodies_max_{criteria}('{enum_val_str}')"
                 )
             elif find_min:
-                matching_bodies = getattr(selection_builder.bodies, f"filter_bodies_min_{criteria}")(enum_val)
+                matching_bodies = getattr(
+                    selection_builder.bodies, f"filter_bodies_min_{criteria}"
+                )(enum_val)
                 app_context.command_history.append(
                     f"selection_builder.bodies.filter_bodies_min_{criteria}('{enum_val_str}')"
                 )
@@ -429,12 +474,16 @@ def filter_bodies(
             if not color:
                 return "color must be provided for 'color' criterion."
             matching_bodies = selection_builder.bodies.filter_bodies_by_color(color)
-            app_context.command_history.append(f"selection_builder.bodies.filter_bodies_by_color('{color}')")
+            app_context.command_history.append(
+                f"selection_builder.bodies.filter_bodies_by_color('{color}')"
+            )
         elif criteria == "name":
             if not name:
                 return "name must be provided for 'name' criterion."
             matching_bodies = selection_builder.bodies.filter_bodies_by_name(name)
-            app_context.command_history.append(f"selection_builder.bodies.filter_bodies_by_name('{name}')")
+            app_context.command_history.append(
+                f"selection_builder.bodies.filter_bodies_by_name('{name}')"
+            )
         elif criteria == "containing_surface_type":
             if not surface_type:
                 return "surface_type must be provided for 'containing_surface_type' criterion."
@@ -535,7 +584,9 @@ def order_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
-        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
+        app_context.command_history.append(
+            f"selection_builder = selection_registry['{selection_handle}']"
+        )
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -620,7 +671,9 @@ def group_bodies(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
-        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
+        app_context.command_history.append(
+            f"selection_builder = selection_registry['{selection_handle}']"
+        )
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -713,7 +766,9 @@ def extend_body_selection(
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
-        app_context.command_history.append(f"selection_builder = selection_registry['{selection_handle}']")
+        app_context.command_history.append(
+            f"selection_builder = selection_registry['{selection_handle}']"
+        )
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
@@ -734,7 +789,7 @@ def extend_body_selection(
             app_context.command_history.append(
                 f"selection_builder.bodies.extend_to_same_{criteria}('{scope}')"
             )
-            
+
         selection_builder._bodies = extended
         app_context.command_history.append(f"selection_builder._bodies = extended")
         logger.info(f"Extended body selection to {len(extended.items)} bodies using '{criteria}'.")
