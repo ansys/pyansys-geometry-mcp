@@ -1,3 +1,7 @@
+ci:
+  autofix_commit_message: 'chore: auto fixes from pre-commit hooks'
+
+exclude: "uv\\.lock"
 repos:
 
   - repo: https://github.com/google/yamlfmt
@@ -24,7 +28,7 @@ repos:
     rev: v2.4.2
     hooks:
       - id: codespell
-        args: [--ignore-words, doc/styles/config/vocabularies/ANSYS/accept.txt]
+        args: [--ignore-words, doc/styles/config/vocabularies/ANSYS/accept.txt, "-w"]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
@@ -35,7 +39,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/ansys/pre-commit-hooks
-    rev: v0.5.2
+    rev: v0.8.0
     hooks:
       - id: add-license-headers
         files: (src|examples|tests|docker)/.*\.(py)|\.(proto)
