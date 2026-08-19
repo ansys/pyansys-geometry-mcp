@@ -48,20 +48,20 @@ from ansys.geometry.mcp.tools import (
 )
 
 
-def test_get_product_status_tool(ctx: PyAnsysGeometryContext):
+def test_get_product_status_tool(ctx):
     """Test getting the product status."""
     status = get_product_status(ctx)
     assert "Product backend is connected:" in status
 
 
-def test_create_design(ctx: PyAnsysGeometryContext):
+def test_create_design(ctx):
     """Test creating a new design."""
     result = create_design(ctx, "test_create_design_001")
     assert "test_create_design_001" in result
     assert "created successfully" in result
 
 
-def test_get_design_info(ctx: PyAnsysGeometryContext):
+def test_get_design_info(ctx):
     """Test retrieving information about the active design."""
     create_design(ctx, "test_get_design_info_001")
     result = get_design_info(ctx)
@@ -69,7 +69,7 @@ def test_get_design_info(ctx: PyAnsysGeometryContext):
     assert len(result) > 0
 
 
-def test_export_design_to(ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.TempPathFactory):
+def test_export_design_to(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test exporting the active design to scdocx format."""
     design_name = "test_export_design_001"
     create_design(ctx, design_name)
@@ -86,9 +86,7 @@ def test_export_design_to(ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.
     "file_format",
     ["fmd", "step", "iges", "disco", "parasolid_text", "parasolid_bin"],
 )
-def test_export_design_to_formats(
-    ctx: PyAnsysGeometryContext, file_format: str, tmp_path_factory: pytest.TempPathFactory
-):
+def test_export_design_to_formats(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
     """Test exporting the active design to each supported file format."""
     design_name = f"test_export_{file_format}_001"
     create_design(ctx, design_name)
@@ -98,19 +96,19 @@ def test_export_design_to_formats(
     location = tmp_path_factory.mktemp(f"test_export_to_{file_format}")
     file_location = location / f"{design_name}.{file_format}"
     result = export_design_to(ctx, file_format=file_format, folder=str(file_location))
+
     assert f"Design exported to {file_format.upper()} file:" in result
+    assert file_location.exists()
 
 
-def test_export_design_to_unsupported_format(
-    ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.TempPathFactory
-):
+def test_export_design_to_unsupported_format(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test that an unsupported format returns an error message."""
     design_name = "test_export_unsupported_001"
     create_design(ctx, design_name)
 
     # Define the location and expected file location
     location = tmp_path_factory.mktemp("test_export_to_scdocx")
-    file_location = location / f"{design_name}.scdocx"
+    file_location = location / f"{design_name}"
 
     result = export_design_to(ctx, file_format="xyz_unsupported", folder=str(file_location))
     assert "Unsupported format" in result
@@ -124,7 +122,7 @@ def test_export_design_to_not_connected():
     assert "not connected" in result
 
 
-def test_move_body_to_component(ctx: PyAnsysGeometryContext):
+def test_move_body_to_component(ctx):
     """Test moving a body into a component."""
     create_design(ctx, "test_move_body_001")
     create_box(ctx, name="movable_box", width=1.0, depth=1.0, height=1.0)
@@ -136,7 +134,7 @@ def test_move_body_to_component(ctx: PyAnsysGeometryContext):
     assert "successfully" in result
 
 
-def test_move_body_to_component_not_found(ctx: PyAnsysGeometryContext):
+def test_move_body_to_component_not_found(ctx):
     """Test that a missing body or missing component each return a not-found error."""
     create_design(ctx, "test_move_body_not_found_001")
     add_component(ctx, name="target_comp_not_found")
@@ -158,7 +156,7 @@ def test_move_body_to_component_not_connected():
     assert "not connected" in result
 
 
-def test_get_screenshot(ctx: PyAnsysGeometryContext, tmp_path_factory: pytest.TempPathFactory):
+def test_get_screenshot(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test capturing a screenshot of the active design."""
     create_design(ctx, "test_screenshot_001")
     create_box(ctx, name="screenshot_box", width=1.0, depth=1.0, height=1.0)
@@ -176,7 +174,7 @@ def test_get_screenshot_not_connected():
 
 
 @pytest.mark.skip(reason="design.plot() opens a blocking GUI window; cannot be automated")
-def test_get_design_3d_scene(ctx: PyAnsysGeometryContext):
+def test_get_design_3d_scene(ctx):
     """Test opening the 3D scene window of the active design."""
     create_design(ctx, "test_3d_scene_001")
     create_box(ctx, name="scene_box", width=1.0, depth=1.0, height=1.0)
@@ -225,7 +223,7 @@ def test_build_sketch_primitives():
         _build_sketch([{"type": "triangle"}])
 
 
-def test_extrude_sketch(ctx: PyAnsysGeometryContext):
+def test_extrude_sketch(ctx):
     """Test extruding a circular sketch into a cylinder."""
     create_design(ctx, "test_extrude_001")
     result = extrude_sketch(
@@ -237,7 +235,7 @@ def test_extrude_sketch(ctx: PyAnsysGeometryContext):
     assert "extruded successfully" in result
 
 
-def test_revolve_sketch(ctx: PyAnsysGeometryContext):
+def test_revolve_sketch(ctx):
     """Test revolving a circular sketch around an axis to create a torus."""
     create_design(ctx, "test_revolve_001")
     result = revolve_sketch(
@@ -250,7 +248,7 @@ def test_revolve_sketch(ctx: PyAnsysGeometryContext):
     assert "revolved successfully" in result
 
 
-def test_add_and_list_components(ctx: PyAnsysGeometryContext):
+def test_add_and_list_components(ctx):
     """Test adding root and nested components, a missing-parent error, and listing them."""
     create_design(ctx, "test_components_001")
 
@@ -267,7 +265,7 @@ def test_add_and_list_components(ctx: PyAnsysGeometryContext):
     assert "child_comp" in result
 
 
-def test_list_bodies(ctx: PyAnsysGeometryContext):
+def test_list_bodies(ctx):
     """Test listing bodies for the full design, a specific component, an empty component, and a missing component."""
     create_design(ctx, "test_list_bodies_001")
     add_component(ctx, name="body_comp")
@@ -286,7 +284,7 @@ def test_list_bodies(ctx: PyAnsysGeometryContext):
     assert "not found" in list_bodies(ctx, component_name="nonexistent_comp")
 
 
-def test_boolean_operations(ctx: PyAnsysGeometryContext):
+def test_boolean_operations(ctx):
     """Test subtract, unite, and intersect boolean operations on overlapping boxes."""
     create_design(ctx, "test_boolean_ops_001")
     for prefix in ("subtract", "unite", "intersect"):
