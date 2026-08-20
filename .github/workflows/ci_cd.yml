@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title
-        uses: ansys/actions/check-pr-title@0b23d99e6800f16337ff173fcfbfcc1251130e99 # v11.0.2
+        uses: ansys/actions/check-pr-title@7e89e00c5619374a1da8c2e876309d8b15ff0559 # v11.0.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -111,7 +111,7 @@ jobs:
           TRANSPORT_MODE_SELECTION: ${{ secrets.TRANSPORT_MODE_SELECTION }}
         run: |
           # Write command to file launch.txt for sanitizing purposes
-          echo "docker run --detach --name $env:GEO_CONT_NAME -e LICENSE_SERVER=$env:ANSRV_GEO_LICENSE_SERVER -p $env:PORT_MAPPING -v $env:GITHUB_WORKSPACE\tests\integration\files:C:\test-files $env:FULL_IMAGE_NAME $env:TRANSPORT_MODE_SELECTION" | Out-File -FilePath launch.txt
+          echo "docker run --detach --name $env:GEO_CONT_NAME -e LICENSE_SERVER=$env:ANSRV_GEO_LICENSE_SERVER -p $env:PORT_MAPPING -v $env:GITHUB_WORKSPACE\tests\files:C:\test-files $env:FULL_IMAGE_NAME $env:TRANSPORT_MODE_SELECTION" | Out-File -FilePath launch.txt
           # Read the file and execute the command
           $command = Get-Content -Path launch.txt | Select-String -Pattern "docker run"
           Invoke-Expression $command.Line
@@ -131,7 +131,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integration-test-logs-${{ matrix.use-tracker }}
-          path: tests/integration/logs/integration_tests_logs.txt
+          path: tests/logs/integration_tests_logs.txt
           retention-days: 7
 
       - name: Upload Coverage Results
@@ -201,7 +201,7 @@ jobs:
 
       - name: Copy test files into geometry service container
         run: |
-          docker cp tests/integration/files/. ${GEO_CONT_NAME}:/test-files
+          docker cp tests/files/. ${GEO_CONT_NAME}:/test-files
           echo "ANSYS_GEOMETRY_TEST_FILES=/test-files" >> $GITHUB_ENV
 
       - name: Run pytest
@@ -227,7 +227,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: integration-test-logs-${{ matrix.use-tracker }}
-          path: tests/integration/logs/integration_tests_logs.txt
+          path: tests/logs/integration_tests_logs.txt
           retention-days: 7
 
       - name: Stop the Geometry service
