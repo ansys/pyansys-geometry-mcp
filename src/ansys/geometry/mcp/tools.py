@@ -313,6 +313,7 @@ def create_box(
     depth: float,
     height: float,
     parent_component_name: str | None = None,
+    origin: list[float] = [0.0, 0.0, 0.0],
 ) -> str:
     """Create a 3D box (rectangular solid) body in the active design or inside a named parent component.
 
@@ -335,6 +336,8 @@ def create_box(
     parent_component_name : str, optional
         Name of the existing component to place the box inside. If omitted, the box is
         added to the root design. Use ``list_components`` to find valid component names.
+    origin : list[float], optional
+        Origin point of the box in meters (X, Y, Z). Default is [0.0, 0.0, 0.0].
 
     Returns
     -------
@@ -342,7 +345,7 @@ def create_box(
         Result message indicating success or failure.
 
     """
-    from ansys.geometry.core.math import Point2D
+    from ansys.geometry.core.math import Plane, Point2D
     from ansys.geometry.core.misc import Distance
     from ansys.geometry.core.sketch import Sketch
     from pint import Unit
@@ -360,8 +363,9 @@ def create_box(
             else _find_component(design, parent_component_name)
         )
 
-        sketch = Sketch()
-        sketch.box(center=Point2D([0, 0]), width=width, height=depth)
+        plane = Plane(origin=[0, 0, origin[2]])
+        sketch = Sketch(plane)
+        sketch.box(center=Point2D(origin[:2]), width=width, height=depth)
         body = parent.extrude_sketch(
             name=name,
             sketch=sketch,
@@ -373,8 +377,9 @@ def create_box(
         app_context.command_history.append("from ansys.geometry.core.misc import Distance")
         app_context.command_history.append("from ansys.geometry.core.sketch import Sketch")
         app_context.command_history.append("from pint import Unit")
+        app_context.command_history.append(f"plane = Plane(origin=[0, 0, {origin[2]}])")
         app_context.command_history.append(
-            f"sketch = Sketch(); sketch.box(center=Point2D([0, 0]), width={width}, height={depth}); "
+            f"sketch = Sketch(plane); sketch.box(center=Point2D({origin[:2]}), width={width}, height={depth}); "
             f"{parent_component_name if parent_component_name is not None else 'design'}.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
         )
 

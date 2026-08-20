@@ -284,6 +284,19 @@ def test_list_bodies(ctx):
     assert "not found" in list_bodies(ctx, component_name="nonexistent_comp")
 
 
+def test_create_box_with_custom_origin(ctx):
+    """Test creating a box at an origin other than (0, 0, 0)."""
+    create_design(ctx, "test_create_box_origin_001")
+    result = create_box(
+        ctx, name="offset_box", width=1.0, depth=1.0, height=1.0, origin=[2.0, 3.0, 4.0]
+    )
+    assert "offset_box" in result
+    assert "successfully" in result
+
+    bodies = list_bodies(ctx)
+    assert "offset_box" in bodies
+
+
 def test_boolean_operations(ctx):
     """Test subtract, unite, and intersect boolean operations on overlapping boxes."""
     create_design(ctx, "test_boolean_ops_001")
