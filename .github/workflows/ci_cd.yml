@@ -99,14 +99,14 @@ jobs:
 
       - name: Download Geometry service container (if needed)
         env:
-          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}"
+          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-windows-latest"
         run: |
           Write-Host "Pulling Docker image: $env:FULL_IMAGE_NAME"
           docker pull $env:FULL_IMAGE_NAME
 
       - name: Start Geometry service and verify start
         env:
-          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}"
+          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-windows-latest"
           PORT_MAPPING: "${{ env.ANSRV_GEO_PORT }}:50051"
           TRANSPORT_MODE_SELECTION: ${{ secrets.TRANSPORT_MODE_SELECTION }}
         run: |
@@ -187,7 +187,7 @@ jobs:
 
       - name: Pull and launch geometry service
         env:
-          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}"
+          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-linux-latest"
           TRANSPORT_MODE_SELECTION: ${{ secrets.TRANSPORT_MODE_SELECTION }}
         run: |
           echo "Pulling Docker image: ${FULL_IMAGE_NAME}"
