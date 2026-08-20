@@ -377,8 +377,9 @@ def create_box(
         app_context.command_history.append("from ansys.geometry.core.misc import Distance")
         app_context.command_history.append("from ansys.geometry.core.sketch import Sketch")
         app_context.command_history.append("from pint import Unit")
+        app_context.command_history.append(f"plane = Plane(origin=[0, 0, {origin[2]}])")
         app_context.command_history.append(
-            f"sketch = Sketch(); sketch.box(center=Point2D({origin[:2]}), width={width}, height={depth}); "
+            f"sketch = Sketch(plane); sketch.box(center=Point2D({origin[:2]}), width={width}, height={depth}); "
             f"{parent_component_name if parent_component_name is not None else 'design'}.extrude_sketch(name={name!r}, sketch=sketch, distance=Distance({height}, unit=Unit('m')))"
         )
 
