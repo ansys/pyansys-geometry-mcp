@@ -80,6 +80,28 @@ def _build_parser() -> argparse.ArgumentParser:
             "Requires --host and --port to point at the running service."
         ),
     )
+    parser.add_argument(
+        "--mcp-transport",
+        default="stdio",
+        choices=["stdio", "http", "streamable-http", "sse"],
+        help="Transport for the MCP server (default: stdio).",
+    )
+    parser.add_argument(
+        "--mcp-host",
+        default="127.0.0.1",
+        help="Host address for the MCP HTTP server (default: 127.0.0.1).",
+    )
+    parser.add_argument(
+        "--mcp-port",
+        type=int,
+        default=62000,
+        help="Port for the MCP HTTP server (default: 62000).",
+    )
+    parser.add_argument(
+        "--mcp-path",
+        default="/mcp",
+        help="Path for the MCP HTTP endpoint (default: /mcp).",
+    )
     return parser
 
 
@@ -99,7 +121,15 @@ def main():
 
     setup_logging(level="INFO")
     try:
-        app.run()
+        if args.mcp_transport == "stdio":
+            app.run(transport="stdio")
+        else:
+            app.run(
+                transport=args.mcp_transport,
+                host=args.mcp_host,
+                port=args.mcp_port,
+                path=args.mcp_path,
+            )
     except KeyboardInterrupt:
         pass
     return 0
