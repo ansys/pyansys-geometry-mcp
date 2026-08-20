@@ -24,6 +24,7 @@
 
 from unittest.mock import MagicMock
 
+import ansys.geometry.core as pyansys_geometry
 import pytest
 
 from ansys.geometry.mcp import app
@@ -61,6 +62,22 @@ def use_existing_service(request):
     return True if value.lower() == "yes" else False
 
 
+@pytest.fixture(scope="session", autouse=True)
+def use_tracker(request):
+    """Fixture to enable or disable the tracker."""
+    value: str = request.config.getoption("--use-tracker", default="no")  # Explicitly set default
+
+    if value.lower() == "yes":
+        pyansys_geometry.USE_TRACKER_TO_UPDATE_DESIGN = True
+    else:
+        pyansys_geometry.USE_TRACKER_TO_UPDATE_DESIGN = False
+
+    yield  # This allows the test to run
+
+    # Revert the state after the test session
+    pyansys_geometry.USE_TRACKER_TO_UPDATE_DESIGN = False
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--use-existing-service",
@@ -70,5 +87,12 @@ def pytest_addoption(parser):
             "Use Modeler object to connect to an existing service. Options: 'yes' or 'no'."
             " By default, 'no'."
         ),
+        choices=("yes", "no"),
+    )
+    parser.addoption(
+        "--use-tracker",
+        action="store",
+        default="no",
+        help=("Enable the tracker to update the design. Options: 'yes' or 'no'. By default, 'no'."),
         choices=("yes", "no"),
     )
