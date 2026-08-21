@@ -23,7 +23,7 @@ concurrency:
 permissions:
   contents: read
   packages: read # Needs access to the Geometry docker image
-  pull-requests: read
+  pull-requests: read # Required to read PR content
 
 jobs:
   vulnerabilities:
