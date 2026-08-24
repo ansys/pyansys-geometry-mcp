@@ -61,6 +61,12 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--proto-version",
+        default="v1",
+        choices=["v0", "v1"],
+        help="Protocol version for an existing geometry service (default: v1).",
+    )
+    parser.add_argument(
         "--host",
         default="localhost",
         help="Host name or IP address of the geometry service (default: localhost).",
@@ -115,6 +121,7 @@ def main():
     app.context = app.create_context()
     app.context.mode = args.mode
     app.context.transport_mode = args.transport_mode
+    app.context.proto_version = args.proto_version
     app.context.host = args.host
     app.context.port = args.port
     app.context.connect_to_existing_service = args.connect_to_existing_service

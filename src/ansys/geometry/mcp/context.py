@@ -42,6 +42,8 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
         Launch mode for the geometry service (e.g. ``"docker"``, ``"spaceclaim"``).
     transport_mode : Optional[str]
         Transport mode for the geometry service connection.
+    proto_version : str
+        Geometry service protocol version for an existing service connection.
     host : str
         Host name or IP address of the geometry service.
     port : int
@@ -62,6 +64,7 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     product_instance: Optional[Modeler] = None
     mode: Optional[str] = None
     transport_mode: Optional[str] = None
+    proto_version: str = "v1"
     host: str = "localhost"
     port: int = 50051
     connect_to_existing_service: bool = False
