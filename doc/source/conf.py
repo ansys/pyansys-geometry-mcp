@@ -65,7 +65,9 @@ html_theme_options = {
     },
 }
 
-linkcheck_ignore = []
+linkcheck_ignore = [
+    "https://github.com/ansys/pyansys-geometry-mcp/*",
+]
 
 if switcher_version != "dev":
     linkcheck_ignore.append(
