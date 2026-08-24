@@ -7,7 +7,7 @@ User guide
 The PyAnsys Geometry MCP user guide explains:
 
 - What this MCP server does and what it needs to run.
-- Which APIs (MCP tools) are currently supported.
+- Which API's (MCP tools) are currently supported.
 - How to connect the server to both GitHub Copilot and Gemini.
 
 What this server provides

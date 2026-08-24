@@ -65,7 +65,7 @@ Gemini
 
 1. Open or create ``.gemini/settings.json``.
 2. Add an MCP server entry named ``pyansys-geometry-mcp``.
-3. Use the same command and args as Copilot.
+3. Use the same command and arguments as Copilot.
 
 Example:
 
