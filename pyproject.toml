@@ -21,7 +21,7 @@ maintainers = [
 authors = [
   { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
 ]
-requires-python = ">=3.10,<4"
+requires-python = ">=3.12,<4"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -29,8 +29,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -39,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
   "ansys-common-mcp>=0.2.0",
-  "ansys-geometry-core[all]>=0.15.0",
+  "ansys-geometry-core[all]>=0.17.0",
   "black",
   "isort",
 ]
@@ -54,7 +52,7 @@ scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
 # only available when a developer clones the repository and installs the package
 # for local development.
 dev = [
-  "pre-commit==4.6.0",
+  "pre-commit==4.6.2",
   { include-group = "doc" },
   { include-group = "tests" },
 ]
