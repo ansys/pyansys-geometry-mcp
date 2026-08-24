@@ -1,5 +1,5 @@
 Currently supported API's
-========================
+=========================
 
 This page lists the MCP tools currently registered by the server in
 ``ansys.geometry.mcp.tools``.
