@@ -22,9 +22,19 @@
 
 """Unit tests for BodySelection tools."""
 
+from unittest.mock import MagicMock
+
+import pytest
+
 from ansys.geometry.mcp import tools
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
-from ansys.geometry.mcp.selection.body_selection_tools import filter_bodies, select_bodies
+from ansys.geometry.mcp.selection.body_selection_tools import (
+    extend_body_selection,
+    filter_bodies,
+    group_bodies,
+    order_bodies,
+    select_bodies,
+)
 
 
 def _setup(ctx, design_name, box_name="box"):
@@ -220,3 +230,21 @@ def test_filter_bodies_missing_args_return_error(ctx: PyAnsysGeometryContext):
 
     assert isinstance(filter_bodies(ctx, handle, criteria="color"), str)
     assert isinstance(filter_bodies(ctx, "not-a-real-handle", criteria="is_solid"), str)
+
+
+@pytest.mark.parametrize(
+    "fn, kwargs",
+    [
+        (select_bodies, {"selection_handle": "h", "criteria": "all"}),
+        (filter_bodies, {"selection_handle": "h", "criteria": "is_solid"}),
+        (order_bodies, {"selection_handle": "h", "criteria": "volume"}),
+        (group_bodies, {"selection_handle": "h", "criteria": "volume"}),
+        (extend_body_selection, {"selection_handle": "h", "criteria": "volume"}),
+    ],
+)
+def test_not_connected(fn, kwargs):
+    """Every body-selection tool returns a 'not connected' error when product_instance is None."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    result = fn(mock_ctx, **kwargs)
+    assert "not connected" in result
