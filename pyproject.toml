@@ -42,9 +42,9 @@ dependencies = [
   "isort",
 ]
 urls.Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
-urls.Homepage = "https://github.com/ansys-internal/pyansys-geometry-mcp"
-urls.Issues = "https://github.com/ansys-internal/pyansys-geometry-mcp/issues"
-urls.Repository = "https://github.com/ansys-internal/pyansys-geometry-mcp"
+urls.Homepage = "https://github.com/ansys/pyansys-geometry-mcp"
+urls.Issues = "https://github.com/ansys/pyansys-geometry-mcp/issues"
+urls.Repository = "https://github.com/ansys/pyansys-geometry-mcp"
 scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
 
 [dependency-groups]

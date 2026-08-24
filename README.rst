@@ -18,12 +18,12 @@ PyAnsys Geometry MCP
    :target: https://opensource.org/licenses/MIT
    :alt: MIT
 
-.. |GH-CI| image:: https://github.com/ansys-internal/pyansys-geometry-mcp/actions/workflows/cicd.yml/badge.svg
-   :target: https://github.com/ansys-internal/pyansys-geometry-mcp/actions/workflows/cicd.yml
+.. |GH-CI| image:: https://github.com/ansys/pyansys-geometry-mcp/actions/workflows/cicd.yml/badge.svg
+   :target: https://github.com/ansys/pyansys-geometry-mcp/actions/workflows/cicd.yml
    :alt: GH-CI
 
-.. |pre-commit| image:: https://results.pre-commit.ci/badge/github/ansys-internal/pyansys-geometry-mcp/main.svg
-   :target: https://results.pre-commit.ci/latest/github/ansys-internal/pyansys-geometry-mcp/main
+.. |pre-commit| image:: https://results.pre-commit.ci/badge/github/ansys/pyansys-geometry-mcp/main.svg
+   :target: https://results.pre-commit.ci/latest/github/ansys/pyansys-geometry-mcp/main
    :alt: pre-commit.ci status
 
 Overview
@@ -53,9 +53,9 @@ for switching from viewing the documentation for the latest stable release
 to viewing the documentation for the development version or previously
 released versions.
 
-On the PyAnsys Geometry MCP `Issues <https://github.com/ansys-internal/pyansys-geometry-mcp/issues>`_
+On the PyAnsys Geometry MCP `Issues <https://github.com/ansys/pyansys-geometry-mcp/issues>`_
 page, you can create issues to report bugs and request new features. On the
-`PyAnsys Geometry MCP Discussions <https://github.com/ansys-internal/pyansys-geometry-mcp/discussions>`_
+`PyAnsys Geometry MCP Discussions <https://github.com/ansys/pyansys-geometry-mcp/discussions>`_
 page or the `Discussions <https://discuss.ansys.com/>`_ page on the Ansys Developer portal,
 you can post questions, share ideas, and get community feedback.
 
@@ -68,6 +68,6 @@ License
 -------
 
 PyAnsys Geometry MCP is licensed under the
-`MIT License <https://github.com/ansys-internal/pyansys-geometry-mcp/blob/main/LICENSE>`_.
+`MIT License <https://github.com/ansys/pyansys-geometry-mcp/blob/main/LICENSE>`_.
 
 PyAnsys Geometry MCP makes no commercial claim over Ansys whatsoever.

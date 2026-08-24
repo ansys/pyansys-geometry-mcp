@@ -18,12 +18,12 @@ run this command:
     pip install pyansys-geometry-mcp
 
 Alternatively, to install the latest version from this library's
-`GitHub repository <https://github.com/ansys-internal/pyansys-geometry-mcp/>`_,
+`GitHub repository <https://github.com/ansys/pyansys-geometry-mcp/>`_,
 run these commands:
 
 .. code:: bash
 
-    git clone https://github.com/ansys-internal/pyansys-geometry-mcp
+    git clone https://github.com/ansys/pyansys-geometry-mcp
     cd pyansys-geometry-mcp
     pip install .
 
