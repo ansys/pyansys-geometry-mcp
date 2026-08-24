@@ -1,4 +1,5 @@
-(?i)ansys
+(?i)Ansys
 (?i)api
 pytest
-(?i)synopsys
+Synopsys
+synopsys
