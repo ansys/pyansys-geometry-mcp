@@ -110,6 +110,7 @@ ini_options.python_classes = "Test*"
 ini_options.python_functions = "test_*"
 ini_options.asyncio_mode = "auto"
 ini_options.addopts = [
+  "-ra",
   "--verbose",
   "--cov=ansys.geometry.mcp",
   "--cov-report=term-missing",
