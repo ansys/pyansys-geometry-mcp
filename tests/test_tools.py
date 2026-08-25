@@ -340,7 +340,6 @@ def test_read_image_in_base64(ctx, tmp_path):
 def test_get_command_history(ctx):
     """Test that command history returns a list of strings after executing commands."""
     result = get_command_history(ctx)
-    print(result)
     assert len(result) == 3
     assert result[0] == "selection_registry = {}"
 
