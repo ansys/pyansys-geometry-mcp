@@ -26,7 +26,7 @@ html_short_title = html_title = "PyAnsys Geometry MCP"
 html_baseurl = f"https://{cname}/version/stable"
 
 html_context = {
-    "github_user": "ansys-internal",
+    "github_user": "ansys",
     "github_repo": "pyansys-geometry-mcp",
     "github_version": "main",
     "doc_path": "doc/source",
@@ -38,7 +38,7 @@ html_theme_options = {
         "version_match": switcher_version,
     },
     "check_switcher": False,
-    "github_url": "https://github.com/ansys-internal/pyansys-geometry-mcp",
+    "github_url": "https://github.com/ansys/pyansys-geometry-mcp",
     "show_prev_next": False,
     "show_breadcrumbs": True,
     "collapse_navigation": True,
@@ -49,7 +49,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "Support",
-            "url": "https://github.com/ansys-internal/pyansys-geometry-mcp/discussions",
+            "url": "https://github.com/ansys/pyansys-geometry-mcp/discussions",
             "icon": "fa fa-comment fa-fw",
         },
         {
@@ -65,11 +65,13 @@ html_theme_options = {
     },
 }
 
-linkcheck_ignore = []
+linkcheck_ignore = [
+    "https://github.com/ansys/pyansys-geometry-mcp/*",
+]
 
 if switcher_version != "dev":
     linkcheck_ignore.append(
-        f"https://github.com/ansys-internal/pyansys-geometry-mcp/releases/tag/v{__version__}"
+        f"https://github.com/ansys/pyansys-geometry-mcp/releases/tag/v{__version__}"
     )
 
 # Sphinx extensions

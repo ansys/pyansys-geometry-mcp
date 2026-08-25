@@ -19,7 +19,7 @@ To clone and install the latest PyAnsys Geometry MCP release in development mode
 
 .. code::
 
-    git clone https://github.com/ansys-internal/pyansys-geometry-mcp
+    git clone https://github.com/ansys/pyansys-geometry-mcp
     cd pyansys-geometry-mcp
     python -m pip install --upgrade pip
     pip install -e .
@@ -102,7 +102,7 @@ Post issues
 -----------
 
 Use the PyAnsys Geometry MCP
-`Issues <https://github.com/ansys-internal/pyansys-geometry-mcp/issues>`_
+`Issues <https://github.com/ansys/pyansys-geometry-mcp/issues>`_
 page to report bugs and request new features. When possible, use the issue
 templates provided. If your issue does not fit into one of these templates,
 click the link for opening a blank issue.
