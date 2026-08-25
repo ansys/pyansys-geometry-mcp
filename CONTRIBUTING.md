@@ -13,4 +13,4 @@ The following contribution information is specific to PyAnsys Geometry MCP.
 
 * [Contributing to PyAnsys Geometry MCP]
 
-[Contributing to PyAnsys Geometry MCP]: https://geometrymcp.docs.pyansys.com/version/dev/contributing.html
+[Contributing to PyAnsys Geometry MCP]: https://geometry-mcp.docs.pyansys.com/version/dev/contributing.html
