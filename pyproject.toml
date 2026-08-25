@@ -119,7 +119,7 @@ ini_options.addopts = [
 ]
 
 [tool.coverage]
-run.omit = [ "*/__pycache__/*" ]
+run.omit = [ "*/__main__.py", "*/__pycache__/*" ]
 run.source = [ "src" ]
 
 [tool.pydocstyle]
