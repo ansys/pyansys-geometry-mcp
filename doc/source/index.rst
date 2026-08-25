@@ -1,5 +1,5 @@
 PyAnsys Geometry MCP |version|
-=============================
+==============================
 
 PyAnsys Geometry MCP provides MCP tools for the PyAnsys ecosystem.
 

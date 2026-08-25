@@ -18,12 +18,12 @@ run this command:
     pip install pyansys-geometry-mcp
 
 Alternatively, to install the latest version from this library's
-`GitHub repository <https://github.com/ansys-internal/pyansys-geometry-mcp/>`_,
+`GitHub repository <https://github.com/ansys/pyansys-geometry-mcp/>`_,
 run these commands:
 
 .. code:: bash
 
-    git clone https://github.com/ansys-internal/pyansys-geometry-mcp
+    git clone https://github.com/ansys/pyansys-geometry-mcp
     cd pyansys-geometry-mcp
     pip install .
 
@@ -65,7 +65,7 @@ Gemini
 
 1. Open or create ``.gemini/settings.json``.
 2. Add an MCP server entry named ``pyansys-geometry-mcp``.
-3. Use the same command and args as Copilot.
+3. Use the same command and arguments as Copilot.
 
 Example:
 

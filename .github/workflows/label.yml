@@ -1,0 +1,129 @@
+name: Labeler
+on:
+  pull_request:
+    # opened, reopened, and synchronize are default for pull_request
+    # edited - when PR title or body is changed
+    # labeled - when labels are added to PR
+    types: [opened, reopened, synchronize, edited, labeled]
+  push:
+    branches: [main]
+    paths:
+      - '.github/labels.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {} # Disable default permissions
+
+jobs:
+  label-syncer:
+    name: Syncer
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to sync labels
+      pull-requests: write # Required to sync labels
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: micnncim/action-label-syncer@3abd5ab72fda571e69fffd97bd4e0033dd5f495c # v1.3.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  labeler:
+    name: Set labels
+    needs: [label-syncer]
+    permissions:
+      contents: read
+      pull-requests: write # Required to add labels to PRs
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REPO: ${{ github.repository }}
+    steps:
+
+      # Label based on modified files
+      - name: Label based on changed files
+        uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          sync-labels: true
+
+      # Label based on branch name
+      - name: Label docs
+        if: |
+          startsWith(github.event.pull_request.head.ref, 'doc') ||
+          startsWith(github.event.pull_request.head.ref, 'docs')
+        run: gh pr edit "$PR_NUMBER" --add-label "documentation" --repo "$REPO"
+
+      - name: Label maintenance
+        if: |
+          startsWith(github.event.pull_request.head.ref, 'maint') ||
+          startsWith(github.event.pull_request.head.ref, 'no-ci') ||
+          startsWith(github.event.pull_request.head.ref, 'ci')
+        run: gh pr edit "$PR_NUMBER" --add-label "maintenance" --repo "$REPO"
+
+      - name: Label enhancement
+        if: startsWith(github.event.pull_request.head.ref, 'feat')
+        run: gh pr edit "$PR_NUMBER" --add-label "enhancement" --repo "$REPO"
+
+      - name: Label bug
+        if: |
+          startsWith(github.event.pull_request.head.ref, 'fix') ||
+          startsWith(github.event.pull_request.head.ref, 'patch')
+        run: gh pr edit "$PR_NUMBER" --add-label "bug" --repo "$REPO"
+
+  commenter:
+    name: "Suggest to add labels"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write # Required to add comments to PRs
+    steps:
+      - name: Suggest to add labels
+        # Execute only when no labels have been applied to the pull request
+        if: toJSON(github.event.pull_request.labels.*.name) == '{}'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          cat > comment.md <<'EOF'
+          <!-- release-notes-label-reminder -->
+          Please add one of the following labels to add this contribution to the Release Notes :point_down:
+          - [bug](https://github.com/ansys/pyansys-geometry/pulls?q=label%3Abug+)
+          - [documentation](https://github.com/ansys/pyansys-geometry/pulls?q=label%3Adocumentation+)
+          - [enhancement](https://github.com/ansys/pyansys-geometry/pulls?q=label%3Aenhancement+)
+          - [maintenance](https://github.com/ansys/pyansys-geometry/pulls?q=label%3Amaintenance+)
+          EOF
+
+          existing_comment_id="$(
+            gh api "repos/${REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --paginate \
+              --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- release-notes-label-reminder -->"))) | .id' \
+              | head -n 1
+          )"
+
+          if [ -n "$existing_comment_id" ]; then
+            echo "Label reminder comment already exists. Skipping."
+          else
+            gh pr comment "${PR_NUMBER}" --repo "${REPOSITORY}" --body-file comment.md
+          fi
+
+  changelog-fragment:
+    name: "Create changelog fragment"
+    needs: [labeler]
+    permissions:
+      contents: write # Required to create changelog fragment
+      pull-requests: write # Required to create changelog fragment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: ansys/actions/doc-changelog@7e89e00c5619374a1da8c2e876309d8b15ff0559 # v11.0.3
+        with:
+          token: ${{ secrets.PYANSYS_CI_BOT_TOKEN }}
+          use-pull-request-title: true
+          use-default-towncrier-config: true
+          bot-user: ${{ secrets.PYANSYS_CI_BOT_USERNAME }}
+          bot-email: ${{ secrets.PYANSYS_CI_BOT_EMAIL }}
