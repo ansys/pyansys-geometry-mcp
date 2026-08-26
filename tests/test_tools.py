@@ -34,14 +34,17 @@ from ansys.geometry.mcp.tools import (
     create_design,
     export_design_to,
     extrude_sketch,
+    get_command_history,
     get_design_3d_scene,
     get_design_info,
     get_product_status,
     get_screenshot,
+    get_transcript,
     intersect_body,
     list_bodies,
     list_components,
     move_body_to_component,
+    read_image_in_base64,
     revolve_sketch,
     subtract_body,
     unite_body,
@@ -313,3 +316,50 @@ def test_boolean_operations(ctx):
     assert "complete" in intersect_body(
         ctx, target_body_name="intersect_target", tool_body_name="intersect_tool"
     )
+
+
+def test_read_image_in_base64(ctx, tmp_path):
+    """Test that a valid file is returned as a base64-encoded string."""
+    import base64
+
+    image_data = b"\x89PNG\r\n\x1a\n"  # minimal PNG-like bytes
+    image_file = tmp_path / "test.png"
+    image_file.write_bytes(image_data)
+
+    result = read_image_in_base64(ctx, str(image_file))
+
+    assert "base64" in result
+    assert result["base64"] == base64.b64encode(image_data).decode("utf-8")
+
+    result = read_image_in_base64(ctx, str(tmp_path / "nonexistent.png"))
+
+    assert "error" in result
+    assert "nonexistent.png" in result["error"]
+
+
+def test_get_command_history(ctx):
+    """Test that command history returns a list of strings after executing commands."""
+    result = get_command_history(ctx)
+    assert len(result) == 3
+    assert result[0] == "selection_registry = {}"
+
+    create_design(ctx, "test_get_command_history_001")
+    result = get_command_history(ctx)
+    assert len(result) == 4
+
+    create_box(ctx, name="test_box", width=1.0, depth=1.0, height=1.0)
+    result = get_command_history(ctx)
+    assert len(result) == 10
+
+
+def test_get_transcript(ctx):
+    """Test that the transcript contains the correct commands after each operation."""
+    create_design(ctx, "test_transcript_001")
+    result = get_transcript(ctx)
+    assert result.count("test_transcript_001") == 1
+    assert 'design = instance.create_design("test_transcript_001")' in result
+
+    create_box(ctx, name="transcript_box", width=1.0, depth=1.0, height=1.0)
+    result = get_transcript(ctx)
+    assert result.count("transcript_box") == 1
+    assert "sketch.box(center=Point2D([0.0, 0.0]), width=1.0, height=1.0)" in result

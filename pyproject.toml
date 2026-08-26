@@ -109,6 +109,7 @@ ini_options.python_files = "test_*.py"
 ini_options.python_classes = "Test*"
 ini_options.python_functions = "test_*"
 ini_options.addopts = [
+  "-ra",
   "--verbose",
   "--cov=ansys.geometry.mcp",
   "--cov-report=term-missing",
@@ -119,7 +120,7 @@ ini_options.asyncio_mode = "auto"
 
 [tool.coverage]
 run.source = [ "src" ]
-run.omit = [ "*/__pycache__/*" ]
+run.omit = [ "*/__main__.py", "*/__pycache__/*" ]
 
 [tool.towncrier]
 directory = "doc/changelog.d"
