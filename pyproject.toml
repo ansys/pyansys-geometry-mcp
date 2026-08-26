@@ -119,9 +119,8 @@ ini_options.addopts = [
 ini_options.asyncio_mode = "auto"
 
 [tool.coverage]
-run.omit = [ "*/__main__.py", "*/__pycache__/*" ]
 run.source = [ "src" ]
-run.omit = [ "*/__pycache__/*" ]
+run.omit = [ "*/__main__.py", "*/__pycache__/*" ]
 
 [tool.towncrier]
 directory = "doc/changelog.d"
