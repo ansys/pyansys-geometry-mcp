@@ -18,7 +18,7 @@ project = "pyansys-geometry-mcp"
 copyright = f"(c) {datetime.now().year} ANSYS, Inc. All rights reserved"
 author = "ANSYS, Inc."
 release = version = __version__
-cname = os.getenv("DOCUMENTATION_CNAME", default="pyansys-geometry-mcp.docs.pyansys.com")
+cname = os.getenv("DOCUMENTATION_CNAME", default="geometry-mcp.docs.pyansys.com")
 switcher_version = get_version_match(__version__)
 
 html_theme = "ansys_sphinx_theme"
