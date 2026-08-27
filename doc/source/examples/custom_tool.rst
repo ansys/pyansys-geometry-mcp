@@ -13,7 +13,7 @@ They are discovered by MCP clients when the MCP server is started, and can be in
 Tools do the following:
 
 - Take structured input parameters
-- Perform some operation(s)
+- Perform some operations
 - Return structured output results
 
 Tool Anatomy
