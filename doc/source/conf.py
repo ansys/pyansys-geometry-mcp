@@ -114,7 +114,6 @@ nbsphinx_execute = "always"
 nbsphinx_custom_formats = {
     ".mystnb": ["jupytext.reads", {"fmt": "mystnb"}],
 }
-nbsphinx_thumbnails = {}
 
 typehints_defaults = "comma"
 latex_additional_files = [watermark, ansys_logo_white, ansys_logo_white_cropped]

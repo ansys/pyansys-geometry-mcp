@@ -5,13 +5,24 @@ Examples
 
 These examples demonstrate the behavior and usage of PyAnsys Geometry MCP.
 
-.. nbgallery::
-    examples/creating_geometry.mystnb
+.. grid:: 1 2 2 2
 
-Miscellaneous examples
-----------------------
+    .. grid-item-card:: Usage examples: Videos
+        :padding: 2 2 2 2
+        :link: examples/video_demos
+        :link-type: doc
 
-.. nbgallery::
-    :caption: Miscellaneous examples
+        Watch video demonstrations of PyAnsys Geometry MCP usage.
 
-    examples/99_misc/template.mystnb
+    .. grid-item-card:: Implement a custom tool
+        :padding: 2 2 2 2
+        :link: examples/custom_tool
+        :link-type: doc
+
+        Learn how to implement a custom tool in PyAnsys Geometry MCP.
+
+.. toctree::
+    :hidden:
+
+    examples/video_demos
+    examples/custom_tool
