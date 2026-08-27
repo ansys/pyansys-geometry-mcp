@@ -840,6 +840,90 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
         return f"Error listing bodies: {e}"
 
 
+@app.tool()
+def list_faces(ctx: Context, body_name: str) -> str:
+    """List all faces of a body, returning their IDs and surface types.
+
+    Use this to discover face IDs required by other tools.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Name of the body whose faces to list. Use ``list_bodies`` to
+        discover available body names.
+
+    Returns
+    -------
+    str
+        Newline-separated list of face descriptions, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot list faces."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        body = _find_body(design, body_name)
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+
+        lines = []
+        for face in body.faces:
+            lines.append(f"id={face.id}  surface_type={face.surface_type.name}")
+
+        logger.info(f"list_faces called for body '{body_name}'")
+        return "\n".join(lines) if lines else f"Body '{body_name}' has no faces."
+    except Exception as e:
+        logger.error(f"list_faces failed: {e}")
+        return f"Error listing faces for body '{body_name}': {e}"
+
+
+@app.tool()
+def list_edges(ctx: Context, body_name: str) -> str:
+    """List all edges of a body, returning their IDs and curve types.
+
+    Use this to discover edge IDs required by other tools.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Name of the body whose edges to list. Use ``list_bodies`` to
+        discover available body names.
+
+    Returns
+    -------
+    str
+        Newline-separated list of edge descriptions, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot list edges."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        body = _find_body(design, body_name)
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+
+        lines = []
+        for edge in body.edges:
+            lines.append(f"id={edge.id}  curve_type={edge.curve_type.name}")
+
+        logger.info(f"list_edges called for body '{body_name}'")
+        return "\n".join(lines) if lines else f"Body '{body_name}' has no edges."
+    except Exception as e:
+        logger.error(f"list_edges failed: {e}")
+        return f"Error listing edges for body '{body_name}': {e}"
+
+
 # ---------------------------------------------------------------------------
 # Sketch-based body creation tools
 # ---------------------------------------------------------------------------

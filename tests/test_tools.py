@@ -46,6 +46,8 @@ from ansys.geometry.mcp.tools import (
     intersect_body,
     list_bodies,
     list_components,
+    list_edges,
+    list_faces,
     move_body_to_component,
     read_image_in_base64,
     revolve_sketch,
@@ -411,6 +413,12 @@ def test_create_named_selection(ctx):
 
     app_context = get_geometry_ctx(ctx)
     design = app_context.product_instance.get_active_design()
+
+    # Test method exception handling
+    with patch.object(design, "create_named_selection", side_effect=Exception("Test error")):
+        result = create_named_selection(ctx, "ns_error", body_names=["ns_box"])
+        assert "Error" in result
+
     box_body = _find_body(design, "ns_box")
     root_box_body = _find_body(design, "root_box")
 
@@ -482,10 +490,51 @@ def test_create_named_selection(ctx):
     assert "created successfully" in result
 
 
-def test_create_named_selection_errors(ctx):
-    """Test error handling in create_named_selection."""
-    app_context = get_geometry_ctx(ctx)
-    design = app_context.product_instance.get_active_design()
-    with patch.object(design, "create_named_selection", side_effect=Exception("Test error")):
-        result = create_named_selection(ctx, "ns_error", body_names=["ns_box"])
+def test_list_faces(ctx):
+    """Test list_faces returns face IDs and surface types, and handles missing/disconnected cases."""
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in list_faces(disconnected_ctx, "box")
+
+    # Body not found
+    create_design(ctx, "test_list_faces_001")
+    assert "not found" in list_faces(ctx, "nonexistent_body")
+
+    # Valid body with faces
+    create_box(ctx, name="face_box", width=1.0, depth=1.0, height=1.0)
+    result = list_faces(ctx, "face_box")
+    assert "id=" in result
+    assert "surface_type=" in result
+    # A box has 6 faces
+    assert len(result.strip().splitlines()) == 6
+
+    # Test method exception handling
+    with patch("ansys.geometry.mcp.tools._find_body", side_effect=Exception("Test error")):
+        result = list_faces(ctx, "face_box")
+        assert "Error" in result
+
+
+def test_list_edges(ctx):
+    """Test list_edges returns edge IDs and curve types, and handles missing/disconnected cases."""
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in list_edges(disconnected_ctx, "box")
+
+    # Body not found
+    create_design(ctx, "test_list_edges_001")
+    assert "not found" in list_edges(ctx, "nonexistent_body")
+
+    # Valid body with edges
+    create_box(ctx, name="edge_box", width=1.0, depth=1.0, height=1.0)
+    result = list_edges(ctx, "edge_box")
+    assert "id=" in result
+    assert "curve_type=" in result
+    # A box has 12 edges
+    assert len(result.strip().splitlines()) == 12
+
+    # Test method exception handling
+    with patch("ansys.geometry.mcp.tools._find_body", side_effect=Exception("Test error")):
+        result = list_edges(ctx, "edge_box")
         assert "Error" in result
