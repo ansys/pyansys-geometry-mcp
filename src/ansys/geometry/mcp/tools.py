@@ -799,7 +799,8 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
 
     Returns each body's name prefixed with its component path, e.g.
     ``MainComponent/Cylinder``. Use this before boolean operations to
-    discover the exact body names required.
+    discover the exact body names required, and before ``list_faces`` or
+    ``list_edges`` to inspect a body's faces and edges.
 
     Parameters
     ----------
@@ -842,9 +843,13 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
 
 @app.tool()
 def list_faces(ctx: Context, body_name: str) -> str:
-    """List all faces of a body, returning their IDs and surface types.
+    """List all faces (surfaces) of a body, returning their face IDs and surface types.
 
-    Use this to discover face IDs required by other tools.
+    Use this whenever a face ID is needed, or to answer questions about the
+    faces of a body: how many faces it has, what the first/nth face is, or
+    which faces are planes, cylinders, cones, and so on. Face IDs returned
+    here are the values accepted by ``create_named_selection`` and other
+    face-based tools.
 
     Parameters
     ----------
@@ -884,9 +889,13 @@ def list_faces(ctx: Context, body_name: str) -> str:
 
 @app.tool()
 def list_edges(ctx: Context, body_name: str) -> str:
-    """List all edges of a body, returning their IDs and curve types.
+    """List all edges (curves) of a body, returning their edge IDs and curve types.
 
-    Use this to discover edge IDs required by other tools.
+    Use this whenever an edge ID is needed, or to answer questions about the
+    edges of a body: how many edges it has, what the first/nth edge is, or
+    which edges are lines, circles, arcs, and so on. Edge IDs returned here
+    are the values accepted by ``create_named_selection`` and other
+    edge-based tools.
 
     Parameters
     ----------
@@ -1307,6 +1316,9 @@ def create_named_selection(
     referenced by name (e.g. for meshing or boundary conditions).
     At least one entity list must be provided.
 
+    Typical workflow: ``list_bodies`` to find body names, then ``list_faces``
+    and ``list_edges`` on a body to obtain the face and edge IDs to pass here.
+
     Parameters
     ----------
     ctx : Context
@@ -1316,9 +1328,9 @@ def create_named_selection(
     body_names : list of str, optional
         Body names to include. Use ``list_bodies`` to discover names.
     face_ids : list of str, optional
-        Face IDs to include (from ``body.faces``).
+        Face IDs to include. Use ``list_faces`` to discover face IDs of a body.
     edge_ids : list of str, optional
-        Edge IDs to include (from ``body.edges``).
+        Edge IDs to include. Use ``list_edges`` to discover edge IDs of a body.
     beam_ids : list of str, optional
         Beam IDs to include.
     design_point_ids : list of str, optional
