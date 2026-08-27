@@ -8,7 +8,7 @@ Learn how to implement a custom MCP tool for PyAnsys Geometry MCP.
 Tool Overview
 -------------
 
-A tool is a function that performances a specific task using the PyAnsys Geometry library.
+A tool is a function that performs a specific task using the PyAnsys Geometry library.
 They are discovered by MCP clients when the MCP server is started, and can be invoked by the clients to perform their specific tasks.
 Tools do the following:
 
@@ -52,7 +52,7 @@ Here is an example tool structure:
 
             # Perform transcript
             app_context.command_history.append(
-                f"design=instance.create_design(TestDesignName)"
+                f'design=instance.create_design("TestDesignName")'
             )
 
             # Perform some operation(s) using the input parameters
