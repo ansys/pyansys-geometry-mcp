@@ -67,7 +67,7 @@ Here is an example tool structure:
 Key Components
 ~~~~~~~~~~~~~~
 
-- Detailed docstring describing what the tool does, when to use it, and the input/output parameters.
+- Detailed documentation string describing what the tool does, when to use it, and the input/output parameters.
 - Context object providing the MCP request context and access to the modeler instance.
 - Input parameters defining the data required for the tool to perform its operation.
 - Graceful handling of errors and useful logging.
