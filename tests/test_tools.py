@@ -22,21 +22,24 @@
 
 """Test tools."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ansys.geometry.mcp import PyAnsysGeometryContext
 from ansys.geometry.mcp.tools import (
     _build_sketch,
+    _find_body,
     add_component,
     create_box,
     create_design,
+    create_named_selection,
     export_design_to,
     extrude_sketch,
     get_command_history,
     get_design_3d_scene,
     get_design_info,
+    get_geometry_ctx,
     get_product_status,
     get_screenshot,
     get_transcript,
@@ -363,3 +366,126 @@ def test_get_transcript(ctx):
     result = get_transcript(ctx)
     assert result.count("transcript_box") == 1
     assert "sketch.box(center=Point2D([0.0, 0.0]), width=1.0, height=1.0)" in result
+
+
+def test_create_named_selection(ctx):
+    """Test create_named_selection with bodies, faces, edges, vertices, components,
+    and all error paths: not connected, no entities, missing body, missing component."""
+    # Test the not connected case
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in create_named_selection(disconnected_ctx, "ns", body_names=["x"])
+
+    # Test the no entities provided case
+    assert "At least one entity list" in create_named_selection(ctx, "empty_ns")
+
+    # Test setup: design with a box and a component
+    create_design(ctx, "test_named_sel_001")
+    add_component(ctx, name="ns_comp")
+    create_box(
+        ctx,
+        name="ns_box",
+        width=1.0,
+        depth=1.0,
+        height=1.0,
+        parent_component_name="ns_comp",
+    )
+    create_box(ctx, name="root_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+
+    # Test not-found error paths
+    assert "not found" in create_named_selection(ctx, "bad_ns", body_names=["no_such_body"])
+    assert "not found" in create_named_selection(ctx, "bad_ns", component_names=["no_such_comp"])
+    assert "not found" in create_named_selection(ctx, "bad_ns", beam_ids=["nonexistent_beam"])
+    assert "not found" in create_named_selection(
+        ctx, "bad_ns", coordinate_system_ids=["nonexistent_cs"]
+    )
+    assert "not found" in create_named_selection(ctx, "bad_ns", datum_point_ids=["nonexistent_dp"])
+
+    # Test the bodies case
+    result = create_named_selection(ctx, "ns_bodies", body_names=["ns_box"])
+    assert "created successfully" in result
+
+    # Test the components case
+    result = create_named_selection(ctx, "ns_comps", component_names=["ns_comp"])
+    assert "created successfully" in result
+
+    app_context = get_geometry_ctx(ctx)
+    design = app_context.product_instance.get_active_design()
+    box_body = _find_body(design, "ns_box")
+    root_box_body = _find_body(design, "root_box")
+
+    face = box_body.faces[0]
+    result = create_named_selection(ctx, "ns_faces", face_ids=[face.id])
+    assert "created successfully" in result
+
+    edge = box_body.edges[0]
+    result = create_named_selection(ctx, "ns_edges", edge_ids=[edge.id])
+    assert "created successfully" in result
+
+    vertex = root_box_body.vertices[0]
+    result = create_named_selection(ctx, "ns_verts", vertex_ids=[vertex.id])
+    assert "created successfully" in result
+
+    # Test the mixed entities case
+    result = create_named_selection(
+        ctx,
+        "ns_mixed",
+        body_names=["ns_box"],
+        face_ids=[face.id],
+        edge_ids=[edge.id],
+        vertex_ids=[vertex.id],
+        component_names=["ns_comp"],
+    )
+    assert "created successfully" in result
+
+    # Test the command history records the call
+    history = app_context.command_history
+    assert any("create_named_selection" in cmd and "ns_mixed" in cmd for cmd in history)
+
+    # Test design_point_ids
+    from ansys.geometry.core.math import Frame, Plane, Point3D, UnitVector3D
+    from pint import Quantity
+
+    design.add_design_point("dp_test", Point3D([1, 2, 3]))
+    dp = design.design_points[0]
+    result = create_named_selection(ctx, "ns_design_points", design_point_ids=[dp.id])
+    assert "created successfully" in result
+
+    # Test datum_plane_ids
+    design.create_datum_plane(
+        "datp_test",
+        Plane(
+            origin=Point3D([0, 0, 0]),
+            direction_x=UnitVector3D([1, 0, 0]),
+            direction_y=UnitVector3D([0, 1, 0]),
+        ),
+    )
+    datum_pl = design.datum_planes[0]
+    result = create_named_selection(ctx, "ns_datum_planes", datum_plane_ids=[datum_pl.id])
+    assert "created successfully" in result
+
+    # Test beam_ids
+    profile = design.add_beam_circular_profile("bp_test", Quantity(0.1, "m"))
+    beam = design.create_beam(Point3D([0, 0, 0]), Point3D([1, 0, 0]), profile)
+    result = create_named_selection(ctx, "ns_beams", beam_ids=[beam.id])
+    assert "created successfully" in result
+
+    # Test coordinate_system_ids
+    cs = design.create_coordinate_system("cs_test", Frame())
+    result = create_named_selection(ctx, "ns_coord_sys", coordinate_system_ids=[cs.id])
+    assert "created successfully" in result
+
+    # Test datum_point_ids
+    design.create_datum_point("datp_pt_test", Point3D([5, 5, 5]))
+    datum_pt = design.datum_points[0]
+    result = create_named_selection(ctx, "ns_datum_points", datum_point_ids=[datum_pt.id])
+    assert "created successfully" in result
+
+
+def test_create_named_selection_errors(ctx):
+    """Test error handling in create_named_selection."""
+    app_context = get_geometry_ctx(ctx)
+    design = app_context.product_instance.get_active_design()
+    with patch.object(design, "create_named_selection", side_effect=Exception("Test error")):
+        result = create_named_selection(ctx, "ns_error", body_names=["ns_box"])
+        assert "Error" in result
