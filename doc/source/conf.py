@@ -78,6 +78,8 @@ if switcher_version != "dev":
 extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
+    "nbsphinx",
+    "myst_parser",
     "sphinx_design",
     "sphinx_click",
     "sphinx_jinja",
@@ -105,7 +107,14 @@ templates_path = ["_templates"]
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
+    ".mystnb": "jupyter_notebook",
 }
+
+nbsphinx_execute = "always"
+nbsphinx_custom_formats = {
+    ".mystnb": ["jupytext.reads", {"fmt": "mystnb"}],
+}
+nbsphinx_thumbnails = {}
 
 typehints_defaults = "comma"
 latex_additional_files = [watermark, ansys_logo_white, ansys_logo_white_cropped]
