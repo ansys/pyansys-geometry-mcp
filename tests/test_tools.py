@@ -22,6 +22,7 @@
 
 """Test tools."""
 
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -43,6 +44,7 @@ from ansys.geometry.mcp.tools import (
     get_product_status,
     get_screenshot,
     get_transcript,
+    import_geometry_file,
     intersect_body,
     list_bodies,
     list_components,
@@ -538,3 +540,91 @@ def test_list_edges(ctx):
     with patch("ansys.geometry.mcp.tools._find_body", side_effect=Exception("Test error")):
         result = list_edges(ctx, "edge_box")
         assert "Error" in result
+
+
+def _export_box_design(
+    ctx, tmp_path_factory: pytest.TempPathFactory, name: str, fmt: str = "scdocx"
+):
+    """Create a one-box design, export it, and return the path of the exported file."""
+    create_design(ctx, name)
+    create_box(ctx, name=f"{name}_box", width=1.0, depth=1.0, height=1.0)
+
+    location = tmp_path_factory.mktemp(name)
+    result = export_design_to(ctx, file_format=fmt, folder=str(location))
+    # The written extension is format-dependent (e.g. STEP writes .stp), so read it back.
+    return Path(result.split("file: ", 1)[1])
+
+
+@pytest.mark.parametrize("file_format", ["scdocx", "step"])
+def test_import_geometry_file_open(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
+    """Test round-tripping a design: export it to disk and open it again."""
+    exported = _export_box_design(
+        ctx, tmp_path_factory, f"test_import_open_{file_format}", file_format
+    )
+    assert exported.exists()
+
+    result = import_geometry_file(ctx, file_path=str(exported), mode="open")
+    assert "Imported" in result
+    assert exported.name in result
+    assert "1 bodies" in result
+    assert "open_file(" in get_command_history(ctx)[-1]
+
+
+def test_import_geometry_file_insert(ctx, tmp_path_factory: pytest.TempPathFactory):
+    """Test inserting an exported file into an existing design as a new component."""
+    exported = _export_box_design(ctx, tmp_path_factory, "test_import_insert")
+
+    create_design(ctx, "test_import_insert_host")
+    result = import_geometry_file(ctx, file_path=str(exported), mode="insert")
+    assert "Inserted" in result
+    assert "test_import_insert_host" in result
+    assert "insert_file(" in get_command_history(ctx)[-1]
+
+
+def test_import_geometry_file_with_options(ctx, tmp_path_factory: pytest.TempPathFactory):
+    """Test importing with non-default import options."""
+    exported = _export_box_design(ctx, tmp_path_factory, "test_import_options")
+
+    result = import_geometry_file(
+        ctx,
+        file_path=str(exported),
+        import_names=True,
+        import_curves=True,
+        import_coordinate_systems=True,
+        import_named_selections=False,
+        cleanup_bodies=True,
+    )
+    assert "Imported" in result
+
+
+def test_import_geometry_file_errors(tmp_path_factory: pytest.TempPathFactory):
+    """Test the import error paths: disconnected, bad mode, bad path, and backend failure."""
+    tmp_dir = tmp_path_factory.mktemp("test_import_errors")
+
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in import_geometry_file(disconnected_ctx, file_path="anything.scdocx")
+
+    mock_ctx = MagicMock()
+
+    # Unsupported mode
+    assert "Unsupported mode" in import_geometry_file(
+        mock_ctx, file_path="anything.scdocx", mode="merge"
+    )
+
+    # Nonexistent path
+    assert "File not found" in import_geometry_file(
+        mock_ctx, file_path=str(tmp_dir / "nope.scdocx")
+    )
+
+    # Directory instead of a file
+    assert "directory" in import_geometry_file(mock_ctx, file_path=str(tmp_dir))
+
+    # Backend failure
+    file = tmp_dir / "broken.scdocx"
+    file.write_bytes(b"not a real design")
+    mock_ctx.fastmcp._lifespan_result.product_instance.open_file.side_effect = RuntimeError("boom")
+    result = import_geometry_file(mock_ctx, file_path=str(file))
+    assert "Error importing" in result
+    assert "boom" in result

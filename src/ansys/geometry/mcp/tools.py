@@ -506,6 +506,121 @@ def export_design_to(ctx: Context, file_format: str, folder: str | None = None) 
 
 
 @app.tool()
+def import_geometry_file(
+    ctx: Context,
+    file_path: str,
+    mode: str = "open",
+    import_names: bool = False,
+    import_curves: bool = False,
+    import_coordinate_systems: bool = False,
+    import_named_selections: bool = True,
+    cleanup_bodies: bool = False,
+) -> str:
+    """Import, open, or load a geometry file from disk into the product backend.
+
+    Use this tool when asked to import, open, load, or insert a CAD or geometry file.
+    Supported extensions include 'scdocx', 'dsco', 'pmdb', 'step', 'iges', 'x_t', 'xmt_txt',
+    'stride', and reader formats such as CATIA, Creo, NX, JT, SOLIDWORKS, Solid Edge,
+    Inventor, Rhino, and AutoCAD.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    file_path : str
+        Path on disk of the file to import. The extension must be included. For a shattered
+        assembly, give the path of the assembly file; the files it references in the same
+        folder are included automatically.
+    mode : str, optional
+        How to import the file. Use 'open' (default) to close the active design and open the
+        file as a new design. Use 'insert' to add the file into the current active design as
+        a new component.
+    import_names : bool, optional
+        Whether to import the names of bodies and curves. Default is False.
+    import_curves : bool, optional
+        Whether to import curves. Default is False.
+    import_coordinate_systems : bool, optional
+        Whether to import coordinate systems. Default is False.
+    import_named_selections : bool, optional
+        Whether to import named selections. Default is True.
+    cleanup_bodies : bool, optional
+        Whether to simplify geometry and clean up topology on import. Default is False.
+
+    Returns
+    -------
+    str
+        Result message describing the imported geometry, or an error message if the
+        import fails.
+
+    """
+    from pathlib import Path
+
+    from ansys.geometry.core.misc import ImportOptions
+
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot import geometry file."
+
+    mode = mode.lower()
+    if mode not in ("open", "insert"):
+        return f"Unsupported mode '{mode}'. Supported modes are: open, insert."
+
+    resolved = Path(file_path).resolve()
+    if not resolved.exists():
+        return f"File not found: {resolved}"
+    if resolved.is_dir():
+        return (
+            f"Path is a directory, not a file: {resolved}. For a shattered assembly, point at "
+            "the assembly file itself; its referenced files in the same folder are included "
+            "automatically."
+        )
+
+    try:
+        import_options = ImportOptions(
+            cleanup_bodies=cleanup_bodies,
+            import_coordinate_systems=import_coordinate_systems,
+            import_curves=import_curves,
+            import_names=import_names,
+            import_named_selections=import_named_selections,
+        )
+        options_repr = (
+            f"ImportOptions(cleanup_bodies={cleanup_bodies}, "
+            f"import_coordinate_systems={import_coordinate_systems}, "
+            f"import_curves={import_curves}, import_names={import_names}, "
+            f"import_named_selections={import_named_selections})"
+        )
+        app_context.command_history.append("from ansys.geometry.core.misc import ImportOptions")
+        app_context.command_history.append(f"import_options = {options_repr}")
+
+        if mode == "open":
+            design = app_context.product_instance.open_file(resolved, import_options=import_options)
+            app_context.command_history.append(
+                f"design = instance.open_file({str(resolved)!r}, import_options=import_options)"
+            )
+            body_count = len(design.get_all_bodies())
+            logger.info(f"import_geometry_file opened {resolved}")
+            return (
+                f"Imported '{resolved.name}' into new design '{design.name}' ({body_count} bodies)."
+            )
+
+        design = app_context.product_instance.get_active_design()
+        component = design.insert_file(resolved, import_options=import_options)
+        app_context.command_history.append(
+            f"component = design.insert_file({str(resolved)!r}, import_options=import_options)"
+        )
+        body_count = len(component.get_all_bodies())
+        logger.info(f"import_geometry_file inserted {resolved}")
+        return (
+            f"Inserted '{resolved.name}' into design '{design.name}' as component "
+            f"'{component.name}' ({body_count} bodies)."
+        )
+    except Exception as e:
+        logger.error(f"import_geometry_file failed: {e}")
+        return f"Error importing '{file_path}': {e}"
+
+
+@app.tool()
 def get_screenshot(ctx: Context, path: str | None = None) -> str:
     """Get a 3D scene screenshot of the current active design.
 
