@@ -1,11 +1,11 @@
 .. _ref_implementing_custom_tools:
 
-Implementing Custom Tools
-==============================
+Implementing custom tools
+=========================
 
 Learn how to implement a custom MCP tool for PyAnsys Geometry MCP.
 
-Tool Overview
+Tool overview
 -------------
 
 A tool is a function that performs a specific task using the PyAnsys Geometry library.
@@ -16,7 +16,7 @@ Tools do the following:
 - Perform some operations
 - Return structured output results
 
-Tool Anatomy
+Tool anatomy
 ------------
 
 Here is an example tool structure:
@@ -64,7 +64,7 @@ Here is an example tool structure:
             logger.error(f"my_custom_tool failed: {e}")
             return f"Error using my_custom_tool: {str(e)}"
 
-Key Components
+Key components
 ~~~~~~~~~~~~~~
 
 - Detailed documentation string describing what the tool does, when to use it, and the input/output parameters.

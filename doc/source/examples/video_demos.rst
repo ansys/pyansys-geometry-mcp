@@ -1,6 +1,6 @@
 .. _ref_video_demos:
 
-Video Demos
+Video demos
 ===========
 
 Video demos to be added to this section in the future.
