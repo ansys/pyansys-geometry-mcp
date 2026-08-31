@@ -506,6 +506,121 @@ def export_design_to(ctx: Context, file_format: str, folder: str | None = None) 
 
 
 @app.tool()
+def import_geometry_file(
+    ctx: Context,
+    file_path: str,
+    mode: str = "open",
+    import_names: bool = False,
+    import_curves: bool = False,
+    import_coordinate_systems: bool = False,
+    import_named_selections: bool = True,
+    cleanup_bodies: bool = False,
+) -> str:
+    """Import, open, or load a geometry file from disk into the product backend.
+
+    Use this tool when asked to import, open, load, or insert a CAD or geometry file.
+    Supported extensions include 'scdocx', 'dsco', 'pmdb', 'step', 'iges', 'x_t', 'xmt_txt',
+    'stride', and reader formats such as CATIA, Creo, NX, JT, SOLIDWORKS, Solid Edge,
+    Inventor, Rhino, and AutoCAD.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    file_path : str
+        Path on disk of the file to import. The extension must be included. For a shattered
+        assembly, give the path of the assembly file; the files it references in the same
+        folder are included automatically.
+    mode : str, optional
+        How to import the file. Use 'open' (default) to close the active design and open the
+        file as a new design. Use 'insert' to add the file into the current active design as
+        a new component.
+    import_names : bool, optional
+        Whether to import the names of bodies and curves. Default is False.
+    import_curves : bool, optional
+        Whether to import curves. Default is False.
+    import_coordinate_systems : bool, optional
+        Whether to import coordinate systems. Default is False.
+    import_named_selections : bool, optional
+        Whether to import named selections. Default is True.
+    cleanup_bodies : bool, optional
+        Whether to simplify geometry and clean up topology on import. Default is False.
+
+    Returns
+    -------
+    str
+        Result message describing the imported geometry, or an error message if the
+        import fails.
+
+    """
+    from pathlib import Path
+
+    from ansys.geometry.core.misc import ImportOptions
+
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot import geometry file."
+
+    mode = mode.lower()
+    if mode not in ("open", "insert"):
+        return f"Unsupported mode '{mode}'. Supported modes are: open, insert."
+
+    resolved = Path(file_path).resolve()
+    if not resolved.exists():
+        return f"File not found: {resolved}"
+    if resolved.is_dir():
+        return (
+            f"Path is a directory, not a file: {resolved}. For a shattered assembly, point at "
+            "the assembly file itself; its referenced files in the same folder are included "
+            "automatically."
+        )
+
+    try:
+        import_options = ImportOptions(
+            cleanup_bodies=cleanup_bodies,
+            import_coordinate_systems=import_coordinate_systems,
+            import_curves=import_curves,
+            import_names=import_names,
+            import_named_selections=import_named_selections,
+        )
+        options_repr = (
+            f"ImportOptions(cleanup_bodies={cleanup_bodies}, "
+            f"import_coordinate_systems={import_coordinate_systems}, "
+            f"import_curves={import_curves}, import_names={import_names}, "
+            f"import_named_selections={import_named_selections})"
+        )
+        app_context.command_history.append("from ansys.geometry.core.misc import ImportOptions")
+        app_context.command_history.append(f"import_options = {options_repr}")
+
+        if mode == "open":
+            design = app_context.product_instance.open_file(resolved, import_options=import_options)
+            app_context.command_history.append(
+                f"design = instance.open_file({str(resolved)!r}, import_options=import_options)"
+            )
+            body_count = len(design.get_all_bodies())
+            logger.info(f"import_geometry_file opened {resolved}")
+            return (
+                f"Imported '{resolved.name}' into new design '{design.name}' ({body_count} bodies)."
+            )
+
+        design = app_context.product_instance.get_active_design()
+        component = design.insert_file(resolved, import_options=import_options)
+        app_context.command_history.append(
+            f"component = design.insert_file({str(resolved)!r}, import_options=import_options)"
+        )
+        body_count = len(component.get_all_bodies())
+        logger.info(f"import_geometry_file inserted {resolved}")
+        return (
+            f"Inserted '{resolved.name}' into design '{design.name}' as component "
+            f"'{component.name}' ({body_count} bodies)."
+        )
+    except Exception as e:
+        logger.error(f"import_geometry_file failed: {e}")
+        return f"Error importing '{file_path}': {e}"
+
+
+@app.tool()
 def get_screenshot(ctx: Context, path: str | None = None) -> str:
     """Get a 3D scene screenshot of the current active design.
 
@@ -799,7 +914,8 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
 
     Returns each body's name prefixed with its component path, e.g.
     ``MainComponent/Cylinder``. Use this before boolean operations to
-    discover the exact body names required.
+    discover the exact body names required, and before ``list_faces`` or
+    ``list_edges`` to inspect a body's faces and edges.
 
     Parameters
     ----------
@@ -838,6 +954,98 @@ def list_bodies(ctx: Context, component_name: str | None = None) -> str:
     except Exception as e:
         logger.error(f"list_bodies failed: {e}")
         return f"Error listing bodies: {e}"
+
+
+@app.tool()
+def list_faces(ctx: Context, body_name: str) -> str:
+    """List all faces (surfaces) of a body, returning their face IDs and surface types.
+
+    Use this whenever a face ID is needed, or to answer questions about the
+    faces of a body: how many faces it has, what the first/nth face is, or
+    which faces are planes, cylinders, cones, and so on. Face IDs returned
+    here are the values accepted by ``create_named_selection`` and other
+    face-based tools.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Name of the body whose faces to list. Use ``list_bodies`` to
+        discover available body names.
+
+    Returns
+    -------
+    str
+        Newline-separated list of face descriptions, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot list faces."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        body = _find_body(design, body_name)
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+
+        lines = []
+        for face in body.faces:
+            lines.append(f"id={face.id}  surface_type={face.surface_type.name}")
+
+        logger.info(f"list_faces called for body '{body_name}'")
+        return "\n".join(lines) if lines else f"Body '{body_name}' has no faces."
+    except Exception as e:
+        logger.error(f"list_faces failed: {e}")
+        return f"Error listing faces for body '{body_name}': {e}"
+
+
+@app.tool()
+def list_edges(ctx: Context, body_name: str) -> str:
+    """List all edges (curves) of a body, returning their edge IDs and curve types.
+
+    Use this whenever an edge ID is needed, or to answer questions about the
+    edges of a body: how many edges it has, what the first/nth edge is, or
+    which edges are lines, circles, arcs, and so on. Edge IDs returned here
+    are the values accepted by ``create_named_selection`` and other
+    edge-based tools.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    body_name : str
+        Name of the body whose edges to list. Use ``list_bodies`` to
+        discover available body names.
+
+    Returns
+    -------
+    str
+        Newline-separated list of edge descriptions, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot list edges."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        body = _find_body(design, body_name)
+        if body is None:
+            return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+
+        lines = []
+        for edge in body.edges:
+            lines.append(f"id={edge.id}  curve_type={edge.curve_type.name}")
+
+        logger.info(f"list_edges called for body '{body_name}'")
+        return "\n".join(lines) if lines else f"Body '{body_name}' has no edges."
+    except Exception as e:
+        logger.error(f"list_edges failed: {e}")
+        return f"Error listing edges for body '{body_name}': {e}"
 
 
 # ---------------------------------------------------------------------------
@@ -1200,3 +1408,195 @@ def intersect_body(ctx: Context, target_body_name: str, tool_body_name: str) -> 
     except Exception as e:
         logger.error(f"intersect_body failed: {e}")
         return f"Error intersecting '{tool_body_name}' with '{target_body_name}': {e}"
+
+
+@app.tool()
+def create_named_selection(
+    ctx: Context,
+    name: str,
+    body_names: list[str] | None = None,
+    face_ids: list[str] | None = None,
+    edge_ids: list[str] | None = None,
+    beam_ids: list[str] | None = None,
+    design_point_ids: list[str] | None = None,
+    component_names: list[str] | None = None,
+    vertex_ids: list[str] | None = None,
+    datum_plane_ids: list[str] | None = None,
+    coordinate_system_ids: list[str] | None = None,
+    datum_point_ids: list[str] | None = None,
+) -> str:
+    """Create a named selection containing geometry entities.
+
+    A named selection is a labelled group of entities that can later be
+    referenced by name (e.g. for meshing or boundary conditions).
+    At least one entity list must be provided.
+
+    Typical workflow: ``list_bodies`` to find body names, then ``list_faces``
+    and ``list_edges`` on a body to obtain the face and edge IDs to pass here.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    name : str
+        Label for the named selection.
+    body_names : list of str, optional
+        Body names to include. Use ``list_bodies`` to discover names.
+    face_ids : list of str, optional
+        Face IDs to include. Use ``list_faces`` to discover face IDs of a body.
+    edge_ids : list of str, optional
+        Edge IDs to include. Use ``list_edges`` to discover edge IDs of a body.
+    beam_ids : list of str, optional
+        Beam IDs to include.
+    design_point_ids : list of str, optional
+        Design point IDs to include.
+    component_names : list of str, optional
+        Component names to include. Use ``list_components`` to discover names.
+    vertex_ids : list of str, optional
+        Vertex IDs to include (from ``body.vertices``).
+    datum_plane_ids : list of str, optional
+        Datum plane IDs to include.
+    coordinate_system_ids : list of str, optional
+        Coordinate system IDs to include.
+    datum_point_ids : list of str, optional
+        Datum point IDs to include.
+
+    Returns
+    -------
+    str
+        Confirmation message, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create named selection."
+
+    if not any(
+        [
+            body_names,
+            face_ids,
+            edge_ids,
+            beam_ids,
+            design_point_ids,
+            component_names,
+            vertex_ids,
+            datum_plane_ids,
+            coordinate_system_ids,
+            datum_point_ids,
+        ]
+    ):
+        return "At least one entity list must be provided."
+
+    try:
+        from ansys.geometry.core.misc.auxiliary import (
+            get_datum_planes_from_ids,
+            get_design_points_from_ids,
+            get_edges_from_ids,
+            get_faces_from_ids,
+            get_vertices_from_ids,
+        )
+
+        design = app_context.product_instance.get_active_design()
+        kwargs: dict = {}
+
+        if body_names:
+            bodies = []
+            for body_name in body_names:
+                body = _find_body(design, body_name)
+                if body is None:
+                    return f"Body '{body_name}' not found. Use list_bodies to see available bodies."
+                bodies.append(body)
+            kwargs["bodies"] = bodies
+
+        if component_names:
+            components = []
+            for comp_name in component_names:
+                comp = _find_component(design, comp_name)
+                if comp is None:
+                    return f"Component '{comp_name}' not found. Use list_components to see available components."
+                components.append(comp)
+            kwargs["components"] = components
+
+        if face_ids:
+            kwargs["faces"] = get_faces_from_ids(design, face_ids)
+
+        if edge_ids:
+            kwargs["edges"] = get_edges_from_ids(design, edge_ids)
+
+        if vertex_ids:
+            kwargs["vertices"] = get_vertices_from_ids(design, vertex_ids)
+
+        if design_point_ids:
+            kwargs["design_points"] = get_design_points_from_ids(design, design_point_ids)
+
+        if datum_plane_ids:
+            kwargs["datum_planes"] = get_datum_planes_from_ids(design, datum_plane_ids)
+
+        if beam_ids:
+            beams = []
+            for bid in beam_ids:
+                beam = design.search_beam(bid)
+                if beam is None:
+                    return f"Beam '{bid}' not found."
+                beams.append(beam)
+            kwargs["beams"] = beams
+
+        if coordinate_system_ids:
+            coord_systems = []
+            for csid in coordinate_system_ids:
+                cs = design.search_coordinate_system(csid)
+                if cs is None:
+                    return f"Coordinate system '{csid}' not found."
+                coord_systems.append(cs)
+            kwargs["coordinate_systems"] = coord_systems
+
+        if datum_point_ids:
+            d_points = []
+            for dpid in datum_point_ids:
+                dp = design.search_datum_point(dpid)
+                if dp is None:
+                    return f"Datum point '{dpid}' not found."
+                d_points.append(dp)
+            kwargs["datum_points"] = d_points
+
+        named_sel = design.create_named_selection(name, **kwargs)
+
+        # Build fully expanded command history entry
+        cmd_parts = []
+        if body_names:
+            cmd_parts.append(f"bodies=[{', '.join(f'design.get_body({b!r})' for b in body_names)}]")
+        if face_ids:
+            cmd_parts.append(f"faces=get_faces_from_ids(design, {face_ids!r})")
+        if edge_ids:
+            cmd_parts.append(f"edges=get_edges_from_ids(design, {edge_ids!r})")
+        if beam_ids:
+            cmd_parts.append(f"beams=[{', '.join(f'design.search_beam({b!r})' for b in beam_ids)}]")
+        if design_point_ids:
+            cmd_parts.append(
+                f"design_points=get_design_points_from_ids(design, {design_point_ids!r})"
+            )
+        if component_names:
+            cmd_parts.append(
+                f"components=[{', '.join(f'design.get_component({c!r})' for c in component_names)}]"
+            )
+        if vertex_ids:
+            cmd_parts.append(f"vertices=get_vertices_from_ids(design, {vertex_ids!r})")
+        if datum_plane_ids:
+            cmd_parts.append(f"datum_planes=get_datum_planes_from_ids(design, {datum_plane_ids!r})")
+        if coordinate_system_ids:
+            cmd_parts.append(
+                f"coordinate_systems=[{', '.join(f'design.search_coordinate_system({c!r})' for c in coordinate_system_ids)}]"
+            )
+        if datum_point_ids:
+            cmd_parts.append(
+                f"datum_points=[{', '.join(f'design.search_datum_point({d!r})' for d in datum_point_ids)}]"
+            )
+        kwargs_str = ", ".join(cmd_parts)
+        app_context.command_history.append(f"design.create_named_selection({name!r}, {kwargs_str})")
+
+        logger.info(f"create_named_selection: name={name!r}")
+        return f"Named selection '{name}' created successfully: {named_sel}"
+    except Exception as e:
+        logger.error(f"create_named_selection failed: {e}")
+        return f"Error creating named selection '{name}': {e}"

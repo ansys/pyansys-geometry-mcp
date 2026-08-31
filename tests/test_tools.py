@@ -22,27 +22,34 @@
 
 """Test tools."""
 
-from unittest.mock import MagicMock
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ansys.geometry.mcp import PyAnsysGeometryContext
 from ansys.geometry.mcp.tools import (
     _build_sketch,
+    _find_body,
     add_component,
     create_box,
     create_design,
+    create_named_selection,
     export_design_to,
     extrude_sketch,
     get_command_history,
     get_design_3d_scene,
     get_design_info,
+    get_geometry_ctx,
     get_product_status,
     get_screenshot,
     get_transcript,
+    import_geometry_file,
     intersect_body,
     list_bodies,
     list_components,
+    list_edges,
+    list_faces,
     move_body_to_component,
     read_image_in_base64,
     revolve_sketch,
@@ -363,3 +370,261 @@ def test_get_transcript(ctx):
     result = get_transcript(ctx)
     assert result.count("transcript_box") == 1
     assert "sketch.box(center=Point2D([0.0, 0.0]), width=1.0, height=1.0)" in result
+
+
+def test_create_named_selection(ctx):
+    """Test create_named_selection with bodies, faces, edges, vertices, components,
+    and all error paths: not connected, no entities, missing body, missing component."""
+    # Test the not connected case
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in create_named_selection(disconnected_ctx, "ns", body_names=["x"])
+
+    # Test the no entities provided case
+    assert "At least one entity list" in create_named_selection(ctx, "empty_ns")
+
+    # Test setup: design with a box and a component
+    create_design(ctx, "test_named_sel_001")
+    add_component(ctx, name="ns_comp")
+    create_box(
+        ctx,
+        name="ns_box",
+        width=1.0,
+        depth=1.0,
+        height=1.0,
+        parent_component_name="ns_comp",
+    )
+    create_box(ctx, name="root_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+
+    # Test not-found error paths
+    assert "not found" in create_named_selection(ctx, "bad_ns", body_names=["no_such_body"])
+    assert "not found" in create_named_selection(ctx, "bad_ns", component_names=["no_such_comp"])
+    assert "not found" in create_named_selection(ctx, "bad_ns", beam_ids=["nonexistent_beam"])
+    assert "not found" in create_named_selection(
+        ctx, "bad_ns", coordinate_system_ids=["nonexistent_cs"]
+    )
+    assert "not found" in create_named_selection(ctx, "bad_ns", datum_point_ids=["nonexistent_dp"])
+
+    # Test the bodies case
+    result = create_named_selection(ctx, "ns_bodies", body_names=["ns_box"])
+    assert "created successfully" in result
+
+    # Test the components case
+    result = create_named_selection(ctx, "ns_comps", component_names=["ns_comp"])
+    assert "created successfully" in result
+
+    app_context = get_geometry_ctx(ctx)
+    design = app_context.product_instance.get_active_design()
+
+    # Test method exception handling
+    with patch.object(design, "create_named_selection", side_effect=Exception("Test error")):
+        result = create_named_selection(ctx, "ns_error", body_names=["ns_box"])
+        assert "Error" in result
+
+    box_body = _find_body(design, "ns_box")
+    root_box_body = _find_body(design, "root_box")
+
+    face = box_body.faces[0]
+    result = create_named_selection(ctx, "ns_faces", face_ids=[face.id])
+    assert "created successfully" in result
+
+    edge = box_body.edges[0]
+    result = create_named_selection(ctx, "ns_edges", edge_ids=[edge.id])
+    assert "created successfully" in result
+
+    vertex = root_box_body.vertices[0]
+    result = create_named_selection(ctx, "ns_verts", vertex_ids=[vertex.id])
+    assert "created successfully" in result
+
+    # Test the mixed entities case
+    result = create_named_selection(
+        ctx,
+        "ns_mixed",
+        body_names=["ns_box"],
+        face_ids=[face.id],
+        edge_ids=[edge.id],
+        vertex_ids=[vertex.id],
+        component_names=["ns_comp"],
+    )
+    assert "created successfully" in result
+
+    # Test the command history records the call
+    history = app_context.command_history
+    assert any("create_named_selection" in cmd and "ns_mixed" in cmd for cmd in history)
+
+    # Test design_point_ids
+    from ansys.geometry.core.math import Frame, Plane, Point3D, UnitVector3D
+    from pint import Quantity
+
+    design.add_design_point("dp_test", Point3D([1, 2, 3]))
+    dp = design.design_points[0]
+    result = create_named_selection(ctx, "ns_design_points", design_point_ids=[dp.id])
+    assert "created successfully" in result
+
+    # Test datum_plane_ids
+    design.create_datum_plane(
+        "datp_test",
+        Plane(
+            origin=Point3D([0, 0, 0]),
+            direction_x=UnitVector3D([1, 0, 0]),
+            direction_y=UnitVector3D([0, 1, 0]),
+        ),
+    )
+    datum_pl = design.datum_planes[0]
+    result = create_named_selection(ctx, "ns_datum_planes", datum_plane_ids=[datum_pl.id])
+    assert "created successfully" in result
+
+    # Test beam_ids
+    profile = design.add_beam_circular_profile("bp_test", Quantity(0.1, "m"))
+    beam = design.create_beam(Point3D([0, 0, 0]), Point3D([1, 0, 0]), profile)
+    result = create_named_selection(ctx, "ns_beams", beam_ids=[beam.id])
+    assert "created successfully" in result
+
+    # Test coordinate_system_ids
+    cs = design.create_coordinate_system("cs_test", Frame())
+    result = create_named_selection(ctx, "ns_coord_sys", coordinate_system_ids=[cs.id])
+    assert "created successfully" in result
+
+    # Test datum_point_ids
+    design.create_datum_point("datp_pt_test", Point3D([5, 5, 5]))
+    datum_pt = design.datum_points[0]
+    result = create_named_selection(ctx, "ns_datum_points", datum_point_ids=[datum_pt.id])
+    assert "created successfully" in result
+
+
+def test_list_faces(ctx):
+    """Test list_faces returns face IDs and surface types, and handles missing/disconnected cases."""
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in list_faces(disconnected_ctx, "box")
+
+    # Body not found
+    create_design(ctx, "test_list_faces_001")
+    assert "not found" in list_faces(ctx, "nonexistent_body")
+
+    # Valid body with faces
+    create_box(ctx, name="face_box", width=1.0, depth=1.0, height=1.0)
+    result = list_faces(ctx, "face_box")
+    assert "id=" in result
+    assert "surface_type=" in result
+    # A box has 6 faces
+    assert len(result.strip().splitlines()) == 6
+
+    # Test method exception handling
+    with patch("ansys.geometry.mcp.tools._find_body", side_effect=Exception("Test error")):
+        result = list_faces(ctx, "face_box")
+        assert "Error" in result
+
+
+def test_list_edges(ctx):
+    """Test list_edges returns edge IDs and curve types, and handles missing/disconnected cases."""
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in list_edges(disconnected_ctx, "box")
+
+    # Body not found
+    create_design(ctx, "test_list_edges_001")
+    assert "not found" in list_edges(ctx, "nonexistent_body")
+
+    # Valid body with edges
+    create_box(ctx, name="edge_box", width=1.0, depth=1.0, height=1.0)
+    result = list_edges(ctx, "edge_box")
+    assert "id=" in result
+    assert "curve_type=" in result
+    # A box has 12 edges
+    assert len(result.strip().splitlines()) == 12
+
+    # Test method exception handling
+    with patch("ansys.geometry.mcp.tools._find_body", side_effect=Exception("Test error")):
+        result = list_edges(ctx, "edge_box")
+        assert "Error" in result
+
+
+def _export_box_design(
+    ctx, tmp_path_factory: pytest.TempPathFactory, name: str, fmt: str = "scdocx"
+):
+    """Create a one-box design, export it, and return the path of the exported file."""
+    create_design(ctx, name)
+    create_box(ctx, name=f"{name}_box", width=1.0, depth=1.0, height=1.0)
+
+    location = tmp_path_factory.mktemp(name)
+    result = export_design_to(ctx, file_format=fmt, folder=str(location))
+    # The written extension is format-dependent (e.g. STEP writes .stp), so read it back.
+    return Path(result.split("file: ", 1)[1])
+
+
+@pytest.mark.parametrize("file_format", ["scdocx", "step"])
+def test_import_geometry_file_open(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
+    """Test round-tripping a design: export it to disk and open it again."""
+    exported = _export_box_design(
+        ctx, tmp_path_factory, f"test_import_open_{file_format}", file_format
+    )
+    assert exported.exists()
+
+    result = import_geometry_file(ctx, file_path=str(exported), mode="open")
+    assert "Imported" in result
+    assert exported.name in result
+    assert "1 bodies" in result
+    assert "open_file(" in get_command_history(ctx)[-1]
+
+
+def test_import_geometry_file_insert(ctx, tmp_path_factory: pytest.TempPathFactory):
+    """Test inserting an exported file into an existing design as a new component."""
+    exported = _export_box_design(ctx, tmp_path_factory, "test_import_insert")
+
+    create_design(ctx, "test_import_insert_host")
+    result = import_geometry_file(ctx, file_path=str(exported), mode="insert")
+    assert "Inserted" in result
+    assert "test_import_insert_host" in result
+    assert "insert_file(" in get_command_history(ctx)[-1]
+
+
+def test_import_geometry_file_with_options(ctx, tmp_path_factory: pytest.TempPathFactory):
+    """Test importing with non-default import options."""
+    exported = _export_box_design(ctx, tmp_path_factory, "test_import_options")
+
+    result = import_geometry_file(
+        ctx,
+        file_path=str(exported),
+        import_names=True,
+        import_curves=True,
+        import_coordinate_systems=True,
+        import_named_selections=False,
+        cleanup_bodies=True,
+    )
+    assert "Imported" in result
+
+
+def test_import_geometry_file_errors(tmp_path_factory: pytest.TempPathFactory):
+    """Test the import error paths: disconnected, bad mode, bad path, and backend failure."""
+    tmp_dir = tmp_path_factory.mktemp("test_import_errors")
+
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in import_geometry_file(disconnected_ctx, file_path="anything.scdocx")
+
+    mock_ctx = MagicMock()
+
+    # Unsupported mode
+    assert "Unsupported mode" in import_geometry_file(
+        mock_ctx, file_path="anything.scdocx", mode="merge"
+    )
+
+    # Nonexistent path
+    assert "File not found" in import_geometry_file(
+        mock_ctx, file_path=str(tmp_dir / "nope.scdocx")
+    )
+
+    # Directory instead of a file
+    assert "directory" in import_geometry_file(mock_ctx, file_path=str(tmp_dir))
+
+    # Backend failure
+    file = tmp_dir / "broken.scdocx"
+    file.write_bytes(b"not a real design")
+    mock_ctx.fastmcp._lifespan_result.product_instance.open_file.side_effect = RuntimeError("boom")
+    result = import_geometry_file(mock_ctx, file_path=str(file))
+    assert "Error importing" in result
+    assert "boom" in result
