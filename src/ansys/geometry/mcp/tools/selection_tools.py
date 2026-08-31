@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""BodySelection MCP tools for PyAnsys Geometry MCP server.
+"""Selection MCP tools for PyAnsys Geometry MCP server.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
 The ``ctx`` parameter provides access to the application context (and thus
@@ -45,19 +45,166 @@ with the server before it starts.
 """
 
 from typing import Literal
+import uuid
 
 from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.selection.selection_enums import (
+from ansys.geometry.mcp.misc.auxiliary import find_body, find_component, get_geometry_ctx
+from ansys.geometry.mcp.misc.selection_enums import (
     _CURVE_TYPE_MAP,
     _SCOPE_MAP,
     _SURFACE_TYPE_MAP,
 )
-from ansys.geometry.mcp.tools import get_geometry_ctx
 
 logger = get_logger(__name__)
+
+
+def _component_tree(node, indent: int) -> list[str]:
+    lines = []
+    for comp in node.components:
+        lines.append("  " * indent + comp.name)
+        lines.extend(_component_tree(comp, indent + 1))
+    return lines
+
+
+def _body_paths(node, prefix: str) -> list[str]:
+    lines = [f"{prefix}{body.name}" for body in node.bodies]
+    for comp in node.components:
+        lines.extend(_body_paths(comp, f"{prefix}{comp.name}/"))
+    return lines
+
+
+@app.tool()
+def list_entities(
+    ctx: Context,
+    entity_type: Literal["bodies", "components", "faces", "edges"],
+    body_name: str | None = None,
+    component_name: str | None = None,
+) -> str:
+    """List the entities of a given type in the active design.
+
+    This is the discovery tool: use it to find the exact body names, component
+    names, face IDs, and edge IDs that every other tool expects as input.
+
+    Behaviour per ``entity_type``:
+
+    - ``"bodies"``: body names prefixed with their component path, e.g.
+      ``MainComponent/Cylinder``. Pass ``component_name`` to restrict the
+      listing to one component and its children.
+    - ``"components"``: the component hierarchy as an indented tree.
+    - ``"faces"``: ``id=<face id>  surface_type=<type>`` for every face of
+      ``body_name``. Use it whenever a face ID is needed, or to answer
+      questions about how many faces a body has or which faces are planes,
+      cylinders, cones, and so on.
+    - ``"edges"``: ``id=<edge id>  curve_type=<type>`` for every edge of
+      ``body_name``. Use it whenever an edge ID is needed, or to answer
+      questions about how many edges a body has or which edges are lines,
+      circles, arcs, and so on.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    entity_type : str
+        One of ``"bodies"``, ``"components"``, ``"faces"``, ``"edges"``.
+    body_name : str, optional
+        Body to inspect. Required for ``"faces"`` and ``"edges"``, ignored
+        otherwise. List the bodies first to discover valid names.
+    component_name : str, optional
+        Restrict a ``"bodies"`` listing to this component and its children.
+        Ignored for the other entity types.
+
+    Returns
+    -------
+    str
+        Newline-separated listing, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return f"Product backend is not connected. Cannot list {entity_type}."
+
+    if entity_type in ("faces", "edges") and body_name is None:
+        return f"'body_name' is required when listing {entity_type}."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        logger.info(f"list_entities: entity_type={entity_type!r}, body_name={body_name!r}")
+
+        if entity_type == "components":
+            lines = _component_tree(design, 0)
+            return "\n".join(lines) if lines else "No components found in the active design."
+
+        if entity_type == "bodies":
+            root = design if component_name is None else find_component(design, component_name)
+            if root is None:
+                return f"Component '{component_name}' not found."
+            lines = _body_paths(root, "")
+            return "\n".join(lines) if lines else "No bodies found."
+
+        body = find_body(design, body_name)
+        if body is None:
+            return (
+                f"Body '{body_name}' not found. "
+                "Use list_entities with entity_type='bodies' to see available bodies."
+            )
+
+        if entity_type == "faces":
+            lines = [f"id={face.id}  surface_type={face.surface_type.name}" for face in body.faces]
+            return "\n".join(lines) if lines else f"Body '{body_name}' has no faces."
+
+        lines = [f"id={edge.id}  curve_type={edge.curve_type.name}" for edge in body.edges]
+        return "\n".join(lines) if lines else f"Body '{body_name}' has no edges."
+    except Exception as e:
+        logger.error(f"list_entities failed: {e}")
+        return f"Error listing {entity_type}: {e}"
+
+
+@app.tool()
+def create_selection_builder(ctx: Context) -> str:
+    """Create an empty selection builder in the product backend.
+
+    The SelectionBuilder is used to build complex selections of geometry entities
+    (bodies, faces, edges) via query, filter, order, group, and extend operations.
+    Selections can also be combined, subtracted, or intersected.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+
+    Returns
+    -------
+    str
+        Selection handle (opaque ID string) that can be used in subsequent selection tools, or an
+        error message if creation fails.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create selection builder."
+
+    try:
+        selection_builder = app_context.product_instance.create_selection_builder()
+
+        # Create a handle for the selection builder to be used in other tools
+        handle = str(uuid.uuid4())
+        app_context.selection_registry[handle] = selection_builder
+
+        # Perform transcript
+        app_context.command_history.append("selection_builder=instance.create_selection_builder()")
+        app_context.command_history.append(f"handle = '{handle}'")
+        app_context.command_history.append(f"selection_registry['{handle}'] = selection_builder")
+
+        logger.info("create_selection_builder called")
+        return handle
+    except Exception as e:
+        logger.error(f"create_selection_builder failed: {e}")
+        return f"Error creating selection builder: {e}"
 
 
 @app.tool()
@@ -797,3 +944,198 @@ def extend_body_selection(
     except Exception as e:
         logger.error(f"Error extending body selection: {e}")
         return f"Error extending body selection: {e}"
+
+
+@app.tool()
+def create_named_selection(
+    ctx: Context,
+    name: str,
+    body_names: list[str] | None = None,
+    face_ids: list[str] | None = None,
+    edge_ids: list[str] | None = None,
+    beam_ids: list[str] | None = None,
+    design_point_ids: list[str] | None = None,
+    component_names: list[str] | None = None,
+    vertex_ids: list[str] | None = None,
+    datum_plane_ids: list[str] | None = None,
+    coordinate_system_ids: list[str] | None = None,
+    datum_point_ids: list[str] | None = None,
+) -> str:
+    """Create a named selection containing geometry entities.
+
+    A named selection is a labelled group of entities that can later be
+    referenced by name (e.g. for meshing or boundary conditions).
+    At least one entity list must be provided.
+
+    Typical workflow: ``list_entities`` with ``entity_type="bodies"`` to find body
+    names, then ``entity_type="faces"`` or ``"edges"`` on a body to obtain the face
+    and edge IDs to pass here.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    name : str
+        Label for the named selection.
+    body_names : list of str, optional
+        Body names to include. Use ``list_entities`` to discover names.
+    face_ids : list of str, optional
+        Face IDs to include. Use ``list_entities`` to discover face IDs of a body.
+    edge_ids : list of str, optional
+        Edge IDs to include. Use ``list_entities`` to discover edge IDs of a body.
+    beam_ids : list of str, optional
+        Beam IDs to include.
+    design_point_ids : list of str, optional
+        Design point IDs to include.
+    component_names : list of str, optional
+        Component names to include. Use ``list_entities`` to discover names.
+    vertex_ids : list of str, optional
+        Vertex IDs to include (from ``body.vertices``).
+    datum_plane_ids : list of str, optional
+        Datum plane IDs to include.
+    coordinate_system_ids : list of str, optional
+        Coordinate system IDs to include.
+    datum_point_ids : list of str, optional
+        Datum point IDs to include.
+
+    Returns
+    -------
+    str
+        Confirmation message, or an error message.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot create named selection."
+
+    if not any(
+        [
+            body_names,
+            face_ids,
+            edge_ids,
+            beam_ids,
+            design_point_ids,
+            component_names,
+            vertex_ids,
+            datum_plane_ids,
+            coordinate_system_ids,
+            datum_point_ids,
+        ]
+    ):
+        return "At least one entity list must be provided."
+
+    try:
+        from ansys.geometry.core.misc.auxiliary import (
+            get_datum_planes_from_ids,
+            get_design_points_from_ids,
+            get_edges_from_ids,
+            get_faces_from_ids,
+            get_vertices_from_ids,
+        )
+
+        design = app_context.product_instance.get_active_design()
+        kwargs: dict = {}
+
+        if body_names:
+            bodies = []
+            for body_name in body_names:
+                body = find_body(design, body_name)
+                if body is None:
+                    return (
+                        f"Body '{body_name}' not found. Use list_entities to see available bodies."
+                    )
+                bodies.append(body)
+            kwargs["bodies"] = bodies
+
+        if component_names:
+            components = []
+            for comp_name in component_names:
+                comp = find_component(design, comp_name)
+                if comp is None:
+                    return f"Component '{comp_name}' not found. Use list_entities to see available components."
+                components.append(comp)
+            kwargs["components"] = components
+
+        if face_ids:
+            kwargs["faces"] = get_faces_from_ids(design, face_ids)
+
+        if edge_ids:
+            kwargs["edges"] = get_edges_from_ids(design, edge_ids)
+
+        if vertex_ids:
+            kwargs["vertices"] = get_vertices_from_ids(design, vertex_ids)
+
+        if design_point_ids:
+            kwargs["design_points"] = get_design_points_from_ids(design, design_point_ids)
+
+        if datum_plane_ids:
+            kwargs["datum_planes"] = get_datum_planes_from_ids(design, datum_plane_ids)
+
+        if beam_ids:
+            beams = []
+            for bid in beam_ids:
+                beam = design.search_beam(bid)
+                if beam is None:
+                    return f"Beam '{bid}' not found."
+                beams.append(beam)
+            kwargs["beams"] = beams
+
+        if coordinate_system_ids:
+            coord_systems = []
+            for csid in coordinate_system_ids:
+                cs = design.search_coordinate_system(csid)
+                if cs is None:
+                    return f"Coordinate system '{csid}' not found."
+                coord_systems.append(cs)
+            kwargs["coordinate_systems"] = coord_systems
+
+        if datum_point_ids:
+            d_points = []
+            for dpid in datum_point_ids:
+                dp = design.search_datum_point(dpid)
+                if dp is None:
+                    return f"Datum point '{dpid}' not found."
+                d_points.append(dp)
+            kwargs["datum_points"] = d_points
+
+        named_sel = design.create_named_selection(name, **kwargs)
+
+        # Build fully expanded command history entry
+        cmd_parts = []
+        if body_names:
+            cmd_parts.append(f"bodies=[{', '.join(f'design.get_body({b!r})' for b in body_names)}]")
+        if face_ids:
+            cmd_parts.append(f"faces=get_faces_from_ids(design, {face_ids!r})")
+        if edge_ids:
+            cmd_parts.append(f"edges=get_edges_from_ids(design, {edge_ids!r})")
+        if beam_ids:
+            cmd_parts.append(f"beams=[{', '.join(f'design.search_beam({b!r})' for b in beam_ids)}]")
+        if design_point_ids:
+            cmd_parts.append(
+                f"design_points=get_design_points_from_ids(design, {design_point_ids!r})"
+            )
+        if component_names:
+            cmd_parts.append(
+                f"components=[{', '.join(f'design.get_component({c!r})' for c in component_names)}]"
+            )
+        if vertex_ids:
+            cmd_parts.append(f"vertices=get_vertices_from_ids(design, {vertex_ids!r})")
+        if datum_plane_ids:
+            cmd_parts.append(f"datum_planes=get_datum_planes_from_ids(design, {datum_plane_ids!r})")
+        if coordinate_system_ids:
+            cmd_parts.append(
+                f"coordinate_systems=[{', '.join(f'design.search_coordinate_system({c!r})' for c in coordinate_system_ids)}]"
+            )
+        if datum_point_ids:
+            cmd_parts.append(
+                f"datum_points=[{', '.join(f'design.search_datum_point({d!r})' for d in datum_point_ids)}]"
+            )
+        kwargs_str = ", ".join(cmd_parts)
+        app_context.command_history.append(f"design.create_named_selection({name!r}, {kwargs_str})")
+
+        logger.info(f"create_named_selection: name={name!r}")
+        return f"Named selection '{name}' created successfully: {named_sel}"
+    except Exception as e:
+        logger.error(f"create_named_selection failed: {e}")
+        return f"Error creating named selection '{name}': {e}"

@@ -20,18 +20,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Unit tests for BodySelection tools."""
+"""Unit tests for the selection tools."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ansys.geometry.mcp import tools
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
-from ansys.geometry.mcp.selection.body_selection_tools import (
+from ansys.geometry.mcp.misc.auxiliary import find_body
+from ansys.geometry.mcp.tools import get_geometry_ctx
+from ansys.geometry.mcp.tools.selection_tools import (
+    create_named_selection,
     extend_body_selection,
     filter_bodies,
     group_bodies,
+    list_entities,
     order_bodies,
     select_bodies,
 )
@@ -248,3 +252,206 @@ def test_not_connected(fn, kwargs):
     mock_ctx.fastmcp._lifespan_result.product_instance = None
     result = fn(mock_ctx, **kwargs)
     assert "not connected" in result
+
+
+def test_list_bodies(ctx):
+    """Test listing bodies for the full design, a specific component, an empty component, and a missing component."""
+    tools.create_design(ctx, "test_list_bodies_001")
+    tools.add_component(ctx, name="body_comp")
+    tools.add_component(ctx, name="empty_comp")
+    tools.create_box(
+        ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp"
+    )
+
+    full = list_entities(ctx, entity_type="bodies")
+    assert "listed_box" in full
+
+    scoped = list_entities(ctx, entity_type="bodies", component_name="body_comp")
+    assert "listed_box" in scoped
+
+    assert "No bodies found" in list_entities(
+        ctx, entity_type="bodies", component_name="empty_comp"
+    )
+    assert "not found" in list_entities(
+        ctx, entity_type="bodies", component_name="nonexistent_comp"
+    )
+
+
+def test_list_faces(ctx):
+    """Test listing faces returns face IDs and surface types, and handles missing/disconnected cases."""
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in list_entities(disconnected_ctx, "faces", body_name="box")
+
+    # Missing body_name
+    assert "required" in list_entities(ctx, "faces")
+
+    # Body not found
+    tools.create_design(ctx, "test_list_faces_001")
+    assert "not found" in list_entities(ctx, "faces", body_name="nonexistent_body")
+
+    # Valid body with faces
+    tools.create_box(ctx, name="face_box", width=1.0, depth=1.0, height=1.0)
+    result = list_entities(ctx, "faces", body_name="face_box")
+    assert "id=" in result
+    assert "surface_type=" in result
+    # A box has 6 faces
+    assert len(result.strip().splitlines()) == 6
+
+    # Test method exception handling
+    with patch(
+        "ansys.geometry.mcp.tools.selection_tools.find_body", side_effect=Exception("Test error")
+    ):
+        result = list_entities(ctx, "faces", body_name="face_box")
+        assert "Error" in result
+
+
+def test_list_edges(ctx):
+    """Test listing edges returns edge IDs and curve types, and handles missing/disconnected cases."""
+    # Not connected
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in list_entities(disconnected_ctx, "edges", body_name="box")
+
+    # Missing body_name
+    assert "required" in list_entities(ctx, "edges")
+
+    # Body not found
+    tools.create_design(ctx, "test_list_edges_001")
+    assert "not found" in list_entities(ctx, "edges", body_name="nonexistent_body")
+
+    # Valid body with edges
+    tools.create_box(ctx, name="edge_box", width=1.0, depth=1.0, height=1.0)
+    result = list_entities(ctx, "edges", body_name="edge_box")
+    assert "id=" in result
+    assert "curve_type=" in result
+    # A box has 12 edges
+    assert len(result.strip().splitlines()) == 12
+
+    # Test method exception handling
+    with patch(
+        "ansys.geometry.mcp.tools.selection_tools.find_body", side_effect=Exception("Test error")
+    ):
+        result = list_entities(ctx, "edges", body_name="edge_box")
+        assert "Error" in result
+
+
+def test_create_named_selection(ctx):
+    """Test create_named_selection with bodies, faces, edges, vertices, components,
+    and all error paths: not connected, no entities, missing body, missing component."""
+    # Test the not connected case
+    disconnected_ctx = MagicMock()
+    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in create_named_selection(disconnected_ctx, "ns", body_names=["x"])
+
+    # Test the no entities provided case
+    assert "At least one entity list" in create_named_selection(ctx, "empty_ns")
+
+    # Test setup: design with a box and a component
+    tools.create_design(ctx, "test_named_sel_001")
+    tools.add_component(ctx, name="ns_comp")
+    tools.create_box(
+        ctx,
+        name="ns_box",
+        width=1.0,
+        depth=1.0,
+        height=1.0,
+        parent_component_name="ns_comp",
+    )
+    tools.create_box(ctx, name="root_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+
+    # Test not-found error paths
+    assert "not found" in create_named_selection(ctx, "bad_ns", body_names=["no_such_body"])
+    assert "not found" in create_named_selection(ctx, "bad_ns", component_names=["no_such_comp"])
+    assert "not found" in create_named_selection(ctx, "bad_ns", beam_ids=["nonexistent_beam"])
+    assert "not found" in create_named_selection(
+        ctx, "bad_ns", coordinate_system_ids=["nonexistent_cs"]
+    )
+    assert "not found" in create_named_selection(ctx, "bad_ns", datum_point_ids=["nonexistent_dp"])
+
+    # Test the bodies case
+    result = create_named_selection(ctx, "ns_bodies", body_names=["ns_box"])
+    assert "created successfully" in result
+
+    # Test the components case
+    result = create_named_selection(ctx, "ns_comps", component_names=["ns_comp"])
+    assert "created successfully" in result
+
+    app_context = get_geometry_ctx(ctx)
+    design = app_context.product_instance.get_active_design()
+
+    # Test method exception handling
+    with patch.object(design, "create_named_selection", side_effect=Exception("Test error")):
+        result = create_named_selection(ctx, "ns_error", body_names=["ns_box"])
+        assert "Error" in result
+
+    box_body = find_body(design, "ns_box")
+    root_box_body = find_body(design, "root_box")
+
+    face = box_body.faces[0]
+    result = create_named_selection(ctx, "ns_faces", face_ids=[face.id])
+    assert "created successfully" in result
+
+    edge = box_body.edges[0]
+    result = create_named_selection(ctx, "ns_edges", edge_ids=[edge.id])
+    assert "created successfully" in result
+
+    vertex = root_box_body.vertices[0]
+    result = create_named_selection(ctx, "ns_verts", vertex_ids=[vertex.id])
+    assert "created successfully" in result
+
+    # Test the mixed entities case
+    result = create_named_selection(
+        ctx,
+        "ns_mixed",
+        body_names=["ns_box"],
+        face_ids=[face.id],
+        edge_ids=[edge.id],
+        vertex_ids=[vertex.id],
+        component_names=["ns_comp"],
+    )
+    assert "created successfully" in result
+
+    # Test the command history records the call
+    history = app_context.command_history
+    assert any("create_named_selection" in cmd and "ns_mixed" in cmd for cmd in history)
+
+    # Test design_point_ids
+    from ansys.geometry.core.math import Frame, Plane, Point3D, UnitVector3D
+    from pint import Quantity
+
+    design.add_design_point("dp_test", Point3D([1, 2, 3]))
+    dp = design.design_points[0]
+    result = create_named_selection(ctx, "ns_design_points", design_point_ids=[dp.id])
+    assert "created successfully" in result
+
+    # Test datum_plane_ids
+    design.create_datum_plane(
+        "datp_test",
+        Plane(
+            origin=Point3D([0, 0, 0]),
+            direction_x=UnitVector3D([1, 0, 0]),
+            direction_y=UnitVector3D([0, 1, 0]),
+        ),
+    )
+    datum_pl = design.datum_planes[0]
+    result = create_named_selection(ctx, "ns_datum_planes", datum_plane_ids=[datum_pl.id])
+    assert "created successfully" in result
+
+    # Test beam_ids
+    profile = design.add_beam_circular_profile("bp_test", Quantity(0.1, "m"))
+    beam = design.create_beam(Point3D([0, 0, 0]), Point3D([1, 0, 0]), profile)
+    result = create_named_selection(ctx, "ns_beams", beam_ids=[beam.id])
+    assert "created successfully" in result
+
+    # Test coordinate_system_ids
+    cs = design.create_coordinate_system("cs_test", Frame())
+    result = create_named_selection(ctx, "ns_coord_sys", coordinate_system_ids=[cs.id])
+    assert "created successfully" in result
+
+    # Test datum_point_ids
+    design.create_datum_point("datp_pt_test", Point3D([5, 5, 5]))
+    datum_pt = design.datum_points[0]
+    result = create_named_selection(ctx, "ns_datum_points", datum_point_ids=[datum_pt.id])
+    assert "created successfully" in result
