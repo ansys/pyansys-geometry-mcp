@@ -37,16 +37,16 @@ Documentation and issues
 ------------------------
 
 Documentation for the latest stable release of PyAnsys Geometry MCP is hosted at
-`PyAnsys Geometry MCP documentation <https://pyansys-geometry-mcp.docs.pyansys.com/version/stable/index.html>`_.
+`PyAnsys Geometry MCP documentation <https://geometry-mcp.docs.pyansys.com/version/stable/index.html>`_.
 
 The documentation has these sections:
 
-- `Getting started <https://pyansys-geometry-mcp.docs.pyansys.com/version/stable/getting_started/index.html>`_: Learn
-   how to install PyAnsys Geometry MCP in user mode.
-- `User guide <https://pyansys-geometry-mcp.docs.pyansys.com/version/stable/user_guide/index.html>`_: Understand key
-  concepts for implementing the tools in your workflows.
-- `Contribute <https://pyansys-geometry-mcp.docs.pyansys.com/version/stable/contributing.html>`_: Learn how to
-   contribute to the PyAnsys Geometry MCP codebase or documentation.
+- `Getting started <https://geometry-mcp.docs.pyansys.com/version/stable/getting_started/index.html>`_: Learn
+    how to install PyAnsys Geometry MCP in user mode.
+- `User guide <https://geometry-mcp.docs.pyansys.com/version/stable/user_guide/index.html>`_: Understand key
+    concepts for implementing the tools in your workflows.
+- `Contribute <https://geometry-mcp.docs.pyansys.com/version/stable/contributing.html>`_: Learn how to
+    contribute to the PyAnsys Geometry MCP codebase or documentation.
 
 In the upper right corner of the documentation's title bar, there is an option
 for switching from viewing the documentation for the latest stable release

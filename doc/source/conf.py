@@ -18,7 +18,7 @@ project = "pyansys-geometry-mcp"
 copyright = f"(c) {datetime.now().year} ANSYS, Inc. All rights reserved"
 author = "ANSYS, Inc."
 release = version = __version__
-cname = os.getenv("DOCUMENTATION_CNAME", default="pyansys-geometry-mcp.docs.pyansys.com")
+cname = os.getenv("DOCUMENTATION_CNAME", default="geometry-mcp.docs.pyansys.com")
 switcher_version = get_version_match(__version__)
 
 html_theme = "ansys_sphinx_theme"
@@ -78,6 +78,8 @@ if switcher_version != "dev":
 extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
+    "nbsphinx",
+    "myst_parser",
     "sphinx_design",
     "sphinx_click",
     "sphinx_jinja",
@@ -105,6 +107,12 @@ templates_path = ["_templates"]
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
+    ".mystnb": "jupyter_notebook",
+}
+
+nbsphinx_execute = "always"
+nbsphinx_custom_formats = {
+    ".mystnb": ["jupytext.reads", {"fmt": "mystnb"}],
 }
 
 typehints_defaults = "comma"
