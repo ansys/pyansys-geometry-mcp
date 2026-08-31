@@ -41,7 +41,7 @@ dependencies = [
   "black",
   "isort",
 ]
-urls.Documentation = "https://pyansys-geometry-mcp.docs.pyansys.com/"
+urls.Documentation = "https://geometry-mcp.docs.pyansys.com/"
 urls.Homepage = "https://github.com/ansys/pyansys-geometry-mcp"
 urls.Issues = "https://github.com/ansys/pyansys-geometry-mcp/issues"
 urls.Repository = "https://github.com/ansys/pyansys-geometry-mcp"
@@ -58,7 +58,13 @@ dev = [
 ]
 doc = [
   "ansys-sphinx-theme>=0.14",
+  "jupytext==1.19.5",
+  "myst-parser==5.1.0",
+  "nbconvert==7.17.1",
+  "nbsphinx==0.9.8",
+  "notebook==7.6.2",
   "pypdf>=4.0",
+  "quarto-cli>=1.10.18",
   "sphinx>=7.0",
   "sphinx-click>=5.0",
   "sphinx-copybutton>=0.5",

@@ -21,6 +21,13 @@ PyAnsys Geometry MCP provides MCP tools for the PyAnsys ecosystem.
         Understand key concepts for implementing the tools
         in your workflows.
 
+    .. grid-item-card:: Examples :material-regular:`code`
+        :padding: 2 2 2 2
+        :link: examples
+        :link-type: doc
+
+        Explore example workflows and use cases for PyAnsys Geometry MCP.
+
     .. grid-item-card:: Contribute :material-regular:`group`
         :padding: 2 2 2 2
         :link: contributing
@@ -35,4 +42,5 @@ PyAnsys Geometry MCP provides MCP tools for the PyAnsys ecosystem.
 
     getting_started/index
     user_guide/index
+    examples
     contributing

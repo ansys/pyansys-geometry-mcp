@@ -207,7 +207,6 @@ marimo/_lsp/
 __marimo__/
 doc/_build/
 doc/source/api/
-doc/source/examples/
 *sg_executions_times*
 
 scripts
