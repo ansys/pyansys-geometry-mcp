@@ -20,6 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-"""Selection MCP tools package. Importing this package registers all selection tools."""
+"""Miscellaneous PyAnsys Geometry MCP helpers package."""
 
-import ansys.geometry.mcp.selection.body_selection_tools  # noqa: F401
+from ansys.geometry.mcp.misc.auxiliary import build_sketch, find_body, find_component  # noqa: F401

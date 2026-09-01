@@ -1,0 +1,154 @@
+# Copyright (C) 2026 Synopsys, Inc. and ANSYS, Inc. All rights reserved.
+# SPDX-License-Identifier: MIT
+#
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""MCP visualization tools for PyAnsys Geometry MCP server.
+
+Tools that render the active design or read the resulting images.
+
+Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
+The ``ctx`` parameter provides access to the application context (and thus
+to the live product instance and command history).
+
+How to add a tool
+-----------------
+1. Define a Python function with type-annotated parameters.
+2. Add a NumPy-style docstring — the summary line becomes the tool description
+   visible to the AI assistant.
+3. Decorate it with ``@app.tool()``.
+4. Access the product instance via::
+
+       app_context = get_geometry_ctx(ctx)
+       instance = app_context.product_instance
+
+Notes
+-----
+Import this module in ``__main__.py`` (already done) to register all tools
+with the server before it starts.
+
+"""
+
+import time
+
+from ansys.common.mcp.logging_config import get_logger
+from fastmcp.server import Context
+
+from ansys.geometry.mcp import app
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
+
+logger = get_logger(__name__)
+
+
+@app.tool()
+def read_image_in_base64(ctx: Context, image_path: str) -> dict[str, str]:
+    """Read an image file and return its contents as a base64-encoded string.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    image_path : str
+        Path to the image file to read.
+
+    Returns
+    -------
+    dict of str
+        A dictionary with a single key "base64" containing the base64-encoded
+        contents of the image, or an error message if reading fails.
+
+    """
+    import base64
+    from pathlib import Path
+
+    try:
+        with Path(image_path).open("rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            return {"base64": encoded}
+    except Exception as e:
+        logger.error(f"read_image_in_base64 failed: {e}")
+        return {"error": f"Error reading image '{image_path}': {e}"}
+
+
+@app.tool()
+def get_screenshot(ctx: Context, path: str | None = None) -> str:
+    """Get a 3D scene screenshot of the current active design.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    path : str, optional
+        Path to save the 3D scene screenshot. If not provided, a default path is used.
+
+    Returns
+    -------
+    str
+        Path to the saved 3D scene screenshot, or an error message if the operation fails.
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot get 3D scene."
+
+    # Path can be provided by user or default to current working directory
+    # with a timestamped filename
+    path = path or f"design_3d_scene_{int(time.time())}.png"
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        _ = design.plot(screenshot=path, use_service_colors=True)  # noqa: F841
+
+        # Perform transcript
+        app_context.command_history.append(
+            f"design.plot(screenshot={path!r}, use_service_colors=True)"
+        )
+
+        logger.info(f"get_design_3d_scene called, saved to {path}")
+        return f"3D scene screenshot saved: {path}"
+    except Exception as e:
+        logger.error(f"get_design_3d_scene failed: {e}")
+        return f"Error getting 3D scene screenshot: {e}"
+
+
+@app.tool()
+def get_design_3d_scene(ctx: Context) -> None:
+    """Get a 3D scene window of the current active design.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+
+    """
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot get 3D scene."
+
+    try:
+        design = app_context.product_instance.get_active_design()
+        _ = design.plot(use_service_colors=True)  # noqa: F841
+
+        return f"3D scene window opened."
+    except Exception as e:
+        logger.error(f"get_design_3d_scene failed: {e}")
+        return f"Error getting 3D scene window: {e}"

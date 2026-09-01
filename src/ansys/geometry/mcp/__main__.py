@@ -30,7 +30,6 @@ from ansys.common.mcp.logging_config import setup_logging
 from ansys.geometry.mcp import app
 
 # Import tools module to register all @app.tool() decorators with the server.
-import ansys.geometry.mcp.selection  # noqa: F401
 import ansys.geometry.mcp.tools  # noqa: F401
 
 
