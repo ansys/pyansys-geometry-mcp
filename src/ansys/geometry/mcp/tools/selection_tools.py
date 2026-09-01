@@ -523,9 +523,10 @@ def select_entities(
                 )
             if entity_type == "body":
                 matching = method(min=min_value, max=max_value)
+                call = f"{method_name}(min={min_value}, max={max_value})"
             else:
                 matching = method(_DEFAULT_RANGE_TYPE, min=min_value, max=max_value)
-            call = f"{method_name}({min_value}, {max_value})"
+                call = f"{method_name}(RangeType.RANGETYPE_INTERSECT, min={min_value}, max={max_value})"
         elif criteria == "color":
             if not color:
                 return "Color must be provided for 'color' criterion."
