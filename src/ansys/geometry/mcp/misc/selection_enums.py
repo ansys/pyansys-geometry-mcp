@@ -24,7 +24,7 @@
 
 from ansys.geometry.core.designer.edge import CurveType
 from ansys.geometry.core.designer.face import SurfaceType
-from ansys.geometry.core.selection_builder.selection_builder import ExtendScope
+from ansys.geometry.core.selection_builder.selection_builder import ExtendScope, RangeType
 
 _SURFACE_TYPE_MAP = {
     "plane": SurfaceType.SURFACETYPE_PLANE,
@@ -52,3 +52,6 @@ _SCOPE_MAP = {
     "visible": ExtendScope.EXTENDSCOPE_VISIBLE,
     "body": ExtendScope.EXTENDSCOPE_BODY,
 }
+
+# Face and edge location queries require an explicit range type; bodies do not take one.
+_DEFAULT_RANGE_TYPE = RangeType.RANGETYPE_INTERSECT
