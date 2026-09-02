@@ -37,12 +37,12 @@ from ansys.geometry.mcp.tools.modeling_tools import (
 from ansys.geometry.mcp.tools.selection_tools import (
     create_named_selection,
     create_selection_builder,
-    extend_body_selection,
-    filter_bodies,
-    group_bodies,
+    extend_selection,
+    filter_entities,
+    group_entities,
     list_entities,
-    order_bodies,
-    select_bodies,
+    order_entities,
+    select_entities,
 )
 from ansys.geometry.mcp.tools.session_tools import (
     create_design,

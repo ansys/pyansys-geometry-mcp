@@ -32,13 +32,23 @@ from ansys.geometry.mcp.misc.auxiliary import find_body
 from ansys.geometry.mcp.tools import get_geometry_ctx
 from ansys.geometry.mcp.tools.selection_tools import (
     create_named_selection,
-    extend_body_selection,
-    filter_bodies,
-    group_bodies,
+    extend_selection,
+    filter_entities,
+    group_entities,
     list_entities,
-    order_bodies,
-    select_bodies,
+    order_entities,
+    select_entities,
 )
+
+# Every handle-based tool, with a criterion valid for bodies and its error prefix.
+# "volume" on an edge is invalid for all of them, so it doubles as the unsupported case.
+_HANDLE_TOOLS = [
+    pytest.param(select_entities, "all", "Error selecting", id="select"),
+    pytest.param(filter_entities, "is_solid", "Error filtering", id="filter"),
+    pytest.param(order_entities, "volume", "Error ordering", id="order"),
+    pytest.param(group_entities, "volume", "Error grouping", id="group"),
+    pytest.param(extend_selection, "volume", "Error extending", id="extend"),
+]
 
 
 def _setup(ctx, design_name, box_name="box"):
@@ -48,214 +58,366 @@ def _setup(ctx, design_name, box_name="box"):
     return tools.create_selection_builder(ctx)
 
 
-def test_select_bodies_type_criteria(ctx: PyAnsysGeometryContext):
-    """all/visible/solid return the box; surface does not (box is solid)."""
-    handle = _setup(ctx, "test_select_bodies_types", box_name="type_box")
-
-    for criteria in ("all", "visible", "solid"):
-        result = select_bodies(ctx, handle, criteria=criteria)
-        assert isinstance(result, list), criteria
-        assert "type_box" in result, criteria
-
-    assert "type_box" not in select_bodies(ctx, handle, criteria="surface")
+def _colored_box(ctx, design_name, box_name, color):
+    """Create a box with a display color set; return the selection handle."""
+    handle = _setup(ctx, design_name, box_name=box_name)
+    design = get_geometry_ctx(ctx).product_instance.get_active_design()
+    find_body(design, box_name).set_color(color)
+    return handle
 
 
-def test_select_bodies_name(ctx: PyAnsysGeometryContext):
-    """criteria='name' returns the matching body; omitting name returns an error string."""
-    handle = _setup(ctx, "test_select_bodies_name", box_name="named_box")
-
-    result = select_bodies(ctx, handle, criteria="name", name="named_box")
-    assert result == ["named_box"]
-
-    result = select_bodies(ctx, handle, criteria="name")
-    assert isinstance(result, str)
+# ---------------------------------------------------------------------------
+# Behaviour shared by every handle-based tool
+# ---------------------------------------------------------------------------
 
 
-def test_select_bodies_named_selection_missing_arg(ctx: PyAnsysGeometryContext):
-    """criteria='named_selection' without the named_selection arg returns an error string."""
-    handle = _setup(ctx, "test_select_bodies_named_sel")
-
-    result = select_bodies(ctx, handle, criteria="named_selection")
-    assert isinstance(result, str)
-
-
-def test_select_bodies_volume(ctx: PyAnsysGeometryContext):
-    """criteria='volume' finds the 1 m³ box in range, misses it out of range, errors with no bounds."""
-    handle = _setup(ctx, "test_select_bodies_volume", box_name="vol_box")
-
-    assert "vol_box" in select_bodies(ctx, handle, criteria="volume", min_value=0.5, max_value=2.0)
-    assert select_bodies(ctx, handle, criteria="volume", min_value=100.0, max_value=200.0) == []
-    assert isinstance(select_bodies(ctx, handle, criteria="volume", min_value=0.5), list)
-    assert (
-        select_bodies(ctx, handle, criteria="volume", max_value=2.0)
-        == "min_value must be provided for 'volume' criterion."
-    )
+@pytest.mark.parametrize("fn, criteria, error", _HANDLE_TOOLS)
+def test_tool_not_connected(fn, criteria, error):
+    """Each tool reports a disconnected backend instead of raising."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    assert "not connected" in fn(mock_ctx, "handle", "body", criteria=criteria)
 
 
-def test_select_bodies_surface_area(ctx: PyAnsysGeometryContext):
-    """criteria='surface_area' finds the 6 m² box in range and misses it out of range."""
-    handle = _setup(ctx, "test_select_bodies_surface_area", box_name="sa_box")
-
-    assert "sa_box" in select_bodies(
-        ctx, handle, criteria="surface_area", min_value=5.0, max_value=7.0
-    )
-    assert (
-        select_bodies(ctx, handle, criteria="surface_area", min_value=100.0, max_value=200.0) == []
-    )
+@pytest.mark.parametrize("fn, criteria, error", _HANDLE_TOOLS)
+def test_tool_invalid_handle(ctx: PyAnsysGeometryContext, fn, criteria, error):
+    """Each tool rejects a selection handle that is not in the registry."""
+    assert "Invalid selection handle" in fn(ctx, "not-a-real-handle", "body", criteria=criteria)
 
 
-def test_select_bodies_location(ctx: PyAnsysGeometryContext):
-    """x/y/z_location criteria find the box at centroid (0, 0, 0.5) m and miss it far away."""
-    handle = _setup(ctx, "test_select_bodies_location", box_name="loc_box")
+@pytest.mark.parametrize("fn, criteria, error", _HANDLE_TOOLS)
+def test_tool_unsupported_criteria(ctx: PyAnsysGeometryContext, fn, criteria, error):
+    """A criterion that does not apply to the entity type lists the supported ones."""
+    handle = _setup(ctx, "test_unsupported_criteria")
 
-    # centroid X=0, Y=0, Z=0.5 for a 1×1×1 m box extruded from the XY plane
-    assert "loc_box" in select_bodies(
-        ctx, handle, criteria="x_location", min_value=-0.1, max_value=0.1
-    )
-    assert select_bodies(ctx, handle, criteria="x_location", min_value=50.0, max_value=100.0) == []
-
-    assert "loc_box" in select_bodies(
-        ctx, handle, criteria="y_location", min_value=-0.1, max_value=0.1
-    )
-    assert select_bodies(ctx, handle, criteria="y_location", min_value=50.0, max_value=100.0) == []
-
-    assert "loc_box" in select_bodies(
-        ctx, handle, criteria="z_location", min_value=0.4, max_value=0.6
-    )
-    assert select_bodies(ctx, handle, criteria="z_location", min_value=50.0, max_value=100.0) == []
+    result = fn(ctx, handle, "edge", criteria="volume")
+    assert "not supported" in result
+    assert "entity_type 'edge'" in result
 
 
-def test_select_bodies_missing_args_return_error(ctx: PyAnsysGeometryContext):
-    """Color without color arg, and an invalid handle, both return error strings."""
-    handle = _setup(ctx, "test_select_bodies_errors")
+@pytest.mark.parametrize("fn, criteria, error", _HANDLE_TOOLS)
+def test_tool_reports_backend_errors(ctx: PyAnsysGeometryContext, fn, criteria, error):
+    """A failure while building the result is returned as an error string, not raised."""
+    handle = _setup(ctx, "test_tool_backend_errors")
+    select_entities(ctx, handle, "body", criteria="all")
 
-    assert isinstance(select_bodies(ctx, handle, criteria="color"), str)
-    assert isinstance(select_bodies(ctx, "not-a-real-handle", criteria="all"), str)
-
-
-def test_filter_bodies_solid_surface(ctx: PyAnsysGeometryContext):
-    """is_solid retains the box; is_surface removes it."""
-    handle = _setup(ctx, "test_filter_bodies_solid_surface", box_name="solid_box")
-
-    # Populate the selection builder with the box
-    select_bodies(ctx, handle, criteria="all")
-
-    assert "solid_box" in filter_bodies(ctx, handle, criteria="is_solid")
-    assert "solid_box" not in filter_bodies(ctx, handle, criteria="is_surface")
+    with patch(
+        "ansys.geometry.mcp.tools.selection_tools._identifiers",
+        side_effect=Exception("Test error"),
+    ):
+        assert error in fn(ctx, handle, "body", criteria=criteria)
 
 
-def test_filter_bodies_name(ctx: PyAnsysGeometryContext):
-    """criteria='name' returns the matching body; omitting name returns an error string."""
-    handle = _setup(ctx, "test_filter_bodies_name", box_name="filter_named_box")
-    select_bodies(ctx, handle, criteria="all")
-
-    result = filter_bodies(ctx, handle, criteria="name", name="filter_named_box")
-    assert result == ["filter_named_box"]
-
-    result = filter_bodies(ctx, handle, criteria="name")
-    assert isinstance(result, str)
-
-
-def test_filter_bodies_numeric_range(ctx: PyAnsysGeometryContext):
-    """Volume and surface_area range filtering; find_max/find_min also return the sole box."""
-    handle = _setup(ctx, "test_filter_bodies_numeric", box_name="num_box")
-    select_bodies(ctx, handle, criteria="all")
-
-    # 1×1×1 box: volume=1 m³, surface_area=6 m²
-    assert "num_box" in filter_bodies(ctx, handle, criteria="volume", min_value=0.5, max_value=2.0)
-    assert filter_bodies(ctx, handle, criteria="volume", min_value=100.0, max_value=200.0) == []
-
-    # Repopulate the selection builder for the next test, since filter_bodies modifies it
-    select_bodies(ctx, handle, criteria="all")
-    assert "num_box" in filter_bodies(ctx, handle, criteria="volume", find_max=True)
-
-    # Repopulate the selection builder for the next test, since filter_bodies modifies it
-    select_bodies(ctx, handle, criteria="all")
-    assert "num_box" in filter_bodies(ctx, handle, criteria="volume", find_min=True)
-
-    assert "num_box" in filter_bodies(
-        ctx, handle, criteria="surface_area", min_value=5.0, max_value=7.0
-    )
-    assert (
-        filter_bodies(ctx, handle, criteria="surface_area", min_value=100.0, max_value=200.0) == []
-    )
-
-    assert isinstance(filter_bodies(ctx, handle, criteria="volume"), str)
-
-
-def test_filter_bodies_count_criteria(ctx: PyAnsysGeometryContext):
-    """face_count/edge_count/loop_count with find_max return the box (6 faces, 12 edges, 6 loops)."""
-    handle = _setup(ctx, "test_filter_bodies_counts", box_name="count_box")
-    select_bodies(ctx, handle, criteria="all")
-
-    assert "count_box" in filter_bodies(ctx, handle, criteria="face_count", find_max=True)
-    assert "count_box" in filter_bodies(ctx, handle, criteria="edge_count", find_max=True)
-    assert "count_box" in filter_bodies(ctx, handle, criteria="loop_count", find_max=True)
-
-    assert isinstance(filter_bodies(ctx, handle, criteria="face_count"), str)
-
-
-def test_filter_bodies_surface_curve_type(ctx: PyAnsysGeometryContext):
-    """containing_surface_type='plane' and containing_curve_type='line' both match the box."""
-    handle = _setup(ctx, "test_filter_bodies_types", box_name="type_box")
-    select_bodies(ctx, handle, criteria="all")
-
-    assert "type_box" in filter_bodies(
-        ctx, handle, criteria="containing_surface_type", surface_type="plane"
-    )
-    assert "type_box" in filter_bodies(
-        ctx, handle, criteria="containing_curve_type", curve_type="line"
-    )
-
-    assert isinstance(filter_bodies(ctx, handle, criteria="containing_surface_type"), str)
-    assert isinstance(filter_bodies(ctx, handle, criteria="containing_curve_type"), str)
-
-
-def test_filter_bodies_number_surfaces_curves(ctx: PyAnsysGeometryContext):
-    """number_surfaces/number_curves with find_max return the box; missing type arg errors."""
-    handle = _setup(ctx, "test_filter_bodies_num_surf_curves", box_name="ns_box")
-    select_bodies(ctx, handle, criteria="all")
-
-    assert "ns_box" in filter_bodies(
-        ctx, handle, criteria="number_surfaces", surface_type="plane", find_max=True
-    )
-    assert "ns_box" in filter_bodies(
-        ctx, handle, criteria="number_curves", curve_type="line", find_max=True
-    )
-
-    assert isinstance(filter_bodies(ctx, handle, criteria="number_surfaces"), str)
-    assert isinstance(filter_bodies(ctx, handle, criteria="number_curves"), str)
-
-
-def test_filter_bodies_missing_args_return_error(ctx: PyAnsysGeometryContext):
-    """Color without color arg and an invalid handle both return error strings."""
-    handle = _setup(ctx, "test_filter_bodies_errors")
-    select_bodies(ctx, handle, criteria="all")
-
-    assert isinstance(filter_bodies(ctx, handle, criteria="color"), str)
-    assert isinstance(filter_bodies(ctx, "not-a-real-handle", criteria="is_solid"), str)
+# ---------------------------------------------------------------------------
+# select_entities
+# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    "fn, kwargs",
+    "criteria, kwargs, matches",
     [
-        (select_bodies, {"selection_handle": "h", "criteria": "all"}),
-        (filter_bodies, {"selection_handle": "h", "criteria": "is_solid"}),
-        (order_bodies, {"selection_handle": "h", "criteria": "volume"}),
-        (group_bodies, {"selection_handle": "h", "criteria": "volume"}),
-        (extend_body_selection, {"selection_handle": "h", "criteria": "volume"}),
+        ("all", {}, True),
+        ("visible", {}, True),
+        ("solid", {}, True),
+        ("surface", {}, False),
+        ("name", {"name": "sel_box"}, True),
+        ("volume", {"min_value": 0.5, "max_value": 2.0}, True),
+        ("volume", {"min_value": 100.0, "max_value": 200.0}, False),
+        ("volume", {"min_value": 0.5}, True),
+        ("surface_area", {"min_value": 5.0, "max_value": 7.0}, True),
+        ("surface_area", {"min_value": 100.0, "max_value": 200.0}, False),
+        # Centroid of a 1 m box extruded from the XY plane is (0, 0, 0.5).
+        ("x_location", {"min_value": -0.1, "max_value": 0.1}, True),
+        ("x_location", {"min_value": 50.0, "max_value": 100.0}, False),
+        ("y_location", {"min_value": -0.1, "max_value": 0.1}, True),
+        ("y_location", {"min_value": 50.0, "max_value": 100.0}, False),
+        ("z_location", {"min_value": 0.4, "max_value": 0.6}, True),
+        ("z_location", {"min_value": 50.0, "max_value": 100.0}, False),
     ],
 )
-def test_not_connected(fn, kwargs):
-    """Every body-selection tool returns a 'not connected' error when product_instance is None."""
-    mock_ctx = MagicMock()
-    mock_ctx.fastmcp._lifespan_result.product_instance = None
-    result = fn(mock_ctx, **kwargs)
-    assert "not connected" in result
+def test_select_bodies_by_criteria(ctx: PyAnsysGeometryContext, criteria, kwargs, matches):
+    """Each body criterion finds the box when it should and misses it when it should not."""
+    handle = _setup(ctx, f"test_select_{criteria}", box_name="sel_box")
+
+    result = select_entities(ctx, handle, "body", criteria=criteria, **kwargs)
+    assert isinstance(result, list)
+    assert ("sel_box" in result) is matches
 
 
-def test_list_bodies(ctx):
-    """Test listing bodies for the full design, a specific component, an empty component, and a missing component."""
+def test_select_bodies_named_selection_and_color(ctx: PyAnsysGeometryContext):
+    """Both criteria need entities prepared first: a named selection group and a display color."""
+    handle = _colored_box(ctx, "test_select_ns_color", "ns_color_box", "#FF0000")
+    create_named_selection(ctx, "ns_group", body_names=["ns_color_box"])
+
+    assert select_entities(
+        ctx, handle, "body", criteria="named_selection", named_selection="ns_group"
+    ) == ["ns_color_box"]
+    assert "ns_color_box" in select_entities(ctx, handle, "body", criteria="color", color="#FF0000")
+
+
+def test_select_faces_and_edges(ctx: PyAnsysGeometryContext):
+    """Face and edge queries return IDs; their location queries also pass a range type."""
+    handle = _setup(ctx, "test_select_faces_edges", box_name="fe_box")
+
+    assert len(select_entities(ctx, handle, "face", criteria="all")) == 6
+    assert len(select_entities(ctx, handle, "edge", criteria="all")) == 12
+
+    faces = select_entities(
+        ctx, handle, "face", criteria="z_location", min_value=-0.1, max_value=1.1
+    )
+    edges = select_entities(
+        ctx, handle, "edge", criteria="z_location", min_value=-0.1, max_value=1.1
+    )
+    assert len(faces) > 0
+    assert len(edges) > 0
+
+
+@pytest.mark.parametrize(
+    "kwargs, message",
+    [
+        ({"criteria": "name"}, "Body name must be provided"),
+        ({"criteria": "named_selection"}, "Named selection name must be provided"),
+        ({"criteria": "color"}, "Color must be provided"),
+        ({"criteria": "volume", "max_value": 2.0}, "min_value must be provided"),
+        ({"criteria": "x_location"}, "At least one of min_value or max_value"),
+    ],
+)
+def test_select_entities_missing_args(ctx: PyAnsysGeometryContext, kwargs, message):
+    """Criteria that need an extra argument say which one is missing."""
+    handle = _setup(ctx, "test_select_missing_args")
+
+    assert message in select_entities(ctx, handle, "body", **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# filter_entities
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "criteria, kwargs",
+    [
+        # 1×1×1 m box: volume 1 m³, surface area 6 m², 6 faces, 12 edges, 6 loops.
+        ("volume", {"min_value": 0.5, "max_value": 2.0}),
+        ("volume", {"find_max": True}),
+        ("volume", {"find_min": True}),
+        ("surface_area", {"min_value": 5.0, "max_value": 7.0}),
+        ("face_count", {"min_value": 1, "max_value": 10}),
+        ("face_count", {"find_max": True}),
+        ("edge_count", {"find_max": True}),
+        ("loop_count", {"find_max": True}),
+        ("number_surfaces", {"surface_type": "plane", "min_value": 1, "max_value": 10}),
+        ("number_surfaces", {"surface_type": "plane", "find_max": True}),
+        ("number_curves", {"curve_type": "line", "find_min": True}),
+        ("name", {"name": "num_box"}),
+        ("containing_surface_type", {"surface_type": "plane"}),
+        ("containing_curve_type", {"curve_type": "line"}),
+        ("is_solid", {}),
+    ],
+)
+def test_filter_bodies_by_criteria(ctx: PyAnsysGeometryContext, criteria, kwargs):
+    """Every body filter criterion retains the only box in the design."""
+    handle = _setup(ctx, f"test_filter_{criteria}", box_name="num_box")
+    select_entities(ctx, handle, "body", criteria="all")
+
+    assert "num_box" in filter_entities(ctx, handle, "body", criteria=criteria, **kwargs)
+
+
+def test_filter_bodies_excluding_criteria(ctx: PyAnsysGeometryContext):
+    """A solid box is dropped by an out-of-range volume and by the surface-body filter."""
+    handle = _setup(ctx, "test_filter_excluding", box_name="excl_box")
+
+    select_entities(ctx, handle, "body", criteria="all")
+    assert (
+        filter_entities(ctx, handle, "body", criteria="volume", min_value=100.0, max_value=200.0)
+        == []
+    )
+
+    select_entities(ctx, handle, "body", criteria="all")
+    assert filter_entities(ctx, handle, "body", criteria="is_surface") == []
+
+
+def test_filter_bodies_by_color(ctx: PyAnsysGeometryContext):
+    """criteria='color' keeps the body once its display color has been set."""
+    handle = _colored_box(ctx, "test_filter_color", "filter_color_box", "#00FF00")
+    select_entities(ctx, handle, "body", criteria="all")
+
+    assert "filter_color_box" in filter_entities(
+        ctx, handle, "body", criteria="color", color="#00FF00"
+    )
+
+
+def test_filter_edges(ctx: PyAnsysGeometryContext):
+    """All twelve edges of a 1 m box are 1 m long lines."""
+    handle = _setup(ctx, "test_filter_edges", box_name="filter_edge_box")
+
+    select_entities(ctx, handle, "edge", criteria="all")
+    assert (
+        len(filter_entities(ctx, handle, "edge", criteria="length", min_value=0.5, max_value=1.5))
+        == 12
+    )
+
+    select_entities(ctx, handle, "edge", criteria="all")
+    assert len(filter_entities(ctx, handle, "edge", criteria="curve_type", curve_type="line")) == 12
+
+
+@pytest.mark.parametrize(
+    "entity_type, kwargs, message",
+    [
+        ("body", {"criteria": "volume"}, "At least one of min_value or max_value"),
+        ("body", {"criteria": "name"}, "name must be provided"),
+        ("body", {"criteria": "color"}, "color must be provided"),
+        ("body", {"criteria": "containing_surface_type"}, "surface_type must be provided"),
+        ("body", {"criteria": "containing_curve_type"}, "curve_type must be provided"),
+        ("body", {"criteria": "number_surfaces"}, "surface_type must be provided"),
+        ("body", {"criteria": "number_curves"}, "curve_type must be provided"),
+        (
+            "body",
+            {"criteria": "number_surfaces", "surface_type": "plane"},
+            "At least one of min_value or max_value",
+        ),
+        (
+            "body",
+            {"criteria": "volume", "find_max": True, "find_min": True},
+            "Cannot set both",
+        ),
+        (
+            "body",
+            {
+                "criteria": "number_surfaces",
+                "surface_type": "plane",
+                "find_max": True,
+                "find_min": True,
+            },
+            "Cannot set both",
+        ),
+        ("edge", {"criteria": "curve_type"}, "curve_type must be provided"),
+    ],
+)
+def test_filter_entities_missing_args(ctx: PyAnsysGeometryContext, entity_type, kwargs, message):
+    """Criteria that need an extra argument or a single find flag say what is wrong."""
+    handle = _setup(ctx, "test_filter_missing_args")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    assert message in filter_entities(ctx, handle, entity_type, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# order_entities and group_entities
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "entity_type, kwargs, count",
+    [
+        ("body", {"criteria": "volume"}, 1),
+        ("body", {"criteria": "face_count"}, 1),
+        ("face", {"criteria": "area"}, 6),
+        ("face", {"criteria": "perimeter"}, 6),
+        ("face", {"criteria": "number_curves", "curve_type": "line"}, 6),
+        ("edge", {"criteria": "length"}, 12),
+    ],
+)
+def test_order_entities(ctx: PyAnsysGeometryContext, entity_type, kwargs, count):
+    """Ordering returns every selected entity, just rearranged."""
+    handle = _setup(ctx, "test_order_entities", box_name="order_box")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    ordered = order_entities(ctx, handle, entity_type, **kwargs)
+    assert isinstance(ordered, list)
+    assert len(ordered) == count
+
+
+def test_order_faces_number_curves_requires_curve_type(ctx: PyAnsysGeometryContext):
+    """The face number_curves criterion is the only ordering rule taking an argument."""
+    handle = _setup(ctx, "test_order_missing_arg")
+    select_entities(ctx, handle, "face", criteria="all")
+
+    assert "curve_type must be provided" in order_entities(
+        ctx, handle, "face", criteria="number_curves"
+    )
+
+
+@pytest.mark.parametrize(
+    "entity_type, criteria, count",
+    [
+        ("body", "volume", 1),
+        ("body", "name", 1),
+        ("face", "body", 6),
+        ("face", "area", 6),
+        ("edge", "curve_type", 12),
+    ],
+)
+def test_group_entities(ctx: PyAnsysGeometryContext, entity_type, criteria, count):
+    """Grouping partitions the selection, so the group sizes add up to the selection size."""
+    handle = _setup(ctx, "test_group_entities", box_name="group_box")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    groups = group_entities(ctx, handle, entity_type, criteria=criteria)
+    assert isinstance(groups, list)
+    assert sum(len(group) for group in groups) == count
+
+
+# ---------------------------------------------------------------------------
+# extend_selection
+# ---------------------------------------------------------------------------
+
+
+def test_extend_bodies_by_shared_property(ctx: PyAnsysGeometryContext):
+    """Two identical boxes: extending from one by volume pulls in the other."""
+    handle = _setup(ctx, "test_extend_shared", box_name="extend_box")
+    tools.create_box(ctx, name="extend_twin", width=1.0, height=1.0, depth=1.0)
+
+    select_entities(ctx, handle, "body", criteria="name", name="extend_box")
+    extended = extend_selection(ctx, handle, "body", criteria="volume")
+    assert "extend_box" in extended
+    assert "extend_twin" in extended
+
+
+def test_extend_bodies_nearby(ctx: PyAnsysGeometryContext):
+    """nearby is the only rule taking a distance, and the backend has no proximity search."""
+    handle = _setup(ctx, "test_extend_nearby", box_name="nearby_box")
+    select_entities(ctx, handle, "body", criteria="all")
+
+    assert "distance must be provided" in extend_selection(ctx, handle, "body", criteria="nearby")
+    assert "not supported for CoreService backends" in extend_selection(
+        ctx, handle, "body", criteria="nearby", distance=5.0
+    )
+
+    # Stand in for the missing backend support to check the call is transcribed.
+    selection = get_geometry_ctx(ctx).selection_registry[handle].bodies
+    with patch.object(selection, "extend_nearby_bodies", return_value=selection):
+        assert isinstance(
+            extend_selection(ctx, handle, "body", criteria="nearby", distance=5.0), list
+        )
+    assert any("extend_nearby_bodies(5.0, 'all')" in cmd for cmd in tools.get_command_history(ctx))
+
+
+@pytest.mark.parametrize(
+    "entity_type, criteria",
+    [
+        ("body", "surface_area"),
+        ("body", "number_of_faces"),
+        ("face", "area"),
+        ("face", "coincident"),
+        ("edge", "tangent_chain"),
+    ],
+)
+def test_extend_selection_criteria(ctx: PyAnsysGeometryContext, entity_type, criteria):
+    """Every remaining extend rule returns a list rather than an error string."""
+    handle = _setup(ctx, "test_extend_criteria", box_name="extend_crit_box")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    assert isinstance(extend_selection(ctx, handle, entity_type, criteria=criteria), list)
+
+
+# ---------------------------------------------------------------------------
+# list_entities
+# ---------------------------------------------------------------------------
+
+
+def test_list_bodies_and_components(ctx: PyAnsysGeometryContext):
+    """Bodies can be listed design-wide or scoped to a component; components list as a tree."""
     tools.create_design(ctx, "test_list_bodies_001")
     tools.add_component(ctx, name="body_comp")
     tools.add_component(ctx, name="empty_comp")
@@ -263,78 +425,44 @@ def test_list_bodies(ctx):
         ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp"
     )
 
-    full = list_entities(ctx, entity_type="bodies")
-    assert "listed_box" in full
+    assert "listed_box" in list_entities(ctx, entity_type="body")
+    assert "listed_box" in list_entities(ctx, entity_type="body", component_name="body_comp")
+    assert "body_comp" in list_entities(ctx, entity_type="component")
 
-    scoped = list_entities(ctx, entity_type="bodies", component_name="body_comp")
-    assert "listed_box" in scoped
-
-    assert "No bodies found" in list_entities(
-        ctx, entity_type="bodies", component_name="empty_comp"
-    )
-    assert "not found" in list_entities(
-        ctx, entity_type="bodies", component_name="nonexistent_comp"
-    )
+    assert "No bodies found" in list_entities(ctx, entity_type="body", component_name="empty_comp")
+    assert "not found" in list_entities(ctx, entity_type="body", component_name="nonexistent_comp")
 
 
-def test_list_faces(ctx):
-    """Test listing faces returns face IDs and surface types, and handles missing/disconnected cases."""
-    # Not connected
+@pytest.mark.parametrize(
+    "entity_type, detail, count",
+    [("face", "surface_type=", 6), ("edge", "curve_type=", 12)],
+)
+def test_list_faces_and_edges(ctx: PyAnsysGeometryContext, entity_type, detail, count):
+    """Listing returns one ID line per entity, and reports missing bodies and backend errors."""
     disconnected_ctx = MagicMock()
     disconnected_ctx.fastmcp._lifespan_result.product_instance = None
-    assert "not connected" in list_entities(disconnected_ctx, "faces", body_name="box")
+    assert "not connected" in list_entities(disconnected_ctx, entity_type, body_name="box")
 
-    # Missing body_name
-    assert "required" in list_entities(ctx, "faces")
+    assert "required" in list_entities(ctx, entity_type)
 
-    # Body not found
-    tools.create_design(ctx, "test_list_faces_001")
-    assert "not found" in list_entities(ctx, "faces", body_name="nonexistent_body")
+    tools.create_design(ctx, f"test_list_{entity_type}_001")
+    assert "not found" in list_entities(ctx, entity_type, body_name="nonexistent_body")
 
-    # Valid body with faces
-    tools.create_box(ctx, name="face_box", width=1.0, depth=1.0, height=1.0)
-    result = list_entities(ctx, "faces", body_name="face_box")
+    tools.create_box(ctx, name="list_box", width=1.0, depth=1.0, height=1.0)
+    result = list_entities(ctx, entity_type, body_name="list_box")
     assert "id=" in result
-    assert "surface_type=" in result
-    # A box has 6 faces
-    assert len(result.strip().splitlines()) == 6
+    assert detail in result
+    assert len(result.strip().splitlines()) == count
 
-    # Test method exception handling
     with patch(
         "ansys.geometry.mcp.tools.selection_tools.find_body", side_effect=Exception("Test error")
     ):
-        result = list_entities(ctx, "faces", body_name="face_box")
-        assert "Error" in result
+        assert "Error" in list_entities(ctx, entity_type, body_name="list_box")
 
 
-def test_list_edges(ctx):
-    """Test listing edges returns edge IDs and curve types, and handles missing/disconnected cases."""
-    # Not connected
-    disconnected_ctx = MagicMock()
-    disconnected_ctx.fastmcp._lifespan_result.product_instance = None
-    assert "not connected" in list_entities(disconnected_ctx, "edges", body_name="box")
-
-    # Missing body_name
-    assert "required" in list_entities(ctx, "edges")
-
-    # Body not found
-    tools.create_design(ctx, "test_list_edges_001")
-    assert "not found" in list_entities(ctx, "edges", body_name="nonexistent_body")
-
-    # Valid body with edges
-    tools.create_box(ctx, name="edge_box", width=1.0, depth=1.0, height=1.0)
-    result = list_entities(ctx, "edges", body_name="edge_box")
-    assert "id=" in result
-    assert "curve_type=" in result
-    # A box has 12 edges
-    assert len(result.strip().splitlines()) == 12
-
-    # Test method exception handling
-    with patch(
-        "ansys.geometry.mcp.tools.selection_tools.find_body", side_effect=Exception("Test error")
-    ):
-        result = list_entities(ctx, "edges", body_name="edge_box")
-        assert "Error" in result
+# ---------------------------------------------------------------------------
+# create_named_selection
+# ---------------------------------------------------------------------------
 
 
 def test_create_named_selection(ctx):

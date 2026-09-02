@@ -26,6 +26,12 @@ Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
 The ``ctx`` parameter provides access to the application context (and thus
 to the live product instance and command history).
 
+The query/filter/order/group/extend tools all take an ``entity_type`` of
+``"body"``, ``"face"``, or ``"edge"`` and dispatch to the matching typed
+selection on the selection builder. Not every criterion applies to every
+entity type; the tools report the supported criteria when given a bad
+combination.
+
 How to add a tool
 -----------------
 1. Define a Python function with type-annotated parameters.
@@ -54,11 +60,155 @@ from ansys.geometry.mcp import app
 from ansys.geometry.mcp.misc.auxiliary import find_body, find_component, get_geometry_ctx
 from ansys.geometry.mcp.misc.selection_enums import (
     _CURVE_TYPE_MAP,
+    _DEFAULT_RANGE_TYPE,
     _SCOPE_MAP,
     _SURFACE_TYPE_MAP,
 )
 
 logger = get_logger(__name__)
+
+EntityType = Literal["body", "face", "edge"]
+
+# Attribute on SelectionBuilder holding the typed selection, and the attribute the
+# result is written back to.
+_SELECTION_ATTR = {"body": "bodies", "face": "faces", "edge": "edges"}
+_RESULT_ATTR = {"body": "_bodies", "face": "_faces", "edge": "_edges"}
+
+_SELECT_METHODS = {
+    "body": {
+        "all": "get_all_bodies",
+        "visible": "get_all_visible_bodies",
+        "solid": "get_all_solid_bodies",
+        "surface": "get_all_surface_bodies",
+        "named_selection": "get_bodies_from_named_selection",
+        "name": "get_bodies_with_name",
+        "volume": "get_bodies_with_volume",
+        "surface_area": "get_bodies_with_surface_area",
+        "x_location": "get_bodies_with_x_location",
+        "y_location": "get_bodies_with_y_location",
+        "z_location": "get_bodies_with_z_location",
+        "color": "get_bodies_with_color",
+    },
+    "face": {
+        "all": "get_all_faces",
+        "visible": "get_all_visible_faces",
+        "named_selection": "get_faces_from_named_selection",
+        "area": "get_faces_with_area",
+        "x_location": "get_faces_with_x_location",
+        "y_location": "get_faces_with_y_location",
+        "z_location": "get_faces_with_z_location",
+        "color": "get_faces_with_color",
+    },
+    "edge": {
+        "all": "get_all_edges",
+        "visible": "get_all_visible_edges",
+        "named_selection": "get_edges_from_named_selection",
+        "length": "get_edges_with_length",
+        "x_location": "get_edges_with_x_location",
+        "y_location": "get_edges_with_y_location",
+        "z_location": "get_edges_with_z_location",
+    },
+}
+
+_SELECT_NO_ARG = ("all", "visible", "solid", "surface")
+_MEASURE_CRITERIA = ("volume", "surface_area", "area", "perimeter", "length")
+_LOCATION_CRITERIA = ("x_location", "y_location", "z_location")
+
+# Criteria supporting min/max ranges plus find_max/find_min, per entity type.
+_FILTER_RANGE_CRITERIA = {
+    "body": ("volume", "surface_area", "face_count", "edge_count", "loop_count"),
+    "face": ("area", "perimeter", "edge_count", "loop_count"),
+    "edge": ("length",),
+}
+# Criteria counting entities of a given surface/curve type.
+_FILTER_TYPED_COUNT_CRITERIA = {
+    "body": ("number_surfaces", "number_curves"),
+    "face": ("number_curves",),
+    "edge": (),
+}
+# Criteria taking no numeric range.
+_FILTER_OTHER_CRITERIA = {
+    "body": (
+        "color",
+        "name",
+        "containing_surface_type",
+        "containing_curve_type",
+        "is_surface",
+        "is_solid",
+    ),
+    "face": ("color", "containing_curve_type"),
+    "edge": ("curve_type",),
+}
+# Count-based criteria the backend expects as integers.
+_INT_CRITERIA = ("face_count", "edge_count", "loop_count", "number_surfaces", "number_curves")
+
+_ORDER_CRITERIA = {
+    "body": (
+        "volume",
+        "surface_area",
+        "face_count",
+        "edge_count",
+        "loop_count",
+        "number_of_surfaces",
+        "number_of_curves",
+    ),
+    "face": ("area", "perimeter", "edge_count", "loop_count", "number_curves"),
+    "edge": ("length",),
+}
+
+_GROUP_CRITERIA = {
+    "body": (
+        "volume",
+        "surface_area",
+        "face_count",
+        "edge_count",
+        "loop_count",
+        "color",
+        "name",
+    ),
+    "face": ("area", "perimeter", "body", "edge_count", "loop_count", "color", "coincident"),
+    "edge": ("curve_type",),
+}
+
+_EXTEND_METHODS = {
+    "body": {
+        "volume": "extend_to_same_volume",
+        "surface_area": "extend_to_same_surface_area",
+        "number_of_faces": "extend_to_same_number_of_faces",
+        "number_of_edges": "extend_to_same_number_of_edges",
+        "color": "extend_to_same_color",
+        "name": "extend_to_same_name",
+        "nearby": "extend_nearby_bodies",
+    },
+    "face": {
+        "area": "extend_to_same_area",
+        "number_of_edges": "extend_to_same_number_of_edges",
+        "number_of_loops": "extend_to_same_number_of_loops",
+        "color": "extend_to_same_color",
+        "coincident": "extend_to_coincident",
+        "coaxial": "extend_to_coaxial_faces",
+    },
+    "edge": {
+        "nearby": "extend_nearby_edges",
+        "connected": "extend_to_connected",
+        "tangent_chain": "extend_to_tangent_chain",
+        "coaxial": "extend_to_coaxial_edges",
+    },
+}
+
+
+def _unsupported(criteria: str, entity_type: str, supported) -> str:
+    return (
+        f"Criterion '{criteria}' is not supported for entity_type '{entity_type}'. "
+        f"Supported criteria: {', '.join(sorted(supported))}."
+    )
+
+
+def _identifiers(entity_type: str, selection) -> list[str]:
+    """Return the names of the selected bodies, or the IDs for faces and edges."""
+    if entity_type == "body":
+        return [item.name for item in selection.items]
+    return [item.id for item in selection.items]
 
 
 def _component_tree(node, indent: int) -> list[str]:
@@ -79,7 +229,7 @@ def _body_paths(node, prefix: str) -> list[str]:
 @app.tool()
 def list_entities(
     ctx: Context,
-    entity_type: Literal["bodies", "components", "faces", "edges"],
+    entity_type: Literal["body", "component", "face", "edge"],
     body_name: str | None = None,
     component_name: str | None = None,
 ) -> str:
@@ -90,15 +240,15 @@ def list_entities(
 
     Behaviour per ``entity_type``:
 
-    - ``"bodies"``: body names prefixed with their component path, e.g.
+    - ``"body"``: body names prefixed with their component path, e.g.
       ``MainComponent/Cylinder``. Pass ``component_name`` to restrict the
       listing to one component and its children.
-    - ``"components"``: the component hierarchy as an indented tree.
-    - ``"faces"``: ``id=<face id>  surface_type=<type>`` for every face of
+    - ``"component"``: the component hierarchy as an indented tree.
+    - ``"face"``: ``id=<face id>  surface_type=<type>`` for every face of
       ``body_name``. Use it whenever a face ID is needed, or to answer
       questions about how many faces a body has or which faces are planes,
       cylinders, cones, and so on.
-    - ``"edges"``: ``id=<edge id>  curve_type=<type>`` for every edge of
+    - ``"edge"``: ``id=<edge id>  curve_type=<type>`` for every edge of
       ``body_name``. Use it whenever an edge ID is needed, or to answer
       questions about how many edges a body has or which edges are lines,
       circles, arcs, and so on.
@@ -108,12 +258,12 @@ def list_entities(
     ctx : Context
         MCP request context (injected automatically).
     entity_type : str
-        One of ``"bodies"``, ``"components"``, ``"faces"``, ``"edges"``.
+        One of ``"body"``, ``"component"``, ``"face"``, ``"edge"``.
     body_name : str, optional
-        Body to inspect. Required for ``"faces"`` and ``"edges"``, ignored
+        Body to inspect. Required for ``"face"`` and ``"edge"``, ignored
         otherwise. List the bodies first to discover valid names.
     component_name : str, optional
-        Restrict a ``"bodies"`` listing to this component and its children.
+        Restrict a ``"body"`` listing to this component and its children.
         Ignored for the other entity types.
 
     Returns
@@ -125,20 +275,20 @@ def list_entities(
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return f"Product backend is not connected. Cannot list {entity_type}."
+        return f"Product backend is not connected. Cannot list {entity_type} entities."
 
-    if entity_type in ("faces", "edges") and body_name is None:
-        return f"'body_name' is required when listing {entity_type}."
+    if entity_type in ("face", "edge") and body_name is None:
+        return f"'body_name' is required when listing {entity_type} entities."
 
     try:
         design = app_context.product_instance.get_active_design()
         logger.info(f"list_entities: entity_type={entity_type!r}, body_name={body_name!r}")
 
-        if entity_type == "components":
+        if entity_type == "component":
             lines = _component_tree(design, 0)
             return "\n".join(lines) if lines else "No components found in the active design."
 
-        if entity_type == "bodies":
+        if entity_type == "body":
             root = design if component_name is None else find_component(design, component_name)
             if root is None:
                 return f"Component '{component_name}' not found."
@@ -149,10 +299,10 @@ def list_entities(
         if body is None:
             return (
                 f"Body '{body_name}' not found. "
-                "Use list_entities with entity_type='bodies' to see available bodies."
+                "Use list_entities with entity_type='body' to see available bodies."
             )
 
-        if entity_type == "faces":
+        if entity_type == "face":
             lines = [f"id={face.id}  surface_type={face.surface_type.name}" for face in body.faces]
             return "\n".join(lines) if lines else f"Body '{body_name}' has no faces."
 
@@ -160,7 +310,7 @@ def list_entities(
         return "\n".join(lines) if lines else f"Body '{body_name}' has no edges."
     except Exception as e:
         logger.error(f"list_entities failed: {e}")
-        return f"Error listing {entity_type}: {e}"
+        return f"Error listing {entity_type} entities: {e}"
 
 
 @app.tool()
@@ -208,9 +358,10 @@ def create_selection_builder(ctx: Context) -> str:
 
 
 @app.tool()
-def select_bodies(
+def select_entities(
     ctx: Context,
     selection_handle: str,
+    entity_type: EntityType,
     criteria: Literal[
         "all",
         "visible",
@@ -220,6 +371,8 @@ def select_bodies(
         "name",
         "volume",
         "surface_area",
+        "area",
+        "length",
         "x_location",
         "y_location",
         "z_location",
@@ -231,11 +384,22 @@ def select_bodies(
     max_value: float | None = None,
     color: str | None = None,
 ) -> list[str] | str:
-    """Select bodies from a selection builder.
+    """Query the design for entities matching a property and store them in a selection builder.
 
-    Use this tool whenever you need to find bodies that match a specific
-    property. Pass one ``criteria`` value from the table below and supply
-    the corresponding extra argument(s).
+    Use this tool whenever you need to find bodies, faces, or edges that match a
+    specific property. Pass one ``criteria`` value together with the corresponding
+    extra argument(s). The result replaces whatever the selection builder held for
+    that entity type.
+
+    Criteria by ``entity_type``:
+
+    - ``"body"``: ``all``, ``visible``, ``solid``, ``surface``, ``named_selection``,
+      ``name``, ``volume``, ``surface_area``, ``x_location``, ``y_location``,
+      ``z_location``, ``color``
+    - ``"face"``: ``all``, ``visible``, ``named_selection``, ``area``,
+      ``x_location``, ``y_location``, ``z_location``, ``color``
+    - ``"edge"``: ``all``, ``visible``, ``named_selection``, ``length``,
+      ``x_location``, ``y_location``, ``z_location``
 
     Parameters
     ----------
@@ -243,52 +407,46 @@ def select_bodies(
         MCP request context (injected automatically).
     selection_handle : str
         Handle of the selection builder to use for this query.
+    entity_type : str
+        Kind of entity to select: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
-        Selection rule to apply. Accepted values:
+        Selection rule to apply:
 
         ``"all"``
-            Every body in the design. No extra arguments needed.
+            Every entity of that type in the design. No extra arguments needed.
         ``"visible"``
-            All currently visible bodies. No extra arguments needed.
+            All currently visible entities. No extra arguments needed.
         ``"solid"``
-            All solid (volumetric) bodies. No extra arguments needed.
+            Solid (volumetric) bodies. Bodies only.
         ``"surface"``
-            All surface (sheet) bodies. No extra arguments needed.
+            Surface (sheet) bodies. Bodies only.
         ``"named_selection"``
-            Bodies belonging to a named selection group.
-            Requires ``named_selection``.
+            Entities belonging to a named selection group. Requires ``named_selection``.
         ``"name"``
-            Bodies whose name matches the given string (exact match).
-            Requires ``name``.
+            Bodies whose name matches exactly. Bodies only. Requires ``name``.
         ``"volume"``
             Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
-            Requires ``min_value`` (``max_value`` optional).
+            Requires ``min_value``.
         ``"surface_area"``
             Bodies whose surface area falls in [``min_value``, ``max_value``] (m²).
-            Requires ``min_value`` (``max_value`` optional).
-        ``"x_location"``
-            Bodies whose centroid X coordinate falls in
-            [``min_value``, ``max_value``] (m).
-            Requires at least one of ``min_value`` or ``max_value``.
-        ``"y_location"``
-            Bodies whose centroid Y coordinate falls in
-            [``min_value``, ``max_value``] (m).
-            Requires at least one of ``min_value`` or ``max_value``.
-        ``"z_location"``
-            Bodies whose centroid Z coordinate falls in
-            [``min_value``, ``max_value``] (m).
+            Requires ``min_value``.
+        ``"area"``
+            Faces whose area falls in [``min_value``, ``max_value``] (m²).
+            Requires ``min_value``.
+        ``"length"``
+            Edges whose length falls in [``min_value``, ``max_value``] (m).
+            Requires ``min_value``.
+        ``"x_location"``, ``"y_location"``, ``"z_location"``
+            Entities whose location falls in [``min_value``, ``max_value``] (m).
             Requires at least one of ``min_value`` or ``max_value``.
         ``"color"``
-            Bodies with a specific display color.
-            Requires ``color`` as a hex string, e.g. ``"#FF0000"``.
+            Bodies or faces with a specific display color. Requires ``color``.
     name : str, optional
         Body name for the ``"name"`` criterion.
     named_selection : str, optional
         Named selection label for the ``"named_selection"`` criterion.
     min_value : float, optional
-        Lower bound (inclusive) for range-based criteria
-        (``"volume"``, ``"surface_area"``, ``"x_location"``,
-        ``"y_location"``, ``"z_location"``).
+        Lower bound (inclusive) for range-based criteria.
     max_value : float, optional
         Upper bound (inclusive) for range-based criteria.
         Pass ``None`` to leave the upper bound open.
@@ -298,29 +456,29 @@ def select_bodies(
     Returns
     -------
     list of str | str
-        Names of all matching bodies, or an empty list if none match.
-        Returns a string error message if the selection handle is invalid or if required arguments
-        are missing.
+        Body names, or face/edge IDs, for every match; an empty list if none match.
+        Returns a string error message if the selection handle is invalid, the
+        criterion does not apply to the entity type, or required arguments are missing.
 
     Examples
     --------
     All solid bodies:
-        ``select_bodies(criteria="solid")``
+        ``select_entities(entity_type="body", criteria="solid")``
 
-    Bodies in a named selection called "Fluid":
-        ``select_bodies(criteria="named_selection", named_selection="Fluid")``
+    All faces of the design:
+        ``select_entities(entity_type="face", criteria="all")``
 
-    Bodies with volume between 1e-6 m³ and 1e-3 m³:
-        ``select_bodies(criteria="volume", min_value=1e-6, max_value=1e-3)``
+    Edges longer than 0.01 m:
+        ``select_entities(entity_type="edge", criteria="length", min_value=0.01)``
 
     Bodies at Z > 0.05 m:
-        ``select_bodies(criteria="z_location", min_value=0.05)``
+        ``select_entities(entity_type="body", criteria="z_location", min_value=0.05)``
 
     """
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot select bodies."
+        return f"Product backend is not connected. Cannot select {entity_type} entities."
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
@@ -330,102 +488,76 @@ def select_bodies(
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
-        # Perform the selection based on the criteria
-        if criteria == "all":
-            matching_bodies = selection_builder.bodies.get_all_bodies()
-            app_context.command_history.append("selection_builder.bodies.get_all_bodies()")
-        elif criteria == "visible":
-            matching_bodies = selection_builder.bodies.get_all_visible_bodies()
-            app_context.command_history.append("selection_builder.bodies.get_all_visible_bodies()")
-        elif criteria == "solid":
-            matching_bodies = selection_builder.bodies.get_all_solid_bodies()
-            app_context.command_history.append("selection_builder.bodies.get_all_solid_bodies()")
-        elif criteria == "surface":
-            matching_bodies = selection_builder.bodies.get_all_surface_bodies()
-            app_context.command_history.append("selection_builder.bodies.get_all_surface_bodies()")
+        methods = _SELECT_METHODS[entity_type]
+        method_name = methods.get(criteria)
+        if method_name is None:
+            return _unsupported(criteria, entity_type, methods)
+
+        attr = _SELECTION_ATTR[entity_type]
+        selection = getattr(selection_builder, attr)
+        method = getattr(selection, method_name)
+
+        if criteria in _SELECT_NO_ARG:
+            matching = method()
+            call = f"{method_name}()"
         elif criteria == "named_selection":
             if not named_selection:
                 return "Named selection name must be provided for 'named_selection' criterion."
-            matching_bodies = selection_builder.bodies.get_bodies_from_named_selection(
-                named_selection
-            )
-            app_context.command_history.append(
-                f"selection_builder.bodies.get_bodies_from_named_selection('{named_selection}')"
-            )
+            matching = method(named_selection)
+            call = f"{method_name}('{named_selection}')"
         elif criteria == "name":
             if not name:
                 return "Body name must be provided for 'name' criterion."
-            matching_bodies = selection_builder.bodies.get_bodies_with_name(name)
-            app_context.command_history.append(
-                f"selection_builder.bodies.get_bodies_with_name('{name}')"
-            )
-        elif criteria in ["volume", "surface_area"]:
+            matching = method(name)
+            call = f"{method_name}('{name}')"
+        elif criteria in _MEASURE_CRITERIA:
             if min_value is None:
                 return f"min_value must be provided for '{criteria}' criterion."
-            if criteria == "volume":
-                matching_bodies = selection_builder.bodies.get_bodies_with_volume(
-                    min_value, max_value
-                )
-                app_context.command_history.append(
-                    f"selection_builder.bodies.get_bodies_with_volume({min_value}, {max_value})"
-                )
-            elif criteria == "surface_area":
-                matching_bodies = selection_builder.bodies.get_bodies_with_surface_area(
-                    min_value, max_value
-                )
-                app_context.command_history.append(
-                    f"selection_builder.bodies.get_bodies_with_surface_area({min_value}, {max_value})"
-                )
-        elif criteria in ["x_location", "y_location", "z_location"]:
+            matching = method(min_value, max_value)
+            call = f"{method_name}({min_value}, {max_value})"
+        elif criteria in _LOCATION_CRITERIA:
             if min_value is None and max_value is None:
-                return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
-            elif criteria == "x_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_x_location(
-                    min=min_value, max=max_value
+                return (
+                    f"At least one of min_value or max_value must be provided "
+                    f"for '{criteria}' criterion."
                 )
-                app_context.command_history.append(
-                    f"selection_builder.bodies.get_bodies_with_x_location({min_value}, {max_value})"
-                )
-            elif criteria == "y_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_y_location(
-                    min=min_value, max=max_value
-                )
-                app_context.command_history.append(
-                    f"selection_builder.bodies.get_bodies_with_y_location({min_value}, {max_value})"
-                )
-            elif criteria == "z_location":
-                matching_bodies = selection_builder.bodies.get_bodies_with_z_location(
-                    min=min_value, max=max_value
-                )
-                app_context.command_history.append(
-                    f"selection_builder.bodies.get_bodies_with_z_location({min_value}, {max_value})"
-                )
+            if entity_type == "body":
+                matching = method(min=min_value, max=max_value)
+                call = f"{method_name}(min={min_value}, max={max_value})"
+            else:
+                matching = method(_DEFAULT_RANGE_TYPE, min=min_value, max=max_value)
+                call = f"{method_name}(RangeType.RANGETYPE_INTERSECT, min={min_value}, max={max_value})"
         elif criteria == "color":
             if not color:
                 return "Color must be provided for 'color' criterion."
-            matching_bodies = selection_builder.bodies.get_bodies_with_color(color)
-            app_context.command_history.append(
-                f"selection_builder.bodies.get_bodies_with_color('{color}')"
-            )
-        else:
-            return f"Unknown selection criterion: {criteria}"
+            matching = method(color)
+            call = f"{method_name}('{color}')"
 
-        selection_builder._bodies = matching_bodies
-        app_context.command_history.append(f"selection_builder._bodies = matching_bodies")
-        logger.info(f"Selected {len(matching_bodies.items)} bodies using criterion '{criteria}'.")
-        return [body.name for body in matching_bodies.items]
+        app_context.command_history.append(f"selection_builder.{attr}.{call}")
+        setattr(selection_builder, _RESULT_ATTR[entity_type], matching)
+        app_context.command_history.append(
+            f"selection_builder.{_RESULT_ATTR[entity_type]} = matching"
+        )
+        logger.info(
+            f"Selected {len(matching.items)} {entity_type} entities using criterion '{criteria}'."
+        )
+        return _identifiers(entity_type, matching)
     except Exception as e:
-        logger.error(f"Error selecting bodies: {e}")
-        return f"Error selecting bodies: {e}"
+        logger.error(f"Error selecting {entity_type} entities: {e}")
+        return f"Error selecting {entity_type} entities: {e}"
 
 
 @app.tool()
-def filter_bodies(
+def filter_entities(
     ctx: Context,
     selection_handle: str,
+    entity_type: EntityType,
     criteria: Literal[
         "volume",
         "surface_area",
+        "area",
+        "perimeter",
+        "length",
         "face_count",
         "edge_count",
         "loop_count",
@@ -435,6 +567,7 @@ def filter_bodies(
         "name",
         "containing_surface_type",
         "containing_curve_type",
+        "curve_type",
         "is_surface",
         "is_solid",
     ],
@@ -451,11 +584,19 @@ def filter_bodies(
     | None = None,
     color: str | None = None,
 ) -> list[str] | str:
-    """Filter bodies in a Selection Builder based on a user-defined condition.
+    """Narrow the entities already held in a selection builder to those matching a condition.
 
-    This tool allows users to apply a custom filter function to the bodies
-    in the selection builder. Pass one  ``criteria`` value from the table below
-    and supply the corresponding extra argument(s).
+    Unlike ``select_entities``, which queries the whole design, this tool only keeps
+    a subset of the current selection. Populate the selection first, then filter it.
+
+    Criteria by ``entity_type``:
+
+    - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
+      ``loop_count``, ``number_surfaces``, ``number_curves``, ``color``, ``name``,
+      ``containing_surface_type``, ``containing_curve_type``, ``is_surface``, ``is_solid``
+    - ``"face"``: ``area``, ``perimeter``, ``edge_count``, ``loop_count``,
+      ``number_curves``, ``color``, ``containing_curve_type``
+    - ``"edge"``: ``length``, ``curve_type``
 
     Parameters
     ----------
@@ -463,88 +604,65 @@ def filter_bodies(
         MCP request context (injected automatically).
     selection_handle : str
         Handle of the selection builder to use for this query.
+    entity_type : str
+        Kind of entity to filter: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
-        Filter rule to apply. Accepted values:
+        Filter rule to apply:
 
-        ``"volume"``
-            Bodies whose volume falls in [``min_value``, ``max_value``] (m³)
-            or is the maximum/minimum if ``find_max`` or ``find_min`` is True.
-            Requires at least one of ``min_value`` or ``max_value``, or exactly
-            one of ``find_max`` or ``find_min``.
-        ``"surface_area"``
-            Bodies whose surface area falls in [``min_value``, ``max_value``] (m²)
-            or is the maximum/minimum if ``find_max`` or ``find_min`` is True.
-            Requires at least one of ``min_value`` or ``max_value``, or exactly
-            one of ``find_max`` or ``find_min``.
-        ``"face_count"``
-            Bodies with a specific number of faces or is the maximum/minimum if ``find_max``
-            or ``find_min`` is True. Requires ``min_value`` and/or ``max_value``, or exactly one
-            of ``find_max`` or ``find_min``.
-        ``"edge_count"``
-            Bodies with a specific number of edges or is the maximum/minimum if ``find_max``
-            or ``find_min`` is True. Requires ``min_value`` and/or ``max_value``, or exactly one
-            of ``find_max`` or ``find_min``.
-        ``"loop_count"``
-            Bodies with a specific number of loops or is the maximum/minimum if ``find_max``
-            or ``find_min`` is True. Requires ``min_value`` and/or ``max_value``, or exactly one
-            of ``find_max`` or ``find_min``.
+        ``"volume"``, ``"surface_area"``, ``"area"``, ``"perimeter"``, ``"length"``
+            Keep entities whose measurement falls in [``min_value``, ``max_value``],
+            or the single largest/smallest when ``find_max``/``find_min`` is True.
+        ``"face_count"``, ``"edge_count"``, ``"loop_count"``
+            Keep entities with a count in [``min_value``, ``max_value``], or the
+            largest/smallest when ``find_max``/``find_min`` is True.
         ``"number_surfaces"``
-            Bodies with a specific number of surfaces or is the maximum/minimum if ``find_max``
-            or ``find_min`` is True. Requires ``min_value`` and/or ``max_value``, or exactly one
-            of ``find_max`` or ``find_min``.
-        ``"number_curves"``
-            Bodies with a specific number of curves or is the maximum/minimum if ``find_max``
-            or ``find_min`` is True. Requires ``min_value`` and/or ``max_value``, or exactly one
-            of ``find_max`` or ``find_min``.
-        ``"color"``
-            Bodies with a specific display color.
-            Requires ``color`` as a hex string, e.g. ``"#FF0000"``.
-        ``"name"``
-            Bodies whose name matches the given string (exact match).
-            Requires ``name``.
-        ``"containing_surface_type"``
-            Bodies containing surfaces of a specific type (e.g., "plane", "cylinder").
+            Keep bodies by how many surfaces of ``surface_type`` they contain.
             Requires ``surface_type``.
-        ``"containing_curve_type"``
-            Bodies containing curves of a specific type (e.g., "line", "arc").
+        ``"number_curves"``
+            Keep bodies or faces by how many curves of ``curve_type`` they contain.
             Requires ``curve_type``.
-        ``"is_surface"``
-            Filter for surface bodies only. No extra arguments needed.
-        ``"is_solid"``
-            Filter for solid bodies only. No extra arguments needed.
+        ``"color"``
+            Keep bodies or faces with a specific display color. Requires ``color``.
+        ``"name"``
+            Keep bodies whose name matches exactly. Bodies only. Requires ``name``.
+        ``"containing_surface_type"``
+            Keep bodies containing a surface of ``surface_type``. Bodies only.
+        ``"containing_curve_type"``
+            Keep bodies or faces containing a curve of ``curve_type``.
+        ``"curve_type"``
+            Keep edges of the given ``curve_type``. Edges only.
+        ``"is_surface"`` / ``"is_solid"``
+            Keep only surface or only solid bodies. Bodies only.
     name : str, optional
         Body name for the ``"name"`` criterion.
     find_max : bool, optional
-        If True, filter for the body with the maximum value of the specified criterion.
+        Keep only the entity with the maximum value of the criterion.
     find_min : bool, optional
-        If True, filter for the body with the minimum value of the specified criterion.
+        Keep only the entity with the minimum value of the criterion.
     min_value : float, optional
-        Lower bound (inclusive) for range-based criteria
-        (``"volume"``, ``"surface_area"``, ``"face_count"``,
-        ``"edge_count"``, ``"loop_count"``, ``"number_surfaces"``,
-        ``"number_curves"``).
+        Lower bound (inclusive) for range-based criteria.
     max_value : float, optional
         Upper bound (inclusive) for range-based criteria.
-        Pass ``None`` to leave the upper bound open.
     surface_type : str, optional
-        Surface type for the ``"containing_surface_type"`` criterion.
+        Surface type for the ``"number_surfaces"`` and ``"containing_surface_type"`` criteria.
     curve_type : str, optional
-        Curve type for the ``"containing_curve_type"`` criterion.
+        Curve type for the ``"number_curves"``, ``"containing_curve_type"``, and
+        ``"curve_type"`` criteria.
     color : str, optional
         Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
 
     Returns
     -------
     list of str | str
-        Names of all bodies that satisfy the filter condition, or an empty list if none match.
-        Returns a string error message if the selection handle is invalid or if required arguments
-        are missing.
+        Body names, or face/edge IDs, that survive the filter; an empty list if none do.
+        Returns a string error message if the selection handle is invalid, the
+        criterion does not apply to the entity type, or required arguments are missing.
 
     """
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot filter bodies."
+        return f"Product backend is not connected. Cannot filter {entity_type} entities."
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
@@ -554,135 +672,145 @@ def filter_bodies(
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
-        if criteria in ("volume", "surface_area", "face_count", "edge_count", "loop_count"):
+        range_criteria = _FILTER_RANGE_CRITERIA[entity_type]
+        typed_count_criteria = _FILTER_TYPED_COUNT_CRITERIA[entity_type]
+        other_criteria = _FILTER_OTHER_CRITERIA[entity_type]
+        supported = (*range_criteria, *typed_count_criteria, *other_criteria)
+        if criteria not in supported:
+            return _unsupported(criteria, entity_type, supported)
+
+        attr = _SELECTION_ATTR[entity_type]
+        selection = getattr(selection_builder, attr)
+
+        if criteria in range_criteria:
             if find_max and find_min:
                 return "Cannot set both find_max and find_min to True."
-            elif find_max:
-                method = getattr(selection_builder.bodies, f"filter_bodies_max_{criteria}")
-                matching_bodies = method()
-                app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_max_{criteria}()"
-                )
+            if find_max:
+                matching = getattr(selection, f"filter_{attr}_max_{criteria}")()
+                call = f"filter_{attr}_max_{criteria}()"
             elif find_min:
-                method = getattr(selection_builder.bodies, f"filter_bodies_min_{criteria}")
-                matching_bodies = method()
-                app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_min_{criteria}()"
-                )
+                matching = getattr(selection, f"filter_{attr}_min_{criteria}")()
+                call = f"filter_{attr}_min_{criteria}()"
             else:
                 if min_value is None and max_value is None:
-                    return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
-                # Count-based criteria require int
-                _int_criteria = ("face_count", "edge_count", "loop_count")
-                if criteria in _int_criteria:
+                    return (
+                        f"At least one of min_value or max_value must be provided "
+                        f"for '{criteria}' criterion."
+                    )
+                if criteria in _INT_CRITERIA:
                     min_val = int(min_value) if min_value is not None else None
                     max_val = int(max_value) if max_value is not None else None
                 else:
                     min_val, max_val = min_value, max_value
-                method = getattr(selection_builder.bodies, f"filter_bodies_by_{criteria}")
-                matching_bodies = method(min_val, max_val)
-                app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_by_{criteria}({min_val}, {max_val})"
-                )
-        elif criteria in ("number_surfaces", "number_curves"):
+                matching = getattr(selection, f"filter_{attr}_by_{criteria}")(min_val, max_val)
+                call = f"filter_{attr}_by_{criteria}({min_val}, {max_val})"
+        elif criteria in typed_count_criteria:
             enum_key = "surface_type" if criteria == "number_surfaces" else "curve_type"
             enum_val_str = surface_type if criteria == "number_surfaces" else curve_type
             type_map = _SURFACE_TYPE_MAP if criteria == "number_surfaces" else _CURVE_TYPE_MAP
             if enum_val_str is None:
                 return f"{enum_key} must be provided for '{criteria}' criterion."
             enum_val = type_map[enum_val_str]
+            if find_max and find_min:
+                return "Cannot set both find_max and find_min to True."
             if find_max:
-                matching_bodies = getattr(
-                    selection_builder.bodies, f"filter_bodies_max_{criteria}"
-                )(enum_val)
-                app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_max_{criteria}('{enum_val_str}')"
-                )
+                matching = getattr(selection, f"filter_{attr}_max_{criteria}")(enum_val)
+                call = f"filter_{attr}_max_{criteria}('{enum_val_str}')"
             elif find_min:
-                matching_bodies = getattr(
-                    selection_builder.bodies, f"filter_bodies_min_{criteria}"
-                )(enum_val)
-                app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_min_{criteria}('{enum_val_str}')"
-                )
+                matching = getattr(selection, f"filter_{attr}_min_{criteria}")(enum_val)
+                call = f"filter_{attr}_min_{criteria}('{enum_val_str}')"
             else:
                 if min_value is None and max_value is None:
-                    return f"At least one of min_value or max_value must be provided for '{criteria}' criterion."
-                # number_surfaces / number_curves also take int counts
+                    return (
+                        f"At least one of min_value or max_value must be provided "
+                        f"for '{criteria}' criterion."
+                    )
                 min_val = int(min_value) if min_value is not None else None
                 max_val = int(max_value) if max_value is not None else None
-                matching_bodies = getattr(selection_builder.bodies, f"filter_bodies_by_{criteria}")(
+                matching = getattr(selection, f"filter_{attr}_by_{criteria}")(
                     enum_val, min_val, max_val
                 )
-                app_context.command_history.append(
-                    f"selection_builder.bodies.filter_bodies_by_{criteria}('{enum_val_str}', {min_val}, {max_val})"
-                )
+                call = f"filter_{attr}_by_{criteria}('{enum_val_str}', {min_val}, {max_val})"
         elif criteria == "color":
             if not color:
                 return "color must be provided for 'color' criterion."
-            matching_bodies = selection_builder.bodies.filter_bodies_by_color(color)
-            app_context.command_history.append(
-                f"selection_builder.bodies.filter_bodies_by_color('{color}')"
-            )
+            matching = getattr(selection, f"filter_{attr}_by_color")(color)
+            call = f"filter_{attr}_by_color('{color}')"
         elif criteria == "name":
             if not name:
                 return "name must be provided for 'name' criterion."
-            matching_bodies = selection_builder.bodies.filter_bodies_by_name(name)
-            app_context.command_history.append(
-                f"selection_builder.bodies.filter_bodies_by_name('{name}')"
-            )
+            matching = selection.filter_bodies_by_name(name)
+            call = f"filter_bodies_by_name('{name}')"
         elif criteria == "containing_surface_type":
             if not surface_type:
                 return "surface_type must be provided for 'containing_surface_type' criterion."
-            st = _SURFACE_TYPE_MAP[surface_type]
-            matching_bodies = selection_builder.bodies.filter_bodies_containing_surface_types(st)
-            app_context.command_history.append(
-                f"selection_builder.bodies.filter_bodies_containing_surface_types('{surface_type}')"
+            matching = selection.filter_bodies_containing_surface_types(
+                _SURFACE_TYPE_MAP[surface_type]
             )
+            call = f"filter_bodies_containing_surface_types('{surface_type}')"
         elif criteria == "containing_curve_type":
             if not curve_type:
                 return "curve_type must be provided for 'containing_curve_type' criterion."
-            ct = _CURVE_TYPE_MAP[curve_type]
-            matching_bodies = selection_builder.bodies.filter_bodies_containing_curve_types(ct)
-            app_context.command_history.append(
-                f"selection_builder.bodies.filter_bodies_containing_curve_types('{curve_type}')"
+            matching = getattr(selection, f"filter_{attr}_containing_curve_types")(
+                _CURVE_TYPE_MAP[curve_type]
             )
+            call = f"filter_{attr}_containing_curve_types('{curve_type}')"
+        elif criteria == "curve_type":
+            if not curve_type:
+                return "curve_type must be provided for 'curve_type' criterion."
+            matching = selection.filter_edges_by_curve_type(_CURVE_TYPE_MAP[curve_type])
+            call = f"filter_edges_by_curve_type('{curve_type}')"
         elif criteria == "is_surface":
-            matching_bodies = selection_builder.bodies.filter_surface_bodies()
-            app_context.command_history.append("selection_builder.bodies.filter_surface_bodies()")
+            matching = selection.filter_surface_bodies()
+            call = "filter_surface_bodies()"
         elif criteria == "is_solid":
-            matching_bodies = selection_builder.bodies.filter_solid_bodies()
-            app_context.command_history.append("selection_builder.bodies.filter_solid_bodies()")
-        else:
-            return f"Unknown filter criterion: {criteria}"
+            matching = selection.filter_solid_bodies()
+            call = "filter_solid_bodies()"
 
-        selection_builder._bodies = matching_bodies
-        app_context.command_history.append(f"selection_builder._bodies = matching_bodies")
-        logger.info(f"Filtered {len(matching_bodies.items)} bodies using criterion '{criteria}'.")
-        return [body.name for body in matching_bodies.items]
+        app_context.command_history.append(f"selection_builder.{attr}.{call}")
+        setattr(selection_builder, _RESULT_ATTR[entity_type], matching)
+        app_context.command_history.append(
+            f"selection_builder.{_RESULT_ATTR[entity_type]} = matching"
+        )
+        logger.info(
+            f"Filtered to {len(matching.items)} {entity_type} entities using criterion '{criteria}'."
+        )
+        return _identifiers(entity_type, matching)
     except Exception as e:
-        logger.error(f"Error filtering bodies: {e}")
-        return f"Error filtering bodies: {e}"
+        logger.error(f"Error filtering {entity_type} entities: {e}")
+        return f"Error filtering {entity_type} entities: {e}"
 
 
 @app.tool()
-def order_bodies(
+def order_entities(
     ctx: Context,
     selection_handle: str,
+    entity_type: EntityType,
     criteria: Literal[
         "volume",
         "surface_area",
+        "area",
+        "perimeter",
+        "length",
         "face_count",
         "edge_count",
         "loop_count",
         "number_of_surfaces",
         "number_of_curves",
+        "number_curves",
     ],
+    curve_type: Literal["line", "circle", "ellipse", "nurbs", "procedural", "helix", "spline"]
+    | None = None,
 ) -> list[str] | str:
-    """Order bodies in a selection builder by a numeric property (ascending).
+    """Order the entities in a selection builder by a numeric property (ascending).
 
-    Use this tool when you want to sort bodies based on a specific numeric property.
-    Pass one ``criteria`` value from the table below.
+    Criteria by ``entity_type``:
+
+    - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
+      ``loop_count``, ``number_of_surfaces``, ``number_of_curves``
+    - ``"face"``: ``area``, ``perimeter``, ``edge_count``, ``loop_count``,
+      ``number_curves`` (requires ``curve_type``)
+    - ``"edge"``: ``length``
 
     Parameters
     ----------
@@ -690,44 +818,33 @@ def order_bodies(
         MCP request context (injected automatically).
     selection_handle : str
         Handle of the selection builder to use for this query.
+    entity_type : str
+        Kind of entity to order: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
-        Property to sort by. Accepted values:
-
-        ``"volume"``
-            Sort bodies from smallest to largest volume.
-        ``"surface_area"``
-            Sort bodies from smallest to largest surface area.
-        ``"face_count"``
-            Sort bodies from fewest to most faces.
-        ``"edge_count"``
-            Sort bodies from fewest to most edges.
-        ``"loop_count"``
-            Sort bodies from fewest to most loops.
-        ``"number_of_surfaces"``
-            Sort bodies from fewest to most surfaces.
-        ``"number_of_curves"``
-            Sort bodies from fewest to most curves.
+        Property to sort by, smallest first.
+    curve_type : str, optional
+        Curve type for the face ``"number_curves"`` criterion.
 
     Returns
     -------
     list of str | str
-        Body names in ascending order of the specified property.
-        Returns a string error message if the selection handle is invalid or if required arguments
-        are missing.
+        Body names, or face/edge IDs, in ascending order of the property.
+        Returns a string error message if the selection handle is invalid or the
+        criterion does not apply to the entity type.
 
     Examples
     --------
     Bodies sorted by volume (smallest first):
-        ``order_bodies(criteria="volume")``
+        ``order_entities(entity_type="body", criteria="volume")``
 
-    Bodies sorted by face count:
-        ``order_bodies(criteria="face_count")``
+    Faces sorted by area:
+        ``order_entities(entity_type="face", criteria="area")``
 
     """
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot order bodies."
+        return f"Product backend is not connected. Cannot order {entity_type} entities."
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
@@ -737,39 +854,65 @@ def order_bodies(
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
-        method = getattr(selection_builder.bodies, f"order_bodies_by_{criteria}", None)
-        if method is None:
-            return f"Unknown order criterion: {criteria}"
+        supported = _ORDER_CRITERIA[entity_type]
+        if criteria not in supported:
+            return _unsupported(criteria, entity_type, supported)
 
-        ordered_bodies = method()
-        app_context.command_history.append(f"selection_builder.bodies.order_bodies_by_{criteria}()")
+        attr = _SELECTION_ATTR[entity_type]
+        method = getattr(getattr(selection_builder, attr), f"order_{attr}_by_{criteria}")
 
-        selection_builder._bodies = ordered_bodies
-        app_context.command_history.append(f"selection_builder._bodies = ordered_bodies")
-        logger.info(f"Ordered {len(ordered_bodies.items)} bodies by '{criteria}'.")
-        return [body.name for body in ordered_bodies.items]
+        if criteria == "number_curves":
+            if not curve_type:
+                return "curve_type must be provided for 'number_curves' criterion."
+            ordered = method(_CURVE_TYPE_MAP[curve_type])
+            call = f"order_{attr}_by_{criteria}('{curve_type}')"
+        else:
+            ordered = method()
+            call = f"order_{attr}_by_{criteria}()"
+
+        app_context.command_history.append(f"selection_builder.{attr}.{call}")
+        setattr(selection_builder, _RESULT_ATTR[entity_type], ordered)
+        app_context.command_history.append(
+            f"selection_builder.{_RESULT_ATTR[entity_type]} = ordered"
+        )
+        logger.info(f"Ordered {len(ordered.items)} {entity_type} entities by '{criteria}'.")
+        return _identifiers(entity_type, ordered)
     except Exception as e:
-        logger.error(f"Error ordering bodies: {e}")
-        return f"Error ordering bodies: {e}"
+        logger.error(f"Error ordering {entity_type} entities: {e}")
+        return f"Error ordering {entity_type} entities: {e}"
 
 
 @app.tool()
-def group_bodies(
+def group_entities(
     ctx: Context,
     selection_handle: str,
+    entity_type: EntityType,
     criteria: Literal[
         "volume",
         "surface_area",
+        "area",
+        "perimeter",
         "face_count",
         "edge_count",
         "loop_count",
         "color",
         "name",
+        "body",
+        "coincident",
+        "curve_type",
     ],
 ) -> list[list[str]] | str:
-    """Group bodies in a selection builder by a shared property.
+    """Group the entities in a selection builder by a shared property.
 
-    Each returned group contains bodies that are equal in the chosen property.
+    Each returned group contains entities that are equal in the chosen property.
+
+    Criteria by ``entity_type``:
+
+    - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
+      ``loop_count``, ``color``, ``name``
+    - ``"face"``: ``area``, ``perimeter``, ``body`` (group faces by owning body),
+      ``edge_count``, ``loop_count``, ``color``, ``coincident``
+    - ``"edge"``: ``curve_type``
 
     Parameters
     ----------
@@ -777,44 +920,31 @@ def group_bodies(
         MCP request context (injected automatically).
     selection_handle : str
         Handle of the selection builder to use for this query.
+    entity_type : str
+        Kind of entity to group: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
-        Property to group by. Accepted values:
-
-        ``"volume"``
-            Group bodies with identical volumes.
-        ``"surface_area"``
-            Group bodies with identical surface areas.
-        ``"face_count"``
-            Group bodies with the same number of faces.
-        ``"edge_count"``
-            Group bodies with the same number of edges.
-        ``"loop_count"``
-            Group bodies with the same number of loops.
-        ``"color"``
-            Group bodies that share the same display color.
-        ``"name"``
-            Group bodies that share the same name.
+        Property to group by.
 
     Returns
     -------
     list of list of str | str
-        Each inner list contains the names of bodies belonging to one group.
-        Returns a string error message if the selection handle is invalid or if required arguments
-        are missing.
+        Each inner list holds the body names, or face/edge IDs, of one group.
+        Returns a string error message if the selection handle is invalid or the
+        criterion does not apply to the entity type.
 
     Examples
     --------
     Group all bodies by color:
-        ``group_bodies(criteria="color")``
+        ``group_entities(entity_type="body", criteria="color")``
 
-    Group all bodies by face count:
-        ``group_bodies(criteria="face_count")``
+    Group faces by the body that owns them:
+        ``group_entities(entity_type="face", criteria="body")``
 
     """
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot group bodies."
+        return f"Product backend is not connected. Cannot group {entity_type} entities."
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
@@ -824,42 +954,60 @@ def group_bodies(
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
-        method = getattr(selection_builder.bodies, f"group_bodies_by_{criteria}", None)
-        if method is None:
-            return f"Unknown group criterion: {criteria}"
+        supported = _GROUP_CRITERIA[entity_type]
+        if criteria not in supported:
+            return _unsupported(criteria, entity_type, supported)
 
-        groups = method()
-        app_context.command_history.append(f"selection_builder.bodies.group_bodies_by_{criteria}()")
+        attr = _SELECTION_ATTR[entity_type]
+        groups = getattr(getattr(selection_builder, attr), f"group_{attr}_by_{criteria}")()
+        app_context.command_history.append(f"selection_builder.{attr}.group_{attr}_by_{criteria}()")
 
-        selection_builder._bodies = groups
-        app_context.command_history.append(f"selection_builder._bodies = groups")
-        logger.info(f"Grouped bodies into {len(groups)} groups by '{criteria}'.")
-        return [[body.name for body in group.items] for group in groups]
+        setattr(selection_builder, _RESULT_ATTR[entity_type], groups)
+        app_context.command_history.append(
+            f"selection_builder.{_RESULT_ATTR[entity_type]} = groups"
+        )
+        logger.info(f"Grouped {entity_type} entities into {len(groups)} groups by '{criteria}'.")
+        return [_identifiers(entity_type, group) for group in groups]
     except Exception as e:
-        logger.error(f"Error grouping bodies: {e}")
-        return f"Error grouping bodies: {e}"
+        logger.error(f"Error grouping {entity_type} entities: {e}")
+        return f"Error grouping {entity_type} entities: {e}"
 
 
 @app.tool()
-def extend_body_selection(
+def extend_selection(
     ctx: Context,
     selection_handle: str,
+    entity_type: EntityType,
     criteria: Literal[
         "volume",
         "surface_area",
+        "area",
         "number_of_faces",
         "number_of_edges",
+        "number_of_loops",
         "color",
         "name",
         "nearby",
+        "coincident",
+        "coaxial",
+        "connected",
+        "tangent_chain",
     ],
     scope: Literal["all", "visible", "body"] = "all",
     distance: float | None = None,
 ) -> list[str] | str:
-    """Extend a body selection with additional bodies sharing a common property.
+    """Extend a selection with additional entities related to the ones already selected.
 
-    The current selection is kept and matching bodies from the specified scope
+    The current selection is kept and matching entities from the specified scope
     are added to it.
+
+    Criteria by ``entity_type``:
+
+    - ``"body"``: ``volume``, ``surface_area``, ``number_of_faces``,
+      ``number_of_edges``, ``color``, ``name``, ``nearby``
+    - ``"face"``: ``area``, ``number_of_edges``, ``number_of_loops``, ``color``,
+      ``coincident``, ``coaxial``
+    - ``"edge"``: ``nearby``, ``connected``, ``tangent_chain``, ``coaxial``
 
     Parameters
     ----------
@@ -867,49 +1015,39 @@ def extend_body_selection(
         MCP request context (injected automatically).
     selection_handle : str
         Handle of the selection builder to use for this query.
+    entity_type : str
+        Kind of entity to extend: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
-        Rule used to find additional bodies. Accepted values:
-
-        ``"volume"``
-            Add bodies with the same volume as any body in the selection.
-        ``"surface_area"``
-            Add bodies with the same surface area.
-        ``"number_of_faces"``
-            Add bodies with the same number of faces.
-        ``"number_of_edges"``
-            Add bodies with the same number of edges.
-        ``"color"``
-            Add bodies sharing the same display color.
-        ``"name"``
-            Add bodies sharing the same name.
-        ``"nearby"``
-            Add bodies within a given distance. Requires ``distance``.
+        Rule used to find additional entities. Property criteria such as
+        ``"volume"`` or ``"color"`` add entities sharing that property with any
+        entity already selected. ``"nearby"`` adds entities within ``distance``.
+        ``"coincident"``, ``"coaxial"``, ``"connected"``, and ``"tangent_chain"``
+        add entities related by topology or geometry.
     scope : str, default: ``"all"``
-        Which bodies to search when extending. Accepted values:
-        ``"all"``, ``"visible"``, ``"body"``.
+        Which entities to search when extending: ``"all"``, ``"visible"``, ``"body"``.
     distance : float, optional
         Maximum proximity distance in metres for the ``"nearby"`` criterion.
 
     Returns
     -------
     list of str | str
-        Names of all bodies in the extended selection.
-        Returns a string error message if the selection handle is invalid or if required arguments
-        are missing.
+        Body names, or face/edge IDs, in the extended selection.
+        Returns a string error message if the selection handle is invalid, the
+        criterion does not apply to the entity type, or required arguments are missing.
 
     Examples
     --------
     Add bodies that share the same color:
-        ``extend_body_selection(criteria="color")``
+        ``extend_selection(entity_type="body", criteria="color")``
 
-    Add bodies within 0.01 m:
-        ``extend_body_selection(criteria="nearby", distance=0.01)``
+    Add edges tangent to the selected ones:
+        ``extend_selection(entity_type="edge", criteria="tangent_chain")``
 
     """
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot extend body selection."
+        return f"Product backend is not connected. Cannot extend {entity_type} selection."
 
     try:
         selection_builder = app_context.selection_registry.get(selection_handle)
@@ -919,31 +1057,36 @@ def extend_body_selection(
         if selection_builder is None:
             return f"Invalid selection handle: {selection_handle}"
 
+        methods = _EXTEND_METHODS[entity_type]
+        method_name = methods.get(criteria)
+        if method_name is None:
+            return _unsupported(criteria, entity_type, methods)
+
+        attr = _SELECTION_ATTR[entity_type]
+        method = getattr(getattr(selection_builder, attr), method_name)
         scope_val = _SCOPE_MAP[scope]
 
         if criteria == "nearby":
             if distance is None:
                 return "distance must be provided for 'nearby' criterion."
-            extended = selection_builder.bodies.extend_nearby_bodies(distance, scope_val)
-            app_context.command_history.append(
-                f"selection_builder.bodies.extend_nearby_bodies({distance}, '{scope}')"
-            )
+            extended = method(distance, scope_val)
+            call = f"{method_name}({distance}, '{scope}')"
         else:
-            method = getattr(selection_builder.bodies, f"extend_to_same_{criteria}", None)
-            if method is None:
-                return f"Unknown extend criterion: {criteria}"
             extended = method(scope_val)
-            app_context.command_history.append(
-                f"selection_builder.bodies.extend_to_same_{criteria}('{scope}')"
-            )
+            call = f"{method_name}('{scope}')"
 
-        selection_builder._bodies = extended
-        app_context.command_history.append(f"selection_builder._bodies = extended")
-        logger.info(f"Extended body selection to {len(extended.items)} bodies using '{criteria}'.")
-        return [body.name for body in extended.items]
+        app_context.command_history.append(f"selection_builder.{attr}.{call}")
+        setattr(selection_builder, _RESULT_ATTR[entity_type], extended)
+        app_context.command_history.append(
+            f"selection_builder.{_RESULT_ATTR[entity_type]} = extended"
+        )
+        logger.info(
+            f"Extended selection to {len(extended.items)} {entity_type} entities using '{criteria}'."
+        )
+        return _identifiers(entity_type, extended)
     except Exception as e:
-        logger.error(f"Error extending body selection: {e}")
-        return f"Error extending body selection: {e}"
+        logger.error(f"Error extending {entity_type} selection: {e}")
+        return f"Error extending {entity_type} selection: {e}"
 
 
 @app.tool()
@@ -967,8 +1110,8 @@ def create_named_selection(
     referenced by name (e.g. for meshing or boundary conditions).
     At least one entity list must be provided.
 
-    Typical workflow: ``list_entities`` with ``entity_type="bodies"`` to find body
-    names, then ``entity_type="faces"`` or ``"edges"`` on a body to obtain the face
+    Typical workflow: ``list_entities`` with ``entity_type="body"`` to find body
+    names, then ``entity_type="face"`` or ``"edge"`` on a body to obtain the face
     and edge IDs to pass here.
 
     Parameters
