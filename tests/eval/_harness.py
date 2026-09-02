@@ -58,6 +58,7 @@ WRONG_TOOL = "wrong_tool"
 NO_TOOL = "no_tool"
 UNEXPECTED_TOOL = "unexpected_tool"
 INVALID_ARGS = "invalid_args"
+ARGS_MISMATCH = "args_mismatch"
 TEXT_MISMATCH = "text_mismatch"
 API_ERROR = "api_error"
 

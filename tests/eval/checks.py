@@ -31,10 +31,12 @@ use case, but plain text checks work through the same :func:`run_once` /
 
 import json
 import re
+from typing import Any
 
 import jsonschema
 
 from ._harness import (
+    ARGS_MISMATCH,
     CORRECT,
     INVALID_ARGS,
     NO_TOOL,
@@ -46,7 +48,7 @@ from ._harness import (
 )
 
 
-def expect_tool(name: str) -> Checker:
+def expect_tool(name: str, arguments: dict[str, Any]) -> Checker:
     """Require that exactly the tool named ``name`` is called with valid arguments."""
 
     def _check(message, schemas: dict) -> Attempt:
@@ -57,7 +59,7 @@ def expect_tool(name: str) -> Checker:
         call = calls[0]
         called_name = call.function.name
         try:
-            arguments = json.loads(call.function.arguments or "{}")
+            parsed = json.loads(call.function.arguments or "{}")
         except json.JSONDecodeError as err:
             return Attempt(
                 outcome=INVALID_ARGS,
@@ -69,7 +71,7 @@ def expect_tool(name: str) -> Checker:
             return Attempt(
                 outcome=WRONG_TOOL,
                 tool_name=called_name,
-                arguments=arguments,
+                arguments=parsed,
                 detail=f"expected {name!r}",
             )
 
@@ -78,22 +80,35 @@ def expect_tool(name: str) -> Checker:
             return Attempt(
                 outcome=WRONG_TOOL,
                 tool_name=called_name,
-                arguments=arguments,
+                arguments=parsed,
                 detail="tool name is not exposed by the MCP server",
             )
 
         try:
-            jsonschema.validate(instance=arguments, schema=schema)
+            jsonschema.validate(instance=parsed, schema=schema)
         except jsonschema.ValidationError as err:
             path = ".".join(str(part) for part in err.absolute_path) or "<root>"
             return Attempt(
                 outcome=INVALID_ARGS,
                 tool_name=called_name,
-                arguments=arguments,
+                arguments=parsed,
                 detail=f"{path}: {err.message}",
             )
 
-        return Attempt(outcome=CORRECT, tool_name=called_name, arguments=arguments)
+        mismatches = [
+            f"{key}: expected {value!r}, got {parsed.get(key)!r}"
+            for key, value in arguments.items()
+            if parsed.get(key) != value
+        ]
+        if mismatches:
+            return Attempt(
+                outcome=ARGS_MISMATCH,
+                tool_name=called_name,
+                arguments=parsed,
+                detail="; ".join(mismatches),
+            )
+
+        return Attempt(outcome=CORRECT, tool_name=called_name, arguments=parsed)
 
     return _check
 
