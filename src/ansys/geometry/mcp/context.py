@@ -52,7 +52,11 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
         When ``True``, connect to a running geometry service instead of
         launching a new one.
     selection_registry: Optional[dict[str, Any]]
-
+    python_session_synced_index : int
+        Number of leading ``command_history`` entries already executed in
+        ``python_session``. Used by ``run_python_code`` to replay commands
+        issued by other tools (which act on ``product_instance`` directly)
+        before running user-supplied code, keeping both in sync.
 
     Examples
     --------
@@ -69,3 +73,4 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     port: int = 50051
     connect_to_existing_service: bool = False
     selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)
+    python_session_synced_index: int = 0

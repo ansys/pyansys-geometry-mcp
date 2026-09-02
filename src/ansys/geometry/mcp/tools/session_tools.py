@@ -133,6 +133,11 @@ async def run_python_code(ctx: Context, code: str) -> str:
     Predefined variables : ``instance`` -> is the instance of ansys.geometry.core.Modeler()
     that should be used.
 
+    Other tools act on ``product_instance`` directly and only record an equivalent
+    code string in the command history, so before running ``code`` any not-yet-replayed
+    history entries are executed here first to keep the session's state (for example,
+    ``design`` or body variables) consistent with what those tools have already done.
+
     Parameters
     ----------
     ctx : Context
@@ -148,12 +153,32 @@ async def run_python_code(ctx: Context, code: str) -> str:
     """
     import json
 
+    app_context = get_geometry_ctx(ctx)
+
+    pending = app_context.command_history[app_context.python_session_synced_index :]
+    if pending and app_context.python_session is not None:
+        replay_result = app_context.python_session.execute("\n".join(pending), timeout=60)
+        if not replay_result.get("success"):
+            return json.dumps(
+                {
+                    "success": False,
+                    "error": (
+                        "Failed to sync prior tool commands into the Python session: "
+                        f"{replay_result.get('error', 'Unknown error')}"
+                    ),
+                    "stdout": replay_result.get("stdout", ""),
+                    "stderr": replay_result.get("stderr", ""),
+                },
+                ensure_ascii=False,
+            )
+        app_context.python_session_synced_index = len(app_context.command_history)
+
     result = await shared_tools.execute_python_code(ctx, code, timeout=60)
     try:
         parsed = json.loads(result)
         if parsed.get("success"):
-            app_context = get_geometry_ctx(ctx)
             app_context.command_history.append(code)
+            app_context.python_session_synced_index = len(app_context.command_history)
     except (json.JSONDecodeError, AttributeError):
         pass
     return result

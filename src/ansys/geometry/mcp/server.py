@@ -147,6 +147,10 @@ instance = Modeler(
 """
             self.context.python_session.execute(background_python_instance_creation)
 
+        # The commands above have already been executed directly in the persistent
+        # session, so mark them as synced to avoid replaying them from run_python_code().
+        self.context.python_session_synced_index = len(self.context.command_history)
+
         self.context.product_instance = instance
         # Log the successful launch of the product instance
         logger.info("PyAnsys Geometry MCP backend launched successfully.")
