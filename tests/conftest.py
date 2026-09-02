@@ -105,3 +105,32 @@ def pytest_addoption(parser):
         help=("Enable the tracker to update the design. Options: 'yes' or 'no'. By default, 'no'."),
         choices=("yes", "no"),
     )
+    parser.addoption(
+        "--run-llm-eval",
+        action="store_true",
+        default=False,
+        help=(
+            "Run the LLM tool-discoverability evaluation in tests/eval. Requires Azure OpenAI"
+            " credentials in the environment. Skipped by default."
+        ),
+    )
+    parser.addoption(
+        "--llm-eval-repeats",
+        action="store",
+        type=int,
+        default=5,
+        help="Number of times each evaluation prompt is sent to the model. By default, 5.",
+    )
+    parser.addoption(
+        "--llm-eval-threshold",
+        action="store",
+        type=float,
+        default=0.8,
+        help="Minimum fraction of repeats that must select the expected tool. By default, 0.8.",
+    )
+    parser.addoption(
+        "--llm-eval-report",
+        action="store",
+        default="tests/logs/llm_eval_report.json",
+        help="Path of the JSON report written by the evaluation suite.",
+    )

@@ -1,0 +1,1462 @@
+{
+  "threshold": 0.8,
+  "overall_pass_rate": 0.6896551724137931,
+  "cases": [
+    {
+      "case_id": "product_status",
+      "prompt": "Is the geometry backend up and running right now?",
+      "expected": "get_product_status",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "get_product_status",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_product_status",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_product_status",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_product_status",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_product_status",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "create_design",
+      "prompt": "Start a new design called 'bracket' so I can begin modeling.",
+      "expected": "create_design",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "create_design",
+          "arguments": {
+            "design_name": "bracket"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_design",
+          "arguments": {
+            "design_name": "bracket"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_design",
+          "arguments": {
+            "design_name": "bracket"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_design",
+          "arguments": {
+            "design_name": "bracket"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_design",
+          "arguments": {
+            "design_name": "bracket"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "design_info",
+      "prompt": "Give me a summary of the design that is currently open.",
+      "expected": "get_design_info",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_info",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_info",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_info",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_info",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_info",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "import_geometry",
+      "prompt": "Open the file C:\\models\\flange.scdocx in the geometry service.",
+      "expected": "import_geometry_file",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "import_geometry_file",
+          "arguments": {
+            "file_path": "C:\\models\\flange.scdocx"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "import_geometry_file",
+          "arguments": {
+            "file_path": "C:\\models\\flange.scdocx",
+            "mode": "open"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "import_geometry_file",
+          "arguments": {
+            "file_path": "C:\\models\\flange.scdocx",
+            "mode": "open"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "import_geometry_file",
+          "arguments": {
+            "file_path": "C:\\models\\flange.scdocx"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "import_geometry_file",
+          "arguments": {
+            "file_path": "C:\\models\\flange.scdocx",
+            "mode": "open"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "export_design",
+      "prompt": "Save the current design out as a STEP file at D:\\out\\flange.stp.",
+      "expected": "export_design_to",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "export_design_to",
+          "arguments": {
+            "file_format": "step",
+            "folder": "D:\\out"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "export_design_to",
+          "arguments": {
+            "file_format": "step",
+            "folder": "D:\\out"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "export_design_to",
+          "arguments": {
+            "file_format": "step",
+            "folder": "D:\\out\\flange.stp"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "export_design_to",
+          "arguments": {
+            "file_format": "step",
+            "folder": "D:\\out"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "export_design_to",
+          "arguments": {
+            "file_format": "step",
+            "folder": "D:\\out"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "command_history",
+      "prompt": "Which commands have been run so far in this session?",
+      "expected": "get_command_history",
+      "pass_rate": 0.6,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "get_transcript",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'get_command_history'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "get_transcript",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'get_command_history'"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_command_history",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_command_history",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_command_history",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "run_python_code",
+      "prompt": "Run this snippet in the backend Python session for me: print(sum(b.volume.m for b in design.bodies))",
+      "expected": "run_python_code",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "run_python_code",
+          "arguments": {
+            "code": "print(sum(b.volume.m for b in design.bodies))"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "run_python_code",
+          "arguments": {
+            "code": "print(sum(b.volume.m for b in instance.bodies))"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "run_python_code",
+          "arguments": {
+            "code": "print(sum(b.volume.m for b in design.bodies))"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "run_python_code",
+          "arguments": {
+            "code": "print(sum(b.volume.m for b in design.bodies))"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "run_python_code",
+          "arguments": {
+            "code": "print(sum(b.volume.m for b in design.bodies))"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "create_box",
+      "prompt": "Make a rectangular block 10 mm wide, 20 mm long and 5 mm tall named 'base'.",
+      "expected": "create_box",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "create_box",
+          "arguments": {
+            "name": "base",
+            "width": 0.01,
+            "depth": 0.02,
+            "height": 0.005
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_box",
+          "arguments": {
+            "name": "base",
+            "width": 0.01,
+            "depth": 0.02,
+            "height": 0.005
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_box",
+          "arguments": {
+            "name": "base",
+            "width": 0.01,
+            "depth": 0.02,
+            "height": 0.005
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_box",
+          "arguments": {
+            "name": "base",
+            "width": 0.01,
+            "depth": 0.02,
+            "height": 0.005
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_box",
+          "arguments": {
+            "name": "base",
+            "width": 0.01,
+            "depth": 0.02,
+            "height": 0.005
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "extrude_sketch",
+      "prompt": "Take a 25 mm circle on the XY plane and pull it up 40 mm into a solid cylinder.",
+      "expected": "extrude_sketch",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "extrude_sketch",
+          "arguments": {
+            "name": "Cylinder",
+            "sketch_primitives": [
+              {
+                "type": "circle",
+                "center_x": 0,
+                "center_y": 0,
+                "radius": 0.025
+              }
+            ],
+            "distance": 0.04
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "extrude_sketch",
+          "arguments": {
+            "name": "SolidCylinder",
+            "sketch_primitives": [
+              {
+                "type": "circle",
+                "center_x": 0.0,
+                "center_y": 0.0,
+                "radius": 0.025
+              }
+            ],
+            "distance": 0.04
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "extrude_sketch",
+          "arguments": {
+            "name": "SolidCylinder",
+            "sketch_primitives": [
+              {
+                "type": "circle",
+                "center_x": 0.0,
+                "center_y": 0.0,
+                "radius": 0.025
+              }
+            ],
+            "distance": 0.04
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "extrude_sketch",
+          "arguments": {
+            "name": "Cylinder",
+            "sketch_primitives": [
+              {
+                "type": "circle",
+                "center_x": 0,
+                "center_y": 0,
+                "radius": 0.025
+              }
+            ],
+            "distance": 0.04
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "extrude_sketch",
+          "arguments": {
+            "name": "Cylinder",
+            "sketch_primitives": [
+              {
+                "type": "circle",
+                "center_x": 0,
+                "center_y": 0,
+                "radius": 0.025
+              }
+            ],
+            "distance": 0.04
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "revolve_sketch",
+      "prompt": "Spin a profile 360 degrees about the Z axis to produce a body of revolution.",
+      "expected": "revolve_sketch",
+      "pass_rate": 0.0,
+      "attempts": [
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'revolve_sketch', no tool was called"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'revolve_sketch', no tool was called"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'revolve_sketch', no tool was called"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'revolve_sketch', no tool was called"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'revolve_sketch', no tool was called"
+        }
+      ]
+    },
+    {
+      "case_id": "subtract_body",
+      "prompt": "Cut the body named 'pin' out of the body named 'block'.",
+      "expected": "subtract_body",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "subtract_body",
+          "arguments": {
+            "target_body_name": "block",
+            "tool_body_name": "pin"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "subtract_body",
+          "arguments": {
+            "target_body_name": "block",
+            "tool_body_name": "pin"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "subtract_body",
+          "arguments": {
+            "target_body_name": "block",
+            "tool_body_name": "pin"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "subtract_body",
+          "arguments": {
+            "target_body_name": "block",
+            "tool_body_name": "pin"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "subtract_body",
+          "arguments": {
+            "target_body_name": "block",
+            "tool_body_name": "pin"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "unite_body",
+      "prompt": "Merge 'plate_left' and 'plate_right' together into a single body.",
+      "expected": "unite_body",
+      "pass_rate": 0.0,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'unite_body'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'unite_body'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'unite_body'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'unite_body'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'unite_body'"
+        }
+      ]
+    },
+    {
+      "case_id": "intersect_body",
+      "prompt": "Keep only the volume that 'sphere_a' and 'sphere_b' have in common.",
+      "expected": "intersect_body",
+      "pass_rate": 0.2,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'intersect_body'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'intersect_body'"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "intersect_body",
+          "arguments": {
+            "target_body_name": "sphere_a",
+            "tool_body_name": "sphere_b"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'intersect_body'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": "expected 'intersect_body'"
+        }
+      ]
+    },
+    {
+      "case_id": "add_component",
+      "prompt": "Create a sub-assembly called 'fasteners' in the current design.",
+      "expected": "add_component",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "add_component",
+          "arguments": {
+            "name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "add_component",
+          "arguments": {
+            "name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "add_component",
+          "arguments": {
+            "name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "add_component",
+          "arguments": {
+            "name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "add_component",
+          "arguments": {
+            "name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "move_body_to_component",
+      "prompt": "Put the body 'bolt_01' inside the 'fasteners' component.",
+      "expected": "move_body_to_component",
+      "pass_rate": 0.8,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "components"
+          },
+          "text": null,
+          "detail": "expected 'move_body_to_component'"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "move_body_to_component",
+          "arguments": {
+            "body_name": "bolt_01",
+            "target_component_name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "move_body_to_component",
+          "arguments": {
+            "body_name": "bolt_01",
+            "target_component_name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "move_body_to_component",
+          "arguments": {
+            "body_name": "bolt_01",
+            "target_component_name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "move_body_to_component",
+          "arguments": {
+            "body_name": "bolt_01",
+            "target_component_name": "fasteners"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "list_bodies",
+      "prompt": "What bodies exist in the active design?",
+      "expected": "list_entities",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "list_entities",
+          "arguments": {
+            "entity_type": "bodies"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "create_selection_builder",
+      "prompt": "Set up a new empty selection so I can start collecting bodies into it.",
+      "expected": "create_selection_builder",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "select_bodies",
+      "prompt": "Using my selection builder, pick up every solid body in the design.",
+      "expected": "select_bodies",
+      "pass_rate": 0.0,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'select_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'select_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'select_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'select_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'select_bodies'"
+        }
+      ]
+    },
+    {
+      "case_id": "filter_bodies",
+      "prompt": "From the bodies already in my selection, drop everything with a volume below 100.",
+      "expected": "filter_bodies",
+      "pass_rate": 0.0,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'filter_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'filter_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'filter_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'filter_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'filter_bodies'"
+        }
+      ]
+    },
+    {
+      "case_id": "order_bodies",
+      "prompt": "Sort the bodies currently in my selection from smallest to largest volume.",
+      "expected": "order_bodies",
+      "pass_rate": 0.0,
+      "attempts": [
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'order_bodies', no tool was called"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'order_bodies', no tool was called"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'order_bodies'"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'order_bodies', no tool was called"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'order_bodies', no tool was called"
+        }
+      ]
+    },
+    {
+      "case_id": "group_bodies",
+      "prompt": "Bucket the bodies in my selection by the colour they share.",
+      "expected": "group_bodies",
+      "pass_rate": 0.0,
+      "attempts": [
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'group_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'group_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'group_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'group_bodies'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'group_bodies'"
+        }
+      ]
+    },
+    {
+      "case_id": "extend_body_selection",
+      "prompt": "Grow my current selection to also include the bodies touching the ones I picked.",
+      "expected": "extend_body_selection",
+      "pass_rate": 0.2,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "extend_body_selection",
+          "arguments": {
+            "selection_handle": "current",
+            "criteria": "nearby",
+            "scope": "all",
+            "distance": 0.001
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'extend_body_selection'"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'extend_body_selection'"
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'extend_body_selection', no tool was called"
+        },
+        {
+          "outcome": "wrong_tool",
+          "tool_name": "create_selection_builder",
+          "arguments": {},
+          "text": null,
+          "detail": "expected 'extend_body_selection'"
+        }
+      ]
+    },
+    {
+      "case_id": "create_named_selection",
+      "prompt": "Save the bodies I selected as a named selection called 'inlet_faces'.",
+      "expected": "create_named_selection",
+      "pass_rate": 0.6,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "create_named_selection",
+          "arguments": {
+            "name": "inlet_faces"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'create_named_selection', no tool was called"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_named_selection",
+          "arguments": {
+            "name": "inlet_faces"
+          },
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "no_tool",
+          "tool_name": null,
+          "arguments": null,
+          "text": null,
+          "detail": "expected 'create_named_selection', no tool was called"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "create_named_selection",
+          "arguments": {
+            "name": "inlet_faces"
+          },
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "get_screenshot",
+      "prompt": "Show me a picture of what the model looks like right now.",
+      "expected": "get_screenshot",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "get_screenshot",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_screenshot",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_screenshot",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_screenshot",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_screenshot",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "get_design_3d_scene",
+      "prompt": "Open an interactive 3D view of the design that I can rotate.",
+      "expected": "get_design_3d_scene",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_3d_scene",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_3d_scene",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_3d_scene",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_3d_scene",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": "get_design_3d_scene",
+          "arguments": {},
+          "text": null,
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "no_tool_concept_question",
+      "prompt": "In CAD terms, what is the difference between a solid body and a surface body?",
+      "expected": "no tool",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "In CAD, the distinction between a **solid body** and a **surface body** lies in their geometric properties and representation:\n\n### **Solid Body**\n- **Definition**: A solid body is a volumetric (3D) entity that fully encloses a region of space. It has a well-defined interior and exterior.\n- **Properties**:\n  1. **Volume**: Solid bodies have a defined volume, which can be calculated.\n  2. **Mass Properties**: You can determine physical properties like density, mass, center of gravity, and moments of inertia.\n  3. **Closed Geometry**: Solid bodies consist of closed, watertight surfaces or faces.\n- **Applications**: Commonly used for structural analysis, simulations, manufacturing processes, and designing parts with physical mass.\n\n### **Surface Body**\n- **Definition**: A surface body is a 2D entity that represents only the outer shell or boundary of a shape without enclosing any volume.\n- **Properties**:\n  1. **No Volume**: Surface bodies lack volume and interior \u2014 they only have surface area.\n  2. **Non-Watertight**: They may represent open or non-enclosed geometries.\n  3. **Thickness**: Often assumed to have negligible or zero thickness for representation.\n- **Applications**: Commonly used for aerodynamic studies, aesthetic modeling, or for representing intermediate steps in design workflows.\n\n### **Key Differences**\n| Feature            | Solid Body                          | Surface Body                      |\n|--------------------|-------------------------------------|-----------------------------------|\n| **Volume**         | Defined, encloses space            | None, defines boundaries only    |\n| **Mass Properties**| Available (e.g., weight, density)  | Not applicable                   |\n| **Watertightness** | Closed geometry                    | Open geometry                    |\n| **Applications**   | Structural, manufacturing          | Aerodynamic, aesthetic           |\n\nIn short, solid bodies represent 3D physical objects, while surface bodies are idealized 2D boundaries or shells that do not enclose any physical space.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "In CAD (Computer-Aided Design), the difference between a solid body and a surface body lies in how they represent geometry in three-dimensional modeling:\n\n1. **Solid Body**:\n   - A solid body represents a fully enclosed, volumetric object. It has mass, volume, and can be used for operations like boolean merges, cuts, or intersections.\n   - Solid bodies are watertight, meaning there are no gaps or holes in their geometry.\n   - They are used for models that require real-world physical properties, such as weight and material density.\n   - Examples include cubes, spheres, cylinders, or any enclosed 3D shapes.\n\n2. **Surface Body**:\n   - A surface body represents a 3D shape defined solely by its outer surfaces, without enclosing any volume. It is essentially a set of two-dimensional surfaces in 3D space.\n   - Surface bodies do not have mass or volume; they are just shells and can be open, meaning they may have edges that are not connected.\n   - They are often used for design representations, aesthetic modeling, or when creating complex shapes, which will later be converted or thickened into solid bodies.\n   - Examples include open sheets, patches, or surfaces that form part of a larger design.\n\nIn summary, **solid bodies have enclosed volumes and physical properties**, while **surface bodies are the 3D outer surfaces of objects without volume**.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "In CAD (Computer-Aided Design), the terms \"solid body\" and \"surface body\" refer to two different types of geometry models used to represent objects. Here's an explanation of their differences:\n\n### Solid Body:\n1. **Definition**: A solid body represents a three-dimensional (3D) object with a fully enclosed volume. It has a defined interior and exterior, with a mass and thickness.\n2. **Uses**: Solid bodies are typically used for manufacturing, simulation, and engineering analysis where the volume and material properties of an object are important (e.g., stress analysis, weight calculations).\n3. **Characteristics**:\n   - Has mass and density.\n   - Occupies physical space and can interact with other components in simulations.\n   - Fully enclosed and watertight, meaning there are no gaps or holes.\n4. **Examples**: A block, sphere, or any object with a definite shape and volume.\n\n### Surface Body:\n1. **Definition**: A surface body is a geometric representation of a shape made up only of surfaces, which do not have thickness or volume. These are essentially 2D sheets that exist in 3D space.\n2. **Uses**: Surface bodies are often used in conceptual design, visual modeling, and aerodynamic simulations where the external shape of an object is the focus, rather than its internal composition.\n3. **Characteristics**:\n   - Lacks mass and volume (only defines a 2D boundary or shell).\n   - Can contain open edges, holes, or gaps.\n   - Not suitable for manufacturing or analysis that requires a solid.\n4. **Examples**: A car body for aerodynamic tests, or an architectural concept of a facade.\n\nIn summary, the primary difference is that solid bodies are volumetric with mass and engender physical properties suitable for more detailed applications like manufacturing and simulations, while surface bodies are used for a surface representation of objects without any physical thickness.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "In CAD (Computer-Aided Design) terms, a **solid body** and a **surface body** differ in their geometric and physical properties:\n\n### **Solid Body**\n- A solid body represents a fully enclosed 3D object with volume and mass.\n- It has surfaces that form a watertight boundary, which completely encloses a space. \n- Solid bodies can be used in simulations requiring calculations of mass, volume, density, and related physical attributes (e.g., structural analysis, fluid dynamics simulation).\n- Example: A cube or sphere in CAD is typically modeled as a solid body.\n\n### **Surface Body**\n- A surface body is a 2D object that lacks enclosed volume and thickness. It is essentially a collection of connected surfaces or a patchwork that defines the outer form of an object without filling the space inside.\n- Surface bodies are often used for aesthetic design, visualization, and creating complex shapes where internal mass and volume are irrelevant.\n- Example: A single curved sheet in CAD, or a collection of surfaces defining the shape of an aircraft wing without internal thickness, is a surface body.\n\n### Applications\n- **Solid bodies** are commonly used in manufacturing processes (e.g., for CNC machining, 3D printing).\n- **Surface bodies** are heavily utilized in industries like automobile and aerospace design, where complex sculpted surfaces are required.\n\nIn summary, a solid body has internal mass and volume, while a surface body only defines the outer boundary and has no substance inside.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "In CAD (Computer-Aided Design) terms, solid bodies and surface bodies are two distinct types of geometrical representations used to create 3D models. Here\u2019s the difference between the two:\n\n### Solid Body\n- **Definition**: A solid body is a 3D geometric representation that has complete volume. It defines both the exterior surfaces and the interior material of the object, making it a \"watertight\" model.\n- **Characteristics**:\n  - Includes physical properties like mass, volume, and density, which makes it suitable for engineering simulations like FEA (Finite Element Analysis) and CFD (Computational Fluid Dynamics).\n  - Fully enclosed with no gaps or holes in its surfaces.\n  - Example: A block of metal or a solid cylinder.\n- **Uses**: Ideal for manufacturing, simulations, and prototyping physical objects.\n\n### Surface Body\n- **Definition**: A surface body is a representation of 3D geometry using only its external surfaces without any interior volume. It is essentially a \"shell\" of an object.\n- **Characteristics**:\n  - Does not include physical properties like mass or volume.\n  - May consist of open surfaces or have gaps, meaning it doesn\u2019t necessarily enclose a space completely.\n  - Example: A piece of cloth, a sheet of paper, or a complex curved surface like a car's exterior.\n- **Uses**: Often used for aesthetic design, visualization, or when working with thin-walled structures where volume details are unnecessary.\n\n### Key Differences:\n| Feature         | Solid Body                  | Surface Body                |\n|-----------------|----------------------------|-----------------------------|\n| Volume          | Has enclosed volume.        | No volume, only external surfaces. |\n| Physical Properties | Includes mass, volume, density, etc. | None.                     |\n| Enclosure       | Fully enclosed 3D model.   | May be open or incomplete.   |\n| Applications    | Engineering, prototyping.  | Design, visualization.       |\n\nBy combining both solid and surface bodies, CAD designers can build complex designs tailored for specific applications.",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "no_tool_off_topic",
+      "prompt": "What is the weather like in Lyon today?",
+      "expected": "no tool",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "I can't provide live weather updates. I recommend checking an official weather website or app like Weather.com or AccuWeather for the current forecast in Lyon.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "I can't provide current weather updates. You can check a weather website or app for the latest information on Lyon's weather conditions.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "I cannot provide real-time weather information. Please check a weather website or app for the current conditions in Lyon.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "I can't provide real-time weather updates. You can check a reliable weather website or use a weather app for the latest forecast in Lyon.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "I cannot provide real-time weather information. Please check a reliable weather forecasting service or app for the latest updates.",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "text_explains_brep",
+      "prompt": "In one short sentence, what is a B-rep (boundary representation) solid?",
+      "expected": "text mentions 'boundary'",
+      "pass_rate": 0.6,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "A B-rep solid is a geometric representation that defines a 3D object using its boundary surfaces, edges, and vertices.",
+          "detail": null
+        },
+        {
+          "outcome": "text_mismatch",
+          "tool_name": null,
+          "arguments": null,
+          "text": "A B-rep solid is a geometric representation defining a 3D object by its bounding surfaces, edges, and vertices.",
+          "detail": "missing: ['boundary']"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "A B-rep (boundary representation) solid is a 3D model defined by its enclosing surfaces, edges, and vertices to represent the object's shape and geometry.",
+          "detail": null
+        },
+        {
+          "outcome": "text_mismatch",
+          "tool_name": null,
+          "arguments": null,
+          "text": "A B-rep solid is a geometric model defined by its boundaries, such as vertices, edges, and faces, to precisely represent its shape and structure.",
+          "detail": "missing: ['boundary']"
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "A B-rep (boundary representation) solid is a 3D geometrical model defined by its boundary surfaces, edges, and vertices that enclose the interior region.",
+          "detail": null
+        }
+      ]
+    },
+    {
+      "case_id": "text_lists_boolean_ops",
+      "prompt": "Name the three boolean operations you can perform on two solid bodies.",
+      "expected": "text mentions union/subtract/intersect",
+      "pass_rate": 1.0,
+      "attempts": [
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "The three boolean operations you can perform on two solid bodies are:\n\n1. **Union:** Combines two solid bodies into a single body.\n2. **Subtract:** Removes the volume of one solid body from another.\n3. **Intersect:** Retains only the overlapping volume between two solid bodies.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "The three Boolean operations that can be performed on two solid bodies are:\n\n1. **Union (Add)**: Combines two solid bodies into a single body.\n2. **Subtract (Cut)**: Removes the volume of one body from another.\n3. **Intersect**: Creates a new body from the overlapping volume of the two original bodies.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "The three boolean operations you can perform on two solid bodies are:\n\n1. **Union (or Add)**: Combines two solid bodies into a single solid body.\n2. **Subtract**: Removes the volume of one solid body from another.\n3. **Intersect**: Creates a new solid body from the overlapping (or intersecting) region of two solid bodies.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "The three boolean operations you can perform on two solid bodies are:\n\n1. **Union**: Combines the two solids into a single solid by merging their volumes.\n2. **Subtract**: Removes the volume of one solid from another.\n3. **Intersect**: Creates a new solid from the overlapping volume of the two solids.",
+          "detail": null
+        },
+        {
+          "outcome": "correct",
+          "tool_name": null,
+          "arguments": null,
+          "text": "The three boolean operations you can perform on two solid bodies are:\n\n1. **Union**: Combines two or more solid bodies into a single body.\n2. **Subtract (Difference)**: Subtracts one body (the tool) from another (the target).\n3. **Intersect**: Creates a new body from the overlapping volume of two solid bodies.",
+          "detail": null
+        }
+      ]
+    }
+  ]
+}

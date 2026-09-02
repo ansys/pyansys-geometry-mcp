@@ -1,0 +1,98 @@
+name: LLM tool discoverability
+
+on:
+  workflow_dispatch:
+    inputs:
+      repeats:
+        description: "Number of times each prompt is sent to the model"
+        required: false
+        default: "5"
+      threshold:
+        description: "Minimum fraction of repeats that must select the expected tool"
+        required: false
+        default: "0.8"
+#   schedule:
+#     - cron: "0 4 * * 1" # Every Monday at 04:00 UTC
+
+env:
+  MAIN_PYTHON_VERSION: '3.14'
+  ANSRV_GEO_IMAGE: 'ghcr.io/ansys/geometry'
+  ANSRV_GEO_PORT: 700
+  ANSRV_GEO_LICENSE_SERVER: ${{ secrets.LICENSE_SERVER }}
+  GEO_CONT_NAME: ans_geo
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read # Needs access to the Geometry docker image
+
+jobs:
+  tool-discoverability:
+    name: Tool discoverability evaluation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login in GitHub Container registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and launch geometry service
+        env:
+          FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-linux-latest"
+          TRANSPORT_MODE_SELECTION: ${{ secrets.TRANSPORT_MODE_SELECTION }}
+        run: |
+          echo "Pulling Docker image: ${FULL_IMAGE_NAME}"
+          docker pull ${FULL_IMAGE_NAME}
+          docker run --detach --name ${GEO_CONT_NAME} -e LICENSE_SERVER=${ANSRV_GEO_LICENSE_SERVER} -p ${ANSRV_GEO_PORT}:50051 ${FULL_IMAGE_NAME} ${TRANSPORT_MODE_SELECTION}
+
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup UV
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          python-version: ${{ env.MAIN_PYTHON_VERSION }}
+          activate-environment: true
+          enable-cache: true
+
+      - name: Install packages for the evaluation
+        run: uv sync --group eval
+
+      - name: Run the evaluation
+        timeout-minutes: 45
+        env:
+          AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          AZURE_OPENAI_DEPLOYMENT: ${{ secrets.AZURE_OPENAI_DEPLOYMENT }}
+          AZURE_OPENAI_API_VERSION: ${{ vars.AZURE_OPENAI_API_VERSION }}
+          GEOMETRY_SERVICE_PORT: ${{ env.ANSRV_GEO_PORT }}
+          REPEATS: ${{ inputs.repeats || '5' }}
+          THRESHOLD: ${{ inputs.threshold || '0.8' }}
+        run: |
+          uv run pytest tests/eval -v --no-cov \
+            --run-llm-eval \
+            --use-existing-service=yes \
+            --llm-eval-repeats="${REPEATS}" \
+            --llm-eval-threshold="${THRESHOLD}"
+
+      - name: Upload evaluation report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: llm-eval-report
+          path: tests/logs/llm_eval_report.json
+          retention-days: 30
+
+      - name: Stop the Geometry service
+        if: always()
+        run: |
+          docker stop ${GEO_CONT_NAME}
+          docker logs ${GEO_CONT_NAME}
+          docker rm ${GEO_CONT_NAME}
