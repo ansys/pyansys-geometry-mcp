@@ -142,9 +142,13 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 f"uds_id={self.context.uds_id!r}"
             )
         else:
-            host, port = connection_target.rsplit(":", maxsplit=1) if connection_target else (
-                self.context.host,
-                str(self.context.port),
+            host, port = (
+                connection_target.rsplit(":", maxsplit=1)
+                if connection_target
+                else (
+                    self.context.host,
+                    str(self.context.port),
+                )
             )
             self.context.host = host
             self.context.port = int(port)
