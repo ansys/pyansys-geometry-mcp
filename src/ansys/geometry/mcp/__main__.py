@@ -41,10 +41,18 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--mode",
         default=None,
-        choices=["pypim", "docker", "geometry_service", "spaceclaim", "discovery"],
+        choices=[
+            "pypim",
+            "docker",
+            "core_service",
+            "geometry_service",
+            "spaceclaim",
+            "discovery",
+        ],
         help=(
             "Launch mode for the geometry service (default: auto-detect). "
             "Options are 'pypim' (remote via PIM API), 'docker' (local Docker), "
+            "'core_service' (local Ansys Geometry Core Service), "
             "'geometry_service' (local Ansys Geometry Service), "
             "'spaceclaim' (local Ansys SpaceClaim), and 'discovery' (local Ansys Discovery)."
         ),
@@ -75,6 +83,16 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=50051,
         help="Port number of the geometry service (default: 50051).",
+    )
+    parser.add_argument(
+        "--uds-dir",
+        default=None,
+        help="Directory for the UDS socket (default: ~/.conn).",
+    )
+    parser.add_argument(
+        "--uds-id",
+        default=None,
+        help="Optional UDS socket identifier (default: aposdas_socket.sock).",
     )
     parser.add_argument(
         "--connect-to-existing-service",
@@ -123,6 +141,8 @@ def main():
     app.context.proto_version = args.proto_version
     app.context.host = args.host
     app.context.port = args.port
+    app.context.uds_dir = args.uds_dir
+    app.context.uds_id = args.uds_id
     app.context.connect_to_existing_service = args.connect_to_existing_service
 
     setup_logging(level="INFO")

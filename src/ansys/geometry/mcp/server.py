@@ -22,6 +22,8 @@
 
 """MCP server for PyAnsys Geometry MCP."""
 
+from pathlib import Path
+
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
 import ansys.common.mcp.tools as shared_tools
@@ -87,40 +89,21 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 host=self.context.host,
                 port=self.context.port,
                 transport_mode=self.context.transport_mode,
+                uds_dir=self.context.uds_dir,
+                uds_id=self.context.uds_id,
                 proto_version=self.context.proto_version,
             )
 
-            # creates the background instance of the modeler to be used when running python scripts in the interpreter
-            host, port = (
-                instance.client.get_name().split(":")
-                if instance.client
-                else (self.context.host, str(self.context.port))
-            )
-            self.context.host = host
-            self.context.port = int(port)
-            background_python_instance_creation = f"""
-from ansys.geometry.core import Modeler
-
-instance = Modeler(
-    host='{host}',
-    port={port},
-    transport_mode='{self.context.transport_mode}',
-    proto_version={self.context.proto_version!r})
-"""
-            self.context.python_session.execute(background_python_instance_creation)
-
-            self.context.command_history.append("from ansys.geometry.core import Modeler")
-            self.context.command_history.append(
-                f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
-                f"transport_mode={self.context.transport_mode!r}, "
-                f"proto_version={self.context.proto_version!r})"
-            )
+            # Create the background instance used by run_python_code().
+            self._mirror_instance_in_python_session(instance)
         else:
             from ansys.geometry.core import launch_modeler
 
             instance = launch_modeler(
                 mode=self.context.mode,
                 transport_mode=self.context.transport_mode,
+                uds_dir=self.context.uds_dir,
+                uds_id=self.context.uds_id,
             )
             self.context.command_history.append("from ansys.geometry.core import launch_modeler")
             self.context.command_history.append(
@@ -130,27 +113,59 @@ instance = Modeler(
 
             # Mirror instance into the persistent Python session so that
             # run_python_code() can reference it via the 'instance' variable.
-            host, port = (
-                instance.client.get_name().split(":")
-                if instance.client
-                else (self.context.host, str(self.context.port))
-            )
-            self.context.host = host
-            self.context.port = int(port)
-            background_python_instance_creation = f"""
-from ansys.geometry.core import Modeler
-
-instance = Modeler(
-    host='{host}',
-    port={port},
-    transport_mode='{self.context.transport_mode}')
-"""
-            self.context.python_session.execute(background_python_instance_creation)
+            self._mirror_instance_in_python_session(instance)
 
         self.context.product_instance = instance
         # Log the successful launch of the product instance
         logger.info("PyAnsys Geometry MCP backend launched successfully.")
         logger.info(f"Product instance details:\n\n{self.context.product_instance}")
+
+    def _mirror_instance_in_python_session(self, instance):
+        """Create a matching modeler in the persistent Python session."""
+        connection_target = instance.client.get_name() if instance.client else ""
+        is_uds = connection_target.startswith("/") or connection_target.startswith("unix:")
+
+        if is_uds:
+            socket_path = Path(connection_target.removeprefix("unix:"))
+            self.context.transport_mode = "uds"
+            host = self.context.host
+            port = self.context.port
+            self.context.uds_dir = str(socket_path.parent)
+            socket_name = socket_path.name.removesuffix(".sock")
+            self.context.uds_id = (
+                socket_name.removeprefix("aposdas_socket-")
+                if socket_name != "aposdas_socket"
+                else None
+            )
+            transport_arguments = (
+                f"transport_mode='uds', uds_dir={self.context.uds_dir!r}, "
+                f"uds_id={self.context.uds_id!r}"
+            )
+        else:
+            host, port = connection_target.rsplit(":", maxsplit=1) if connection_target else (
+                self.context.host,
+                str(self.context.port),
+            )
+            self.context.host = host
+            self.context.port = int(port)
+            transport_arguments = f"transport_mode={self.context.transport_mode!r}"
+
+        background_python_instance_creation = f"""
+from ansys.geometry.core import Modeler
+
+instance = Modeler(
+    host={host!r},
+    port={port},
+    {transport_arguments},
+    proto_version={self.context.proto_version!r})
+"""
+        self.context.python_session.execute(background_python_instance_creation)
+
+        self.context.command_history.append("from ansys.geometry.core import Modeler")
+        self.context.command_history.append(
+            f"instance=Modeler(host={host!r}, port={port}, {transport_arguments}, "
+            f"proto_version={self.context.proto_version!r})"
+        )
 
     def product_cleanup(self):
         """Clean up the product instance when the server stops.
