@@ -44,7 +44,7 @@ def test_create_box_with_custom_origin(ctx):
     assert "offset_box" in result
     assert "successfully" in result
 
-    bodies = list_entities(ctx, entity_type="bodies")
+    bodies = list_entities(ctx, entity_type="body")
     assert "offset_box" in bodies
 
 
@@ -85,7 +85,7 @@ def test_add_and_list_components(ctx):
         ctx, name="orphan", parent_component_name="nonexistent_parent"
     )
 
-    result = list_entities(ctx, entity_type="components")
+    result = list_entities(ctx, entity_type="component")
     assert "parent_comp" in result
     assert "child_comp" in result
 
