@@ -321,6 +321,10 @@ def create_selection_builder(ctx: Context) -> str:
     (bodies, faces, edges) via query, filter, order, group, and extend operations.
     Selections can also be combined, subtracted, or intersected.
 
+    Call this only to start a brand-new selection. If a selection builder already
+    exists from earlier in this conversation, reuse its handle in the other
+    selection tools instead of calling this again.
+
     Parameters
     ----------
     ctx : Context
@@ -406,7 +410,9 @@ def select_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to select: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -603,7 +609,9 @@ def filter_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to filter: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -657,6 +665,17 @@ def filter_entities(
         Body names, or face/edge IDs, that survive the filter; an empty list if none do.
         Returns a string error message if the selection handle is invalid, the
         criterion does not apply to the entity type, or required arguments are missing.
+
+    Examples
+    --------
+    Keep only bodies with volume of at least 100 m³ (drops the smaller ones):
+        ``filter_entities(entity_type="body", criteria="volume", min_value=100)``
+
+    Keep only the single largest face by area:
+        ``filter_entities(entity_type="face", criteria="area", find_max=True)``
+
+    Keep only solid bodies:
+        ``filter_entities(entity_type="body", criteria="is_solid")``
 
     """
     app_context = get_geometry_ctx(ctx)
@@ -817,7 +836,9 @@ def order_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to order: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -919,7 +940,9 @@ def group_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to group: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -1014,7 +1037,9 @@ def extend_selection(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to extend: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -1022,7 +1047,9 @@ def extend_selection(
         ``"volume"`` or ``"color"`` add entities sharing that property with any
         entity already selected. ``"nearby"`` adds entities within ``distance``.
         ``"coincident"``, ``"coaxial"``, ``"connected"``, and ``"tangent_chain"``
-        add entities related by topology or geometry.
+        add entities related by topology or geometry. Bodies have no dedicated
+        "touching"/contact criterion: for bodies in direct contact, use ``"nearby"``
+        with a near-zero ``distance`` (e.g. ``0.0``) rather than omitting it.
     scope : str, default: ``"all"``
         Which entities to search when extending: ``"all"``, ``"visible"``, ``"body"``.
     distance : float, optional
