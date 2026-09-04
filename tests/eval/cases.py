@@ -177,9 +177,9 @@ CASES: list[EvalCase] = [
     EvalCase(
         id="list_bodies",
         prompt="What bodies exist in the active design?",
-        checker=expect_tool("list_entities", arguments={"entity_type": "bodies"}),
+        checker=expect_tool("list_entities", arguments={"entity_type": "body"}),
         expected="list_entities",
-        note="Confusable with select_bodies and get_design_info.",
+        note="Confusable with select_entities and get_design_info.",
     ),
     # -- Selection workflow -------------------------------------------------
     EvalCase(
@@ -189,35 +189,46 @@ CASES: list[EvalCase] = [
         expected="create_selection_builder",
     ),
     EvalCase(
-        id="select_bodies",
+        id="select_entities",
         prompt="Using my selection builder, pick up every solid body in the design.",
-        checker=expect_tool("select_bodies", arguments={"criteria": "solid"}),
-        expected="select_bodies",
+        checker=expect_tool(
+            "select_entities", arguments={"entity_type": "body", "criteria": "solid"}
+        ),
+        expected="select_entities",
     ),
     EvalCase(
-        id="filter_bodies",
+        id="filter_entities",
         prompt="From the bodies already in my selection, drop everything with a volume below 100.",
-        checker=expect_tool("filter_bodies", arguments={"criteria": "volume", "min_value": 100}),
-        expected="filter_bodies",
-        note="Confusable with select_bodies.",
+        checker=expect_tool(
+            "filter_entities",
+            arguments={"entity_type": "body", "criteria": "volume", "min_value": 100},
+        ),
+        expected="filter_entities",
+        note="Confusable with select_entities.",
     ),
     EvalCase(
-        id="order_bodies",
+        id="order_entities",
         prompt="Sort the bodies currently in my selection from smallest to largest volume.",
-        checker=expect_tool("order_bodies", arguments={"criteria": "volume"}),
-        expected="order_bodies",
+        checker=expect_tool(
+            "order_entities", arguments={"entity_type": "body", "criteria": "volume"}
+        ),
+        expected="order_entities",
     ),
     EvalCase(
-        id="group_bodies",
+        id="group_entities",
         prompt="Bucket the bodies in my selection by the colour they share.",
-        checker=expect_tool("group_bodies", arguments={"criteria": "color"}),
-        expected="group_bodies",
+        checker=expect_tool(
+            "group_entities", arguments={"entity_type": "body", "criteria": "color"}
+        ),
+        expected="group_entities",
     ),
     EvalCase(
-        id="extend_body_selection",
+        id="extend_selection",
         prompt="Grow my current selection to also include the bodies touching the ones I picked.",
-        checker=expect_tool("extend_body_selection", arguments={"criteria": "nearby"}),
-        expected="extend_body_selection",
+        checker=expect_tool(
+            "extend_selection", arguments={"entity_type": "body", "criteria": "nearby"}
+        ),
+        expected="extend_selection",
     ),
     EvalCase(
         id="create_named_selection",

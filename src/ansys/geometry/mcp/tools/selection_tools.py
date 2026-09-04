@@ -1093,6 +1093,7 @@ def extend_selection(
 def create_named_selection(
     ctx: Context,
     name: str,
+    selection_handle: str | None = None,
     body_names: list[str] | None = None,
     face_ids: list[str] | None = None,
     edge_ids: list[str] | None = None,
@@ -1108,11 +1109,18 @@ def create_named_selection(
 
     A named selection is a labelled group of entities that can later be
     referenced by name (e.g. for meshing or boundary conditions).
-    At least one entity list must be provided.
+    At least one of ``selection_handle`` or an entity list must be provided.
 
-    Typical workflow: ``list_entities`` with ``entity_type="body"`` to find body
-    names, then ``entity_type="face"`` or ``"edge"`` on a body to obtain the face
-    and edge IDs to pass here.
+    Typical workflows:
+
+    - ``list_entities`` with ``entity_type="body"`` to find body names, then
+      ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and
+      edge IDs to pass here.
+    - Build a selection with ``create_selection_builder`` followed by
+      ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
+      ``extend_selection``, then pass that builder's ``selection_handle`` here to
+      save its currently selected bodies, faces, and edges as a named selection
+      (e.g. "save the bodies/faces I selected as ...").
 
     Parameters
     ----------
@@ -1120,6 +1128,11 @@ def create_named_selection(
         MCP request context (injected automatically).
     name : str
         Label for the named selection.
+    selection_handle : str, optional
+        Handle of a selection builder (from ``create_selection_builder``) whose
+        currently selected bodies, faces, and edges should be included. Use this
+        when the user refers to entities already picked/selected rather than
+        naming them explicitly.
     body_names : list of str, optional
         Body names to include. Use ``list_entities`` to discover names.
     face_ids : list of str, optional
@@ -1154,6 +1167,7 @@ def create_named_selection(
 
     if not any(
         [
+            selection_handle,
             body_names,
             face_ids,
             edge_ids,
@@ -1179,9 +1193,33 @@ def create_named_selection(
 
         design = app_context.product_instance.get_active_design()
         kwargs: dict = {}
+        bodies: list = []
+        faces: list = []
+        edges: list = []
+
+        if selection_handle:
+            selection_builder = app_context.selection_registry.get(selection_handle)
+            if selection_builder is None:
+                return f"Invalid selection handle: {selection_handle}"
+            selected_bodies = getattr(selection_builder, "_bodies", None)
+            selected_faces = getattr(selection_builder, "_faces", None)
+            selected_edges = getattr(selection_builder, "_edges", None)
+            if not any(
+                sel is not None and getattr(sel, "items", None)
+                for sel in (selected_bodies, selected_faces, selected_edges)
+            ):
+                return f"Selection '{selection_handle}' has no entities selected."
+            if selected_bodies is not None and selected_bodies.items:
+                bodies.extend(selected_bodies.items)
+            if selected_faces is not None and selected_faces.items:
+                faces.extend(selected_faces.items)
+            if selected_edges is not None and selected_edges.items:
+                edges.extend(selected_edges.items)
+            app_context.command_history.append(
+                f"selection_builder = selection_registry['{selection_handle}']"
+            )
 
         if body_names:
-            bodies = []
             for body_name in body_names:
                 body = find_body(design, body_name)
                 if body is None:
@@ -1189,6 +1227,8 @@ def create_named_selection(
                         f"Body '{body_name}' not found. Use list_entities to see available bodies."
                     )
                 bodies.append(body)
+
+        if bodies:
             kwargs["bodies"] = bodies
 
         if component_names:
@@ -1201,10 +1241,16 @@ def create_named_selection(
             kwargs["components"] = components
 
         if face_ids:
-            kwargs["faces"] = get_faces_from_ids(design, face_ids)
+            faces.extend(get_faces_from_ids(design, face_ids))
+
+        if faces:
+            kwargs["faces"] = faces
 
         if edge_ids:
-            kwargs["edges"] = get_edges_from_ids(design, edge_ids)
+            edges.extend(get_edges_from_ids(design, edge_ids))
+
+        if edges:
+            kwargs["edges"] = edges
 
         if vertex_ids:
             kwargs["vertices"] = get_vertices_from_ids(design, vertex_ids)
@@ -1246,6 +1292,13 @@ def create_named_selection(
 
         # Build fully expanded command history entry
         cmd_parts = []
+        if selection_handle:
+            if selected_bodies is not None and selected_bodies.items:
+                cmd_parts.append("bodies=selection_builder._bodies.items")
+            if selected_faces is not None and selected_faces.items:
+                cmd_parts.append("faces=selection_builder._faces.items")
+            if selected_edges is not None and selected_edges.items:
+                cmd_parts.append("edges=selection_builder._edges.items")
         if body_names:
             cmd_parts.append(f"bodies=[{', '.join(f'design.get_body({b!r})' for b in body_names)}]")
         if face_ids:
