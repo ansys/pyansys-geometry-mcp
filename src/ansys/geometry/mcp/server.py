@@ -91,19 +91,14 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             )
 
             # creates the background instance of the modeler to be used when running python scripts in the interpreter
-            host, port = (
-                instance.client.get_name().split(":")
-                if instance.client
-                else (self.context.host, str(self.context.port))
-            )
-            self.context.host = host
-            self.context.port = int(port)
+            self.context.host = instance.client.host
+            self.context.port = instance.client.port
             background_python_instance_creation = f"""
 from ansys.geometry.core import Modeler
 
 instance = Modeler(
-    host='{host}',
-    port={port},
+    host='{self.context.host}',
+    port={self.context.port},
     transport_mode='{self.context.transport_mode}',
     proto_version={self.context.proto_version!r})
 """
@@ -130,19 +125,14 @@ instance = Modeler(
 
             # Mirror instance into the persistent Python session so that
             # run_python_code() can reference it via the 'instance' variable.
-            host, port = (
-                instance.client.get_name().split(":")
-                if instance.client
-                else (self.context.host, str(self.context.port))
-            )
-            self.context.host = host
-            self.context.port = int(port)
+            self.context.host = instance.client.host
+            self.context.port = instance.client.port
             background_python_instance_creation = f"""
-from ansys.geometry.core import Modeler
+from ansys.geometry.core import launch_modeler
 
-instance = Modeler(
-    host='{host}',
-    port={port},
+instance = launch_modeler(
+    host='{self.context.host}',
+    port={self.context.port},
     transport_mode='{self.context.transport_mode}')
 """
             self.context.python_session.execute(background_python_instance_creation)
