@@ -89,7 +89,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 transport_mode=self.context.transport_mode,
                 proto_version=self.context.proto_version,
                 uds_dir=self.context.uds_dir,
-                uds_id=self.context.uds_id
+                uds_id=self.context.uds_id,
             )
 
             # creates the background instance of the modeler to be used when running python scripts in the interpreter
