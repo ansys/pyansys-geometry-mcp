@@ -88,6 +88,8 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 port=self.context.port,
                 transport_mode=self.context.transport_mode,
                 proto_version=self.context.proto_version,
+                uds_dir=self.context.uds_dir,
+                uds_id=self.context.uds_id
             )
 
             # creates the background instance of the modeler to be used when running python scripts in the interpreter
@@ -100,7 +102,9 @@ instance = Modeler(
     host='{self.context.host}',
     port={self.context.port},
     transport_mode='{self.context.transport_mode}',
-    proto_version={self.context.proto_version!r})
+    proto_version={self.context.proto_version!r},
+    uds_dir='{self.context.uds_dir}',
+    uds_id='{self.context.uds_id}')
 """
             self.context.python_session.execute(background_python_instance_creation)
 
@@ -108,7 +112,9 @@ instance = Modeler(
             self.context.command_history.append(
                 f"instance=Modeler(host={self.context.host!r}, port={self.context.port}, "
                 f"transport_mode={self.context.transport_mode!r}, "
-                f"proto_version={self.context.proto_version!r})"
+                f"proto_version={self.context.proto_version!r}, "
+                f"uds_dir={self.context.uds_dir!r}, "
+                f"uds_id={self.context.uds_id!r})"
             )
         else:
             from ansys.geometry.core import launch_modeler
@@ -120,7 +126,9 @@ instance = Modeler(
             self.context.command_history.append("from ansys.geometry.core import launch_modeler")
             self.context.command_history.append(
                 f"instance=launch_modeler(mode={self.context.mode!r}, "
-                f"transport_mode={self.context.transport_mode!r})"
+                f"transport_mode={self.context.transport_mode!r}, "
+                f"uds_dir={self.context.uds_dir!r}, "
+                f"uds_id={self.context.uds_id!r})"
             )
 
             # Mirror instance into the persistent Python session so that
@@ -133,7 +141,9 @@ from ansys.geometry.core import launch_modeler
 instance = launch_modeler(
     host='{self.context.host}',
     port={self.context.port},
-    transport_mode='{self.context.transport_mode}')
+    transport_mode='{self.context.transport_mode}',
+    uds_dir='{self.context.uds_dir}',
+    uds_id='{self.context.uds_id}')
 """
             self.context.python_session.execute(background_python_instance_creation)
 
