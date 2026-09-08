@@ -228,16 +228,16 @@ wheels = [
 
 [[package]]
 name = "ansys-common-mcp"
-version = "0.3.3"
+version = "0.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp" },
     { name = "mcp" },
     { name = "pydantic-settings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/e4/539b5a2cddbae173af1d5b314e45cba29fdb5d3c568103255af4d04f40c9/ansys_common_mcp-0.3.3.tar.gz", hash = "sha256:33b9a4a8a8b19d7bcaea6e43581d317c6bf25da2a8db260a9b06aa4d3adb593c", size = 23330, upload-time = "2026-07-29T12:02:31.773Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/f6/a669b15734fd6b43d9b95dd258b614fc539b144c284fedb5b7fa4dc07bb9/ansys_common_mcp-0.3.4.tar.gz", hash = "sha256:8fc183a8a64533430587327bdc0bf08ffc6665ef1f63399b0637deed4c734dd7", size = 24236, upload-time = "2026-09-03T16:45:32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/7c/e0e2e49d5a0b06bdbf7af4e812e6ee907773382d1be197a7d34a58ce8f2d/ansys_common_mcp-0.3.3-py3-none-any.whl", hash = "sha256:d7c810c5de4fc8004c3421919c3cab687b515930fd1d46029103177faf14825b", size = 26823, upload-time = "2026-07-29T12:02:30.314Z" },
+    { url = "https://files.pythonhosted.org/packages/30/0e/36765dd20bf61fcefd397db850a31b4666c58da2dec76d5b020a047f3757/ansys_common_mcp-0.3.4-py3-none-any.whl", hash = "sha256:81311d274bc82065d039f4d4b09adbaa8a957451a26d882caaecbe0932d58a02", size = 27768, upload-time = "2026-09-03T16:45:30.708Z" },
 ]
 
 [[package]]
