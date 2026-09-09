@@ -80,9 +80,9 @@ tests = [
 
 [tool.hatch]
 build.targets.wheel.packages = [ "src/ansys/geometry/mcp" ]
-build.targets.wheel.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
 build.targets.editable.packages = [ "src/ansys/geometry/mcp" ]
 build.targets.editable.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
+build.targets.wheel.sources."src/ansys/geometry/mcp" = "ansys/geometry/mcp"
 
 [tool.uv]
 default-groups = []

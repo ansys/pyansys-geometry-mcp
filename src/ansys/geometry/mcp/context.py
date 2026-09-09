@@ -48,6 +48,10 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
         Host name or IP address of the geometry service.
     port : int
         Port number of the geometry service.
+    uds_dir : Optional[str]
+        Directory for the Unix Domain Socket.
+    uds_id : Optional[str]
+        Optional identifier for the Unix Domain Socket filename.
     connect_to_existing_service : bool
         When ``True``, connect to a running geometry service instead of
         launching a new one.
@@ -71,6 +75,8 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     proto_version: str = "v1"
     host: str = "localhost"
     port: int = 50051
+    uds_dir: Optional[str] = None
+    uds_id: Optional[str] = None
     connect_to_existing_service: bool = False
     selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)
     python_session_synced_index: int = 0
