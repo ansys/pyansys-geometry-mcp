@@ -430,21 +430,57 @@ def import_geometry_file(
 def run_script_file(
     ctx: Context, file_path: str, args: dict[str, str] = None
 ) -> str | dict[str, str]:
-    """Run a Discovery or SpaceClaim script file within the current session context.
+    """Run an existing Discovery/SpaceClaim scripting API file on the geometry backend.
+
+    Use this tool when the user asks to run, execute, or play back a script file that
+    already exists on disk (for example "run C:/scripts/make_flange.py", "execute my
+    SpaceClaim script", "replay this .scscript").
+
+    When NOT to use this tool: to execute Python code you are writing yourself, use
+    ``run_python_code`` instead -- that tool runs the PyAnsys Geometry API
+    (``instance``, ``design``, ...) in a persistent session, while this tool runs a
+    different language surface entirely. To load a CAD/geometry file (``.scdocx``,
+    ``.step``, ``.iges``, ``.x_t``, ...), use ``import_geometry_file``. Never write a
+    temporary script file just to run a few statements; prefer ``run_python_code``.
+
+    Script language: the file must be written against the Discovery/SpaceClaim scripting
+    API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``, ``instance``,
+    ``design``) are NOT available inside the script, and script variables do not leak
+    into the ``run_python_code`` session (or vice versa).
+
+    Passing arguments: ``args`` values must all be strings. The script receives them as a
+    dictionary of strings named ``argsDict`` and is responsible for converting them, for
+    example ``radius = MM(int(argsDict["radius"]))``. Pass ``{"radius": "1"}``, never
+    ``{"radius": 1}``. Omit ``args`` when the script takes no arguments.
+
+    Returning values: to get values back, the script must assign a dictionary named
+    ``result``, for example ``result = {"numBodies": numBodies}``. A script that does not
+    define ``result`` returns an empty dictionary even though it ran successfully.
+
+    Side effects: the script may create or modify the active design on the backend. Those
+    changes are not mirrored into this server's in-process design state or command
+    history, so after a script that edits geometry, refresh your view with
+    ``get_design_info``, ``list_entities``, or ``get_screenshot`` before relying on
+    previously reported names, IDs, or counts.
 
     Parameters
     ----------
     ctx : Context
-        The current session context.
+        MCP request context (injected automatically).
     file_path : str
-        Path to the Python script file to be executed.
+        Path to the script file, including its extension. Must be readable by the
+        machine running this MCP server; use an absolute path when possible, since
+        relative paths are resolved against the server's working directory.
     args : dict[str, str], optional
-        Arguments to pass to the script file.
+        String-valued arguments exposed to the script as ``argsDict``. Default ``None``.
 
     Returns
     -------
     str | dict[str, str]
-        Error message or the results dictionary as defined in the script file.
+        On success, the script's ``result`` dictionary with string values (empty if the
+        script defined no ``result``). On failure, a plain string message.
+        Check the returned type: a ``str`` always means the script did not run, and the
+        message should be reported to the user rather than retried unchanged.
 
     """
     from pathlib import Path
