@@ -187,16 +187,16 @@ wheels = [
 
 [[package]]
 name = "ansys-api-discovery"
-version = "1.2.12"
+version = "1.2.13"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-api-geometry" },
     { name = "grpcio" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/b4/a394e687179078fc1f60c73949ac592a2ca66c58de1e371dd93524816496/ansys_api_discovery-1.2.12.tar.gz", hash = "sha256:6bb861971eb1b6c8b8a624a1bdc5eef3932197a68d94af439bfda3bf29dbb2f7", size = 88663, upload-time = "2026-08-10T11:04:44.607Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/a9/2800b37cf9af1b730c81668cf05180301aa2bd04d41043985a34384a95cb/ansys_api_discovery-1.2.13.tar.gz", hash = "sha256:78f48c166b598f9dc36c6780dbe78074869198db99a223bbfbe70d0d518fb7d4", size = 88782, upload-time = "2026-08-21T10:59:13.806Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d7/2a/53bfe0f1db313155b0ce15098829001a2277316af520083a07239bb9f848/ansys_api_discovery-1.2.12-py3-none-any.whl", hash = "sha256:10e9fc372b373305e26741fe85e572e058509f383b4278616dcc7670d3fd4e7b", size = 1215508, upload-time = "2026-08-10T11:04:43.234Z" },
+    { url = "https://files.pythonhosted.org/packages/cb/a4/c5d995289ef8c369ce88f5693be4854c15c770e172f45b07e33685c97d50/ansys_api_discovery-1.2.13-py3-none-any.whl", hash = "sha256:f9f9875ef1caaee6a6be95a08c3dc6d8f4d868b470239c209626e767eb84cda8", size = 1216085, upload-time = "2026-08-21T10:59:12.522Z" },
 ]
 
 [[package]]
@@ -228,21 +228,21 @@ wheels = [
 
 [[package]]
 name = "ansys-common-mcp"
-version = "0.3.3"
+version = "0.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp" },
     { name = "mcp" },
     { name = "pydantic-settings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/89/e4/539b5a2cddbae173af1d5b314e45cba29fdb5d3c568103255af4d04f40c9/ansys_common_mcp-0.3.3.tar.gz", hash = "sha256:33b9a4a8a8b19d7bcaea6e43581d317c6bf25da2a8db260a9b06aa4d3adb593c", size = 23330, upload-time = "2026-07-29T12:02:31.773Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/f6/a669b15734fd6b43d9b95dd258b614fc539b144c284fedb5b7fa4dc07bb9/ansys_common_mcp-0.3.4.tar.gz", hash = "sha256:8fc183a8a64533430587327bdc0bf08ffc6665ef1f63399b0637deed4c734dd7", size = 24236, upload-time = "2026-09-03T16:45:32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/7c/e0e2e49d5a0b06bdbf7af4e812e6ee907773382d1be197a7d34a58ce8f2d/ansys_common_mcp-0.3.3-py3-none-any.whl", hash = "sha256:d7c810c5de4fc8004c3421919c3cab687b515930fd1d46029103177faf14825b", size = 26823, upload-time = "2026-07-29T12:02:30.314Z" },
+    { url = "https://files.pythonhosted.org/packages/30/0e/36765dd20bf61fcefd397db850a31b4666c58da2dec76d5b020a047f3757/ansys_common_mcp-0.3.4-py3-none-any.whl", hash = "sha256:81311d274bc82065d039f4d4b09adbaa8a957451a26d882caaecbe0932d58a02", size = 27768, upload-time = "2026-09-03T16:45:30.708Z" },
 ]
 
 [[package]]
 name = "ansys-geometry-core"
-version = "0.17.1"
+version = "0.17.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-api-discovery" },
@@ -261,18 +261,19 @@ dependencies = [
     { name = "semver" },
     { name = "six" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4f/bf/844156efb72430d6895c4c794c94e63f62ab79de2cbf791a2b8aa678fc78/ansys_geometry_core-0.17.1.tar.gz", hash = "sha256:6435685750006ef811af4b252618fe20ab081ecb01316da11165ec4d6d185fec", size = 23150216, upload-time = "2026-08-21T13:52:37.411Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/25/ba/b6ede208f5db314aa41c6e3475a03a21bf8ca240c615869ca17773ad8877/ansys_geometry_core-0.17.2.tar.gz", hash = "sha256:234dd4cba4e9e9ed5e92b357fec641626ec7c81f17ff779fbed591b9af137a55", size = 23304040, upload-time = "2026-09-09T09:40:32.075Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/6d/9f0f9bfd7be1f228b358af83b192024ef8accb5f9d4c4550807becf578e4/ansys_geometry_core-0.17.1-py3-none-any.whl", hash = "sha256:b2e989ad0d6979a34208d1381dc8c9dab5c9595d32536fa6c7a43dd5e95f6015", size = 588626, upload-time = "2026-08-21T13:52:35.176Z" },
+    { url = "https://files.pythonhosted.org/packages/8f/d8/7afc1f9be4f4352deea959dadc127762ff41141b2430751615e8e2c80b59/ansys_geometry_core-0.17.2-py3-none-any.whl", hash = "sha256:08d265462bd6a42ce71e37ef4f17df688e027addc5de7535537d95c6f70a8145", size = 596128, upload-time = "2026-09-09T09:40:29.621Z" },
 ]
 
 [package.optional-dependencies]
 all = [
     { name = "ansys-platform-instancemanagement" },
-    { name = "ansys-tools-visualization-interface" },
+    { name = "ansys-tools-visualization-interface", extra = ["usd"] },
     { name = "docker" },
     { name = "pygltflib" },
     { name = "pyvista", extra = ["jupyter"] },
+    { name = "usd-core" },
     { name = "vtk" },
 ]
 
@@ -335,6 +336,12 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/27/6c/b9d9bb75ff7b8f822cf920a23c952e1f3d7f083a7c522a240a75d752cf81/ansys_tools_visualization_interface-0.14.0.tar.gz", hash = "sha256:b419f6c4aa04c583f606d6950729841a09cb338ff62c4012335b729000dd3b41", size = 379094, upload-time = "2026-07-22T09:21:13.923Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/3a/c1856dfd50c3ab4a55c5b5fdd0e68b2596da00ec911e9c824e5ed4ee6a2c/ansys_tools_visualization_interface-0.14.0-py3-none-any.whl", hash = "sha256:a7634ec951e03107486c1e38ad0bfd67a0ea41a0fa592efd9db54c4db9738f79", size = 464810, upload-time = "2026-07-22T09:21:11.81Z" },
+]
+
+[package.optional-dependencies]
+usd = [
+    { name = "pygltflib" },
+    { name = "usd-core" },
 ]
 
 [[package]]
@@ -4835,6 +4842,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/53/0c/06f8b233b8fd13b9e5ee11424ef85419ba0d8ba0b3138bf360be2ff56953/urllib3-2.7.0.tar.gz", hash = "sha256:231e0ec3b63ceb14667c67be60f2f2c40a518cb38b03af60abc813da26505f4c", size = 433602, upload-time = "2026-05-07T16:13:18.596Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl", hash = "sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897", size = 131087, upload-time = "2026-05-07T16:13:17.151Z" },
+]
+
+[[package]]
+name = "usd-core"
+version = "26.8"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/44/fb780d02b04bbebc410bfb6decccc66aec07fb0322172ad019c4579ad80a/usd_core-26.8-cp312-none-macosx_10_15_universal2.whl", hash = "sha256:aaf1a68bf4c7ab959b9f4d3a6e0ef9347ff6135a1452676bb40916060146c53e", size = 40698020, upload-time = "2026-07-20T14:32:20.788Z" },
+    { url = "https://files.pythonhosted.org/packages/19/0b/efe5c0d7c273149ac94083831e5b36649925a621a73cd2ddf9616e160c8c/usd_core-26.8-cp312-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:204fb1ef1fc977b827c491f4e9fa39b57518504ed0cacfe12e026e95123cacf1", size = 29530957, upload-time = "2026-07-20T14:32:24.255Z" },
+    { url = "https://files.pythonhosted.org/packages/79/d3/749edc4d2eea3ffb94aa0526d5da6f4a3f185ef7004ceeb6b5ecdb6a0c68/usd_core-26.8-cp312-none-win_amd64.whl", hash = "sha256:6db0031224b718cae53e4b19ecd80aea0a7ed4348e330fd82ccfbdc9b8b311ed", size = 13887898, upload-time = "2026-07-20T14:32:27.452Z" },
+    { url = "https://files.pythonhosted.org/packages/79/fd/7060951a8fef299c9adcd89493219884c9f53f14492f7972238b83a6eb17/usd_core-26.8-cp313-none-macosx_10_15_universal2.whl", hash = "sha256:150bc967f4760000b8087ab4bd669f1477043f07433dcbcd8a80a97c73c47545", size = 40698029, upload-time = "2026-07-20T14:32:30.566Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/e8/aee0809bedc47032a4bee4cd0b1b65e7bc65522c5ac9b28418974a47b5c7/usd_core-26.8-cp313-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cd08c65edccd3fd3b5be5354593a8b54175adb8b45e3d84eb5e1644af5e904fb", size = 29531140, upload-time = "2026-07-20T14:32:34.047Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/54/83e0f3810f74c88a85a56dc9cf950bc7b74a342cea3d5c4e441b3a11b4bb/usd_core-26.8-cp313-none-win_amd64.whl", hash = "sha256:8de2d62f148d11a33936634b9e43ded9c691ce565430218b606e8235bdb9cbf2", size = 13888333, upload-time = "2026-07-20T14:32:36.645Z" },
+    { url = "https://files.pythonhosted.org/packages/94/56/1b14f82eaa8db9d054246ec6c4abad146c21eb4e914e742d4ad153f8325a/usd_core-26.8-cp314-none-macosx_10_15_universal2.whl", hash = "sha256:fec6ba0ddcf6b285e1757494fcb66e57c23993098cb3cb26bf8db263567bb945", size = 40856543, upload-time = "2026-07-20T14:32:39.783Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/ce/76e0476d04c387cbf435f11aafb36ff4f79345215d7b9dbb677a7a1efa11/usd_core-26.8-cp314-none-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:114f39723ccfc9a269cfdf6a7b80fec53aa96530806e510a6cccfd577401a07c", size = 29575839, upload-time = "2026-07-20T14:32:43.582Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/87/d5cd29f5326bb945cf90198d28c7f3fca45a950e7512851360ced2e0a7e9/usd_core-26.8-cp314-none-win_amd64.whl", hash = "sha256:c780f28b624f4efb3d8f78af805f17082b3976f61ba18da8171bb898ce31f2be", size = 14451875, upload-time = "2026-07-20T14:32:46.461Z" },
 ]
 
 [[package]]
