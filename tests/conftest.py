@@ -40,11 +40,14 @@ def context(use_existing_service):
     app.context.transport_mode = "insecure"
     app.context.connect_to_existing_service = use_existing_service
 
-    # Launch the backend without starting the MCP stdio protocol.
+    # Launch the backend without starting the MCP stdio protocol, following the same
+    # order as product_lifespan() so run_python_code() has a live session to work with.
+    app.start_python_session()
     app.product_startup()
     yield app.context
 
     app.product_cleanup()
+    app.cleanup_python_session()
 
 
 @pytest.fixture(scope="session")
@@ -65,6 +68,7 @@ def ctx(context, startup_history):
 
     mock_ctx = MagicMock()
     mock_ctx.fastmcp._lifespan_result = context
+    mock_ctx.request_context.lifespan_context = context
     yield mock_ctx
 
 

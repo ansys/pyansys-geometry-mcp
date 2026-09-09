@@ -22,6 +22,7 @@
 
 """Unit tests for the session tools."""
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -36,6 +37,7 @@ from ansys.geometry.mcp.tools import (
     get_product_status,
     get_transcript,
     import_geometry_file,
+    run_python_code,
     run_script_file,
 )
 
@@ -263,3 +265,78 @@ def test_run_script_file_errors(ctx):
     result = run_script_file(mock_ctx, Path(FILES_DIR, "simple_script.py"))
     assert "Error running script file" in result
     assert "boom" in result
+
+
+async def test_run_python_code_success(ctx):
+    """Test history replay and bookkeeping when the session and the code both succeed."""
+    app_context = ctx.fastmcp._lifespan_result
+    app_context.python_session_synced_index = len(app_context.command_history)
+    baseline = list(app_context.command_history)
+
+    # Nothing pending: the code runs and is recorded as already synced.
+    result = json.loads(await run_python_code(ctx, "answer = 6 * 7\nprint(answer)"))
+    assert result["success"] is True
+    assert "42" in result["stdout"]
+    assert app_context.command_history == [*baseline, "answer = 6 * 7\nprint(answer)"]
+    assert app_context.python_session_synced_index == len(baseline) + 1
+
+    # History recorded by other tools is replayed before the code runs, so what it
+    # defines is visible here.
+    app_context.command_history.append("replayed_value = answer + 1")
+    result = json.loads(await run_python_code(ctx, "print(replayed_value)"))
+    assert result["success"] is True
+    assert "43" in result["stdout"]
+    assert app_context.command_history == [
+        *baseline,
+        "answer = 6 * 7\nprint(answer)",
+        "replayed_value = answer + 1",
+        "print(replayed_value)",
+    ]
+    assert app_context.python_session_synced_index == len(app_context.command_history)
+
+    # The session is persistent, so earlier variables survive without any replay.
+    result = json.loads(await run_python_code(ctx, "print(answer * 2)"))
+    assert result["success"] is True
+    assert "84" in result["stdout"]
+
+
+async def test_run_python_code_failure_paths(ctx):
+    """Test that replay failures abort early and failed results never reach the history."""
+    app_context = ctx.fastmcp._lifespan_result
+    app_context.python_session_synced_index = len(app_context.command_history)
+    baseline = list(app_context.command_history)
+
+    # Code that raises is reported as a failure and is not recorded.
+    result = json.loads(await run_python_code(ctx, "raise ValueError('bad code')"))
+    assert result["success"] is False
+    assert "bad code" in result["error"]
+    assert app_context.command_history == baseline
+    assert app_context.python_session_synced_index == len(baseline)
+
+    # A pending command that fails on replay aborts before the code is ever run.
+    app_context.command_history.append("raise RuntimeError('bad replay')")
+    result = json.loads(await run_python_code(ctx, "never_defined = 1"))
+    assert result["success"] is False
+    assert "Failed to sync prior tool commands" in result["error"]
+    assert "bad replay" in result["error"]
+    assert app_context.command_history == [*baseline, "raise RuntimeError('bad replay')"]
+    assert app_context.python_session_synced_index == len(baseline)
+
+    # Without a session there is nothing to replay into, and nothing is recorded.
+    session = app_context.python_session
+    app_context.python_session = None
+    try:
+        result = json.loads(await run_python_code(ctx, "never_defined = 2"))
+    finally:
+        app_context.python_session = session
+    assert result["success"] is False
+    assert "No Python session available" in result["error"]
+    assert app_context.command_history == [*baseline, "raise RuntimeError('bad replay')"]
+    assert app_context.python_session_synced_index == len(baseline)
+
+    # Neither failing call leaked state into the session.
+    app_context.command_history.pop()
+    app_context.python_session_synced_index = len(app_context.command_history)
+    result = json.loads(await run_python_code(ctx, "print('never_defined' in dir())"))
+    assert result["success"] is True
+    assert "False" in result["stdout"]
