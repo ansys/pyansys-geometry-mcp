@@ -424,3 +424,43 @@ def import_geometry_file(
     except Exception as e:
         logger.error(f"import_geometry_file failed: {e}")
         return f"Error importing '{file_path}': {e}"
+
+
+@app.tool()
+def run_script_file(
+    ctx: Context, file_path: str, args: dict[str, str] = None
+) -> str | dict[str, str]:
+    """Run a Discovery or SpaceClaim script file within the current session context.
+
+    Parameters
+    ----------
+    ctx : Context
+        The current session context.
+    file_path : str
+        Path to the Python script file to be executed.
+    args : dict[str, str], optional
+        Arguments to pass to the script file.
+
+    Returns
+    -------
+    str | dict[str, str]
+        Error message or the results dictionary as defined in the script file.
+
+    """
+    from pathlib import Path
+
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot run script file."
+
+    resolved = Path(file_path).resolve()
+    if not resolved.exists():
+        return f"File not found: {resolved}"
+
+    try:
+        return app_context.product_instance.run_script_file(resolved, args)[0]
+
+    except Exception as e:
+        logger.error(f"run_script_file failed: {e}")
+        return f"Error running script file '{file_path}': {e}"

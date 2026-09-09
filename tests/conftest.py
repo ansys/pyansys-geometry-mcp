@@ -22,12 +22,15 @@
 
 """Configuration for MCP tool test modules."""
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import ansys.geometry.core as pyansys_geometry
 import pytest
 
 from ansys.geometry.mcp import app
+
+FILES_DIR = Path(Path(__file__).parent, "files")
 
 
 @pytest.fixture(scope="session")

@@ -53,6 +53,7 @@ from ansys.geometry.mcp.tools.session_tools import (
     get_transcript,
     import_geometry_file,
     run_python_code,
+    run_script_file,
 )
 from ansys.geometry.mcp.tools.visualization_tools import (
     get_design_3d_scene,

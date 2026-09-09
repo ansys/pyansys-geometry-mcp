@@ -36,7 +36,10 @@ from ansys.geometry.mcp.tools import (
     get_product_status,
     get_transcript,
     import_geometry_file,
+    run_script_file,
 )
+
+from .conftest import FILES_DIR
 
 
 def test_get_product_status_tool(ctx):
@@ -226,4 +229,37 @@ def test_import_geometry_file_errors(tmp_path_factory: pytest.TempPathFactory):
     mock_ctx.fastmcp._lifespan_result.product_instance.open_file.side_effect = RuntimeError("boom")
     result = import_geometry_file(mock_ctx, file_path=str(file))
     assert "Error importing" in result
+    assert "boom" in result
+
+
+def test_run_script_file(ctx):
+    """Test that running a script file with success."""
+    result = run_script_file(ctx, Path(FILES_DIR, "simple_script.py"))
+    assert "design" in result
+    assert "design_body" in result
+
+    # Test passing in args
+    create_design(ctx, "NewDesign")
+    create_box(ctx, "Box", 1, 1, 1)
+    result = run_script_file(ctx, Path(FILES_DIR, "integrated_script.py"), {"radius": "1"})
+    assert int(result["numBodies"]) == 2
+
+
+def test_run_script_file_errors(ctx):
+    """Test that running a nonexistent script file returns an error message."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    result = run_script_file(mock_ctx, "anything.py")
+    assert "not connected" in result
+
+    result = run_script_file(ctx, Path(FILES_DIR, "nonexistent.py"))
+    assert "File not found" in result
+
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance.run_script_file.side_effect = RuntimeError(
+        "boom"
+    )
+
+    result = run_script_file(mock_ctx, Path(FILES_DIR, "simple_script.py"))
+    assert "Error running script file" in result
     assert "boom" in result
