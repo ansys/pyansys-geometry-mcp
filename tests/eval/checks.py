@@ -58,6 +58,14 @@ def expect_tool(name: str, arguments: dict[str, Any]) -> Checker:
 
         call = calls[0]
         called_name = call.function.name
+
+        if len(calls) > 1:
+            extra = ", ".join(c.function.name for c in calls[1:])
+            return Attempt(
+                outcome=UNEXPECTED_TOOL,
+                tool_name=called_name,
+                detail=f"expected exactly one tool call, got extra call(s): {extra}",
+            )
         try:
             parsed = json.loads(call.function.arguments or "{}")
         except json.JSONDecodeError as err:

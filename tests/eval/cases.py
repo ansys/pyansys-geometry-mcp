@@ -226,14 +226,18 @@ CASES: list[EvalCase] = [
         id="extend_selection",
         prompt="Grow my current selection to also include the bodies touching the ones I picked.",
         checker=expect_tool(
-            "extend_selection", arguments={"entity_type": "body", "criteria": "nearby"}
+            "extend_selection",
+            arguments={"entity_type": "body", "criteria": "nearby", "distance": 0.0},
         ),
         expected="extend_selection",
     ),
     EvalCase(
         id="create_named_selection",
-        prompt="Save the bodies I selected as a named selection called 'inlet_faces'.",
-        checker=expect_tool("create_named_selection", arguments={"name": "inlet_faces"}),
+        prompt="Save the body 'bolt_01' as a named selection called 'inlet_faces'.",
+        checker=expect_tool(
+            "create_named_selection",
+            arguments={"name": "inlet_faces", "body_names": ["bolt_01"]},
+        ),
         expected="create_named_selection",
     ),
     # -- Visualization ------------------------------------------------------

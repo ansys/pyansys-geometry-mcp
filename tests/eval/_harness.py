@@ -39,9 +39,6 @@ from dataclasses import dataclass, field
 import os
 from typing import Any
 
-#: Default Azure OpenAI resource used when ``AZURE_OPENAI_ENDPOINT`` is unset.
-DEFAULT_ENDPOINT = "https://casebu-chatgpt-eastus-2.openai.azure.com/"
-
 #: Default Azure OpenAI REST API version.
 DEFAULT_API_VERSION = "2024-10-21"
 
@@ -107,7 +104,7 @@ class AzureConfig:
         raw_temperature = os.environ.get("AZURE_OPENAI_TEMPERATURE", "")
 
         return cls(
-            endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT") or DEFAULT_ENDPOINT,
+            endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
             api_key=api_key,
             deployment=deployment,
             api_version=os.environ.get("AZURE_OPENAI_API_VERSION") or DEFAULT_API_VERSION,
