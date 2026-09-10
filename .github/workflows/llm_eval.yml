@@ -11,8 +11,8 @@ on:
         description: "Minimum fraction of repeats that must select the expected tool"
         required: false
         default: "0.8"
-#   schedule:
-#     - cron: "0 4 * * 1" # Every Monday at 04:00 UTC
+  schedule:
+    - cron: "0 4 * * 1" # Every Monday at 04:00 UTC
 
 env:
   MAIN_PYTHON_VERSION: '3.14'
