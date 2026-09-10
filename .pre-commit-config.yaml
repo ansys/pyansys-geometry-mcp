@@ -56,3 +56,10 @@ repos:
     hooks:
       - id: ruff-check
       - id: ruff-format
+
+  - repo: https://github.com/crate-ci/typos
+    rev: b859c0df7f391deba73030f79b957e62b4d81dc6  # frozen: varcon-core-v5.0.7
+    hooks:
+      - id: typos
+        args: ["--config", "doc/styles/typos.toml"]
+        exclude: "doc/styles/config/vocabularies"

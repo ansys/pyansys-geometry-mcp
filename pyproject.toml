@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "pyansys-geometry-mcp"
-version = "0.1.0"
+version = "0.1.dev0"
 description = "MCP server for PyAnsys Geometry"
 readme = "README.rst"
 keywords = [
@@ -16,10 +16,10 @@ keywords = [
 ]
 license = "MIT"
 maintainers = [
-  { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
+  { name = "Synopsys, Inc. and ANSYS, Inc.", email = "pyansys-core@synopsys.com" },
 ]
 authors = [
-  { name = "ANSYS, Inc.", email = "pyansys.core@ansys.com" },
+  { name = "Synopsys, Inc. and ANSYS, Inc.", email = "pyansys-core@synopsys.com" },
 ]
 requires-python = ">=3.12,<4"
 classifiers = [
@@ -36,7 +36,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-  "ansys-common-mcp>=0.2.0",
+  "ansys-common-mcp>=0.3.0",
   "ansys-geometry-core[all]>=0.17.0",
   "black",
   "isort",
