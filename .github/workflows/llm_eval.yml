@@ -1,6 +1,9 @@
 name: LLM tool discoverability
 
 on:
+  push:
+    branches:
+      - test/add-discoverability-harness
   workflow_dispatch:
     inputs:
       repeats:
