@@ -29,6 +29,7 @@ If you want to override these defaults, set the following environment variables.
 - export ANSRV_GEO_PORT=50051
 """
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import ansys.tools.visualization_interface as viz_interface
@@ -40,6 +41,8 @@ from ansys.geometry.mcp import app
 pv.OFF_SCREEN = True
 viz_interface.TESTING_MODE = True
 pv.global_theme.window_size = [600, 600]
+
+FILES_DIR = Path(Path(__file__).parent, "files")
 
 
 @pytest.fixture(scope="session")
