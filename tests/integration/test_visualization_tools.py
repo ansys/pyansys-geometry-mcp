@@ -25,6 +25,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from pyvista.plotting import system_supports_plotting
 
 from ansys.geometry.mcp.tools import (
     create_box,
@@ -32,6 +33,10 @@ from ansys.geometry.mcp.tools import (
     get_design_3d_scene,
     get_screenshot,
     read_image_in_base64,
+)
+
+skip_no_xserver = pytest.mark.skipif(
+    not system_supports_plotting(), reason="Requires active X Server"
 )
 
 
@@ -52,7 +57,7 @@ def test_get_screenshot_not_connected():
     assert "not connected" in result
 
 
-@pytest.mark.skip(reason="design.plot() opens a blocking GUI window; cannot be automated")
+@skip_no_xserver
 def test_get_design_3d_scene(ctx):
     """Test opening the 3D scene window of the active design."""
     create_design(ctx, "test_3d_scene_001")
