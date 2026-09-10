@@ -268,75 +268,78 @@ def test_run_script_file_errors(ctx):
 
 
 async def test_run_python_code_success(ctx):
-    """Test history replay and bookkeeping when the session and the code both succeed."""
+    """Test persistence and history bookkeeping when the code succeeds."""
     app_context = ctx.fastmcp._lifespan_result
-    app_context.python_session_synced_index = len(app_context.command_history)
+    app_context.python_globals.pop("answer", None)
     baseline = list(app_context.command_history)
 
-    # Nothing pending: the code runs and is recorded as already synced.
     result = json.loads(await run_python_code(ctx, "answer = 6 * 7\nprint(answer)"))
     assert result["success"] is True
     assert "42" in result["stdout"]
     assert app_context.command_history == [*baseline, "answer = 6 * 7\nprint(answer)"]
-    assert app_context.python_session_synced_index == len(baseline) + 1
 
-    # History recorded by other tools is replayed before the code runs, so what it
-    # defines is visible here.
-    app_context.command_history.append("replayed_value = answer + 1")
-    result = json.loads(await run_python_code(ctx, "print(replayed_value)"))
-    assert result["success"] is True
-    assert "43" in result["stdout"]
-    assert app_context.command_history == [
-        *baseline,
-        "answer = 6 * 7\nprint(answer)",
-        "replayed_value = answer + 1",
-        "print(replayed_value)",
-    ]
-    assert app_context.python_session_synced_index == len(app_context.command_history)
-
-    # The session is persistent, so earlier variables survive without any replay.
+    # The namespace is persistent, so earlier variables survive.
     result = json.loads(await run_python_code(ctx, "print(answer * 2)"))
     assert result["success"] is True
     assert "84" in result["stdout"]
 
 
-async def test_run_python_code_failure_paths(ctx):
-    """Test that replay failures abort early and failed results never reach the history."""
+async def test_run_python_code_shares_live_objects(ctx):
+    """Test that the code runs against the same objects the other tools use."""
     app_context = ctx.fastmcp._lifespan_result
-    app_context.python_session_synced_index = len(app_context.command_history)
+
+    result = json.loads(await run_python_code(ctx, "print(instance is not None)"))
+    assert result["success"] is True
+    assert "True" in result["stdout"]
+    assert app_context.python_globals["instance"] is app_context.product_instance
+
+    create_design(ctx, "InProcessDesign")
+    result = json.loads(await run_python_code(ctx, "print(design.name)"))
+    assert result["success"] is True
+    assert "InProcessDesign" in result["stdout"]
+
+    # A body created here is immediately visible through the product instance.
+    result = json.loads(
+        await run_python_code(
+            ctx,
+            "from ansys.geometry.core.math import Point2D\n"
+            "from ansys.geometry.core.misc import Distance\n"
+            "from ansys.geometry.core.sketch import Sketch\n"
+            "sketch = Sketch()\n"
+            "sketch.box(center=Point2D([0, 0]), width=1, height=1)\n"
+            "design.extrude_sketch(name='InProcessBody', sketch=sketch, distance=Distance(1))",
+        )
+    )
+    assert result["success"] is True
+    bodies = app_context.product_instance.get_active_design().get_all_bodies()
+    assert [b.name for b in bodies] == ["InProcessBody"]
+
+
+async def test_run_python_code_failure_paths(ctx):
+    """Test that failures are reported without touching the history or the namespace."""
+    app_context = ctx.fastmcp._lifespan_result
     baseline = list(app_context.command_history)
 
     # Code that raises is reported as a failure and is not recorded.
-    result = json.loads(await run_python_code(ctx, "raise ValueError('bad code')"))
+    result = json.loads(await run_python_code(ctx, "never_defined = 1\nraise ValueError('bad')"))
     assert result["success"] is False
-    assert "bad code" in result["error"]
+    assert "bad" in result["error"]
+    assert "ValueError" in result["error"]
     assert app_context.command_history == baseline
-    assert app_context.python_session_synced_index == len(baseline)
 
-    # A pending command that fails on replay aborts before the code is ever run.
-    app_context.command_history.append("raise RuntimeError('bad replay')")
-    result = json.loads(await run_python_code(ctx, "never_defined = 1"))
+    # Output produced before the exception is still returned.
+    result = json.loads(await run_python_code(ctx, "print('partial')\nraise ValueError('bad')"))
     assert result["success"] is False
-    assert "Failed to sync prior tool commands" in result["error"]
-    assert "bad replay" in result["error"]
-    assert app_context.command_history == [*baseline, "raise RuntimeError('bad replay')"]
-    assert app_context.python_session_synced_index == len(baseline)
+    assert "partial" in result["stdout"]
 
-    # Without a session there is nothing to replay into, and nothing is recorded.
-    session = app_context.python_session
-    app_context.python_session = None
+    # A disconnected backend is reported instead of executing anything.
+    instance = app_context.product_instance
+    app_context.product_instance = None
     try:
-        result = json.loads(await run_python_code(ctx, "never_defined = 2"))
+        result = json.loads(await run_python_code(ctx, "should_not_run = 1"))
     finally:
-        app_context.python_session = session
+        app_context.product_instance = instance
     assert result["success"] is False
-    assert "No Python session available" in result["error"]
-    assert app_context.command_history == [*baseline, "raise RuntimeError('bad replay')"]
-    assert app_context.python_session_synced_index == len(baseline)
-
-    # Neither failing call leaked state into the session.
-    app_context.command_history.pop()
-    app_context.python_session_synced_index = len(app_context.command_history)
-    result = json.loads(await run_python_code(ctx, "print('never_defined' in dir())"))
-    assert result["success"] is True
-    assert "False" in result["stdout"]
+    assert "not connected" in result["error"]
+    assert "should_not_run" not in app_context.python_globals
+    assert app_context.command_history == baseline

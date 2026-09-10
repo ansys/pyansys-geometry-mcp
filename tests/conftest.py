@@ -41,13 +41,11 @@ def context(use_existing_service):
     app.context.connect_to_existing_service = use_existing_service
 
     # Launch the backend without starting the MCP stdio protocol, following the same
-    # order as product_lifespan() so run_python_code() has a live session to work with.
-    app.start_python_session()
+    # order as product_lifespan().
     app.product_startup()
     yield app.context
 
     app.product_cleanup()
-    app.cleanup_python_session()
 
 
 @pytest.fixture(scope="session")

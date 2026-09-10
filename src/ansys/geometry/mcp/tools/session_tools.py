@@ -45,7 +45,6 @@ with the server before it starts.
 """
 
 from ansys.common.mcp.logging_config import get_logger
-import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
@@ -128,60 +127,98 @@ def get_product_status(ctx: Context) -> str:
 
 @app.tool()
 async def run_python_code(ctx: Context, code: str) -> str:
-    """Execute arbitrary Python code in the product backend's Python session. Session is persistent - variables inside remain available.
+    """Perform ANY geometry/CAD operation that has no dedicated MCP tool, by running PyAnsys Geometry API code.
 
-    Predefined variables : ``instance`` -> is the instance of ansys.geometry.core.Modeler()
-    that should be used.
+    This is the general-purpose fallback tool. When the user asks for a modeling,
+    query, or modification action (fillet, chamfer, shell, measure, pattern, ...) and
+    no other tool matches it, do NOT answer that it is unsupported -- write the
+    equivalent ``ansys.geometry.core`` code and run it here. Prefer a dedicated tool
+    whenever one exists; use ``run_script_file`` for an existing Discovery/SpaceClaim
+    script file on disk, and never write a temporary file to run a few statements.
 
-    Other tools act on ``product_instance`` directly and only record an equivalent
-    code string in the command history, so before running ``code`` any not-yet-replayed
-    history entries are executed here first to keep the session's state (for example,
-    ``design`` or body variables) consistent with what those tools have already done.
+    The session is persistent, so variables defined by one call stay available to the
+    next. ``instance`` (the ``Modeler``) and, once a design exists, ``design`` are
+    predefined; import anything else explicitly. Bodies, faces, and edges are reached
+    through the design tree (``design.bodies[0].faces[0].edges``) and edits are methods
+    on those objects. Only stdout is returned, so ``print()`` the values you need; if
+    unsure of the exact API, introspect it first with ``dir()`` or ``help()``, then
+    issue a second call with the real code.
+
+    The code runs against the same live objects the other tools use, so bodies they
+    created are immediately available here, and bodies created here are immediately
+    visible to them.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
     code : str
-        The Python code to execute.
+        PyAnsys Geometry Python code to execute in the persistent session.
 
     Returns
     -------
     str
-        The output or result of the executed code, or an error message if execution fails.
+        JSON string with ``success``, ``stdout``, ``stderr``, and ``error`` keys.
+        On failure, read ``error``/``stderr``, correct the code, and retry rather than
+        reporting the operation as impossible.
 
     """
+    import asyncio
+    import contextlib
+    import io
     import json
+    import traceback
 
     app_context = get_geometry_ctx(ctx)
 
-    pending = app_context.command_history[app_context.python_session_synced_index :]
-    if pending and app_context.python_session is not None:
-        replay_result = app_context.python_session.execute("\n".join(pending), timeout=60)
-        if not replay_result.get("success"):
-            return json.dumps(
-                {
-                    "success": False,
-                    "error": (
-                        "Failed to sync prior tool commands into the Python session: "
-                        f"{replay_result.get('error', 'Unknown error')}"
-                    ),
-                    "stdout": replay_result.get("stdout", ""),
-                    "stderr": replay_result.get("stderr", ""),
-                },
-                ensure_ascii=False,
-            )
-        app_context.python_session_synced_index = len(app_context.command_history)
+    if app_context.product_instance is None:
+        return json.dumps(
+            {
+                "success": False,
+                "stdout": "",
+                "stderr": "",
+                "error": "Product backend is not connected. Cannot run Python code.",
+            },
+            ensure_ascii=False,
+        )
 
-    result = await shared_tools.execute_python_code(ctx, code, timeout=60)
+    session_globals = app_context.python_globals
+    session_globals["instance"] = app_context.product_instance
     try:
-        parsed = json.loads(result)
-        if parsed.get("success"):
-            app_context.command_history.append(code)
-            app_context.python_session_synced_index = len(app_context.command_history)
-    except (json.JSONDecodeError, AttributeError):
-        pass
-    return result
+        active_design = app_context.product_instance.get_active_design()
+    except Exception:
+        active_design = None
+    if active_design is not None:
+        session_globals["design"] = active_design
+
+    def _execute() -> dict[str, str | bool]:
+        stdout, stderr = io.StringIO(), io.StringIO()
+        try:
+            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                exec(compile(code, "<run_python_code>", "exec"), session_globals)
+        except BaseException:
+            return {
+                "success": False,
+                "stdout": stdout.getvalue(),
+                "stderr": stderr.getvalue(),
+                "error": traceback.format_exc(),
+            }
+        return {
+            "success": True,
+            "stdout": stdout.getvalue(),
+            "stderr": stderr.getvalue(),
+            "error": "",
+        }
+
+    # Off the event loop: geometry calls are blocking and can take a while.
+    result = await asyncio.get_running_loop().run_in_executor(None, _execute)
+
+    if result["success"]:
+        app_context.command_history.append(code)
+    else:
+        logger.error(f"run_python_code failed: {result['error']}")
+
+    return json.dumps(result, ensure_ascii=False)
 
 
 @app.tool()

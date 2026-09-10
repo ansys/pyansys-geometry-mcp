@@ -56,11 +56,10 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
         When ``True``, connect to a running geometry service instead of
         launching a new one.
     selection_registry: Optional[dict[str, Any]]
-    python_session_synced_index : int
-        Number of leading ``command_history`` entries already executed in
-        ``python_session``. Used by ``run_python_code`` to replay commands
-        issued by other tools (which act on ``product_instance`` directly)
-        before running user-supplied code, keeping both in sync.
+    python_globals : dict[str, Any]
+        Namespace in which ``run_python_code`` executes user code. It persists
+        across calls and is seeded with ``instance`` and ``design``, which refer
+        to the very same objects the other tools act on.
 
     Examples
     --------
@@ -79,4 +78,4 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     uds_id: Optional[str] = None
     connect_to_existing_service: bool = False
     selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)
-    python_session_synced_index: int = 0
+    python_globals: dict[str, Any] = field(default_factory=dict)
