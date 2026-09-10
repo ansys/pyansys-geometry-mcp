@@ -182,6 +182,7 @@ async def run_python_code(ctx: Context, code: str) -> str:
             ensure_ascii=False,
         )
 
+    # Define ``instance`` and ``design`` for script running to use.
     session_globals = app_context.python_globals
     session_globals["instance"] = app_context.product_instance
     try:

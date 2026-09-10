@@ -134,10 +134,10 @@ def create_box(
         )
 
         # Perform transcript
-        # TODO: record the `Plane` import too; the transcript does not run as-is  # noqa: TD002, TD003
         app_context.command_history.append("from ansys.geometry.core.math import Point2D")
         app_context.command_history.append("from ansys.geometry.core.misc import Distance")
         app_context.command_history.append("from ansys.geometry.core.sketch import Sketch")
+        app_context.command_history.append("from ansys.geometry.core.math import Plane")
         app_context.command_history.append("from pint import Unit")
         app_context.command_history.append(f"plane = Plane(origin=[0, 0, {origin[2]}])")
         app_context.command_history.append(
