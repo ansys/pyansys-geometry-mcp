@@ -22,47 +22,8 @@
 
 """Configuration for MCP tool test modules."""
 
-from unittest.mock import MagicMock
-
 import ansys.geometry.core as pyansys_geometry
 import pytest
-
-from ansys.geometry.mcp import app
-
-
-@pytest.fixture(scope="session")
-def context(use_existing_service):
-    """Start the geometry backend once for the whole test session."""
-    app.context = app.create_context()
-    app.context.transport_mode = "insecure"
-    app.context.connect_to_existing_service = use_existing_service
-
-    # Launch the backend without starting the MCP stdio protocol.
-    app.product_startup()
-    yield app.context
-
-    app.product_cleanup()
-
-
-@pytest.fixture(scope="session")
-def startup_history(context):
-    """Snapshot the command history produced by product_startup for reuse."""
-    return list(context.command_history)
-
-
-@pytest.fixture(scope="function")
-def ctx(context, startup_history):
-    """Return a minimal MCP Context that resolves to the real app context.
-
-    Tools call ``ctx.fastmcp._lifespan_result`` to reach the context, so we
-    wire that attribute to the live session context without starting any server.
-    """
-    context.command_history.clear()
-    context.command_history.extend(startup_history)
-
-    mock_ctx = MagicMock()
-    mock_ctx.fastmcp._lifespan_result = context
-    yield mock_ctx
 
 
 @pytest.fixture(scope="session")
