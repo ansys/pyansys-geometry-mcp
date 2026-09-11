@@ -191,6 +191,8 @@ async def run_python_code(ctx: Context, code: str) -> str:
         active_design = None
     if active_design is not None:
         session_globals["design"] = active_design
+    else:
+        session_globals.pop("design", None)
 
     def _execute() -> dict[str, str | bool]:
         stdout, stderr = io.StringIO(), io.StringIO()
@@ -288,7 +290,7 @@ def get_design_info(ctx: Context) -> str:
 
 @app.tool()
 def export_design_to(ctx: Context, file_format: str, folder: str | None = None) -> str:
-    """Export the current active design to a specified format.
+    """Export/Save the current active design to a specified format.
 
     Parameters
     ----------
@@ -466,7 +468,7 @@ def import_geometry_file(
 
 @app.tool()
 def run_script_file(
-    ctx: Context, file_path: str, args: dict[str, str] = None
+    ctx: Context, file_path: str, args: dict[str, str] | None = None
 ) -> str | dict[str, str]:
     """Run an existing Discovery/SpaceClaim scripting API file on the geometry backend.
 

@@ -24,7 +24,6 @@
 
 from ansys.common.mcp import PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
-import ansys.common.mcp.tools as shared_tools
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 
