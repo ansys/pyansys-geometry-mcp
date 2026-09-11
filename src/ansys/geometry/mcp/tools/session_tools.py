@@ -225,7 +225,7 @@ def get_design_info(ctx: Context) -> str:
 
 @app.tool()
 def export_design_to(ctx: Context, file_format: str, folder: str | None = None) -> str:
-    """Export the current active design to a specified format.
+    """Export/Save the current active design to a specified format.
 
     Parameters
     ----------
