@@ -321,6 +321,10 @@ def create_selection_builder(ctx: Context) -> str:
     (bodies, faces, edges) via query, filter, order, group, and extend operations.
     Selections can also be combined, subtracted, or intersected.
 
+    Call this only to start a brand-new selection. If a selection builder already
+    exists from earlier in this conversation, reuse its handle in the other
+    selection tools instead of calling this again.
+
     Parameters
     ----------
     ctx : Context
@@ -406,7 +410,9 @@ def select_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to select: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -603,7 +609,9 @@ def filter_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to filter: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -657,6 +665,17 @@ def filter_entities(
         Body names, or face/edge IDs, that survive the filter; an empty list if none do.
         Returns a string error message if the selection handle is invalid, the
         criterion does not apply to the entity type, or required arguments are missing.
+
+    Examples
+    --------
+    Keep only bodies with volume of at least 100 m³ (drops the smaller ones):
+        ``filter_entities(entity_type="body", criteria="volume", min_value=100)``
+
+    Keep only the single largest face by area:
+        ``filter_entities(entity_type="face", criteria="area", find_max=True)``
+
+    Keep only solid bodies:
+        ``filter_entities(entity_type="body", criteria="is_solid")``
 
     """
     app_context = get_geometry_ctx(ctx)
@@ -817,7 +836,9 @@ def order_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to order: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -919,7 +940,9 @@ def group_entities(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to group: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -1014,7 +1037,9 @@ def extend_selection(
     ctx : Context
         MCP request context (injected automatically).
     selection_handle : str
-        Handle of the selection builder to use for this query.
+        Handle of the selection builder to use for this query. Reuse the handle
+        from the most recent ``create_selection_builder`` call in this
+        conversation rather than creating a new one.
     entity_type : str
         Kind of entity to extend: ``"body"``, ``"face"``, or ``"edge"``.
     criteria : str
@@ -1022,7 +1047,9 @@ def extend_selection(
         ``"volume"`` or ``"color"`` add entities sharing that property with any
         entity already selected. ``"nearby"`` adds entities within ``distance``.
         ``"coincident"``, ``"coaxial"``, ``"connected"``, and ``"tangent_chain"``
-        add entities related by topology or geometry.
+        add entities related by topology or geometry. Bodies have no dedicated
+        "touching"/contact criterion: for bodies in direct contact, use ``"nearby"``
+        with a near-zero ``distance`` (e.g. ``0.0``) rather than omitting it.
     scope : str, default: ``"all"``
         Which entities to search when extending: ``"all"``, ``"visible"``, ``"body"``.
     distance : float, optional
@@ -1093,6 +1120,7 @@ def extend_selection(
 def create_named_selection(
     ctx: Context,
     name: str,
+    selection_handle: str | None = None,
     body_names: list[str] | None = None,
     face_ids: list[str] | None = None,
     edge_ids: list[str] | None = None,
@@ -1108,11 +1136,18 @@ def create_named_selection(
 
     A named selection is a labelled group of entities that can later be
     referenced by name (e.g. for meshing or boundary conditions).
-    At least one entity list must be provided.
+    At least one of ``selection_handle`` or an entity list must be provided.
 
-    Typical workflow: ``list_entities`` with ``entity_type="body"`` to find body
-    names, then ``entity_type="face"`` or ``"edge"`` on a body to obtain the face
-    and edge IDs to pass here.
+    Typical workflows:
+
+    - ``list_entities`` with ``entity_type="body"`` to find body names, then
+      ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and
+      edge IDs to pass here.
+    - Build a selection with ``create_selection_builder`` followed by
+      ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
+      ``extend_selection``, then pass that builder's ``selection_handle`` here to
+      save its currently selected bodies, faces, and edges as a named selection
+      (e.g. "save the bodies/faces I selected as ...").
 
     Parameters
     ----------
@@ -1120,6 +1155,11 @@ def create_named_selection(
         MCP request context (injected automatically).
     name : str
         Label for the named selection.
+    selection_handle : str, optional
+        Handle of a selection builder (from ``create_selection_builder``) whose
+        currently selected bodies, faces, and edges should be included. Use this
+        when the user refers to entities already picked/selected rather than
+        naming them explicitly.
     body_names : list of str, optional
         Body names to include. Use ``list_entities`` to discover names.
     face_ids : list of str, optional
@@ -1154,6 +1194,7 @@ def create_named_selection(
 
     if not any(
         [
+            selection_handle,
             body_names,
             face_ids,
             edge_ids,
@@ -1179,9 +1220,33 @@ def create_named_selection(
 
         design = app_context.product_instance.get_active_design()
         kwargs: dict = {}
+        bodies: list = []
+        faces: list = []
+        edges: list = []
+
+        if selection_handle:
+            selection_builder = app_context.selection_registry.get(selection_handle)
+            if selection_builder is None:
+                return f"Invalid selection handle: {selection_handle}"
+            selected_bodies = getattr(selection_builder, "_bodies", None)
+            selected_faces = getattr(selection_builder, "_faces", None)
+            selected_edges = getattr(selection_builder, "_edges", None)
+            if not any(
+                sel is not None and getattr(sel, "items", None)
+                for sel in (selected_bodies, selected_faces, selected_edges)
+            ):
+                return f"Selection '{selection_handle}' has no entities selected."
+            if selected_bodies is not None and selected_bodies.items:
+                bodies.extend(selected_bodies.items)
+            if selected_faces is not None and selected_faces.items:
+                faces.extend(selected_faces.items)
+            if selected_edges is not None and selected_edges.items:
+                edges.extend(selected_edges.items)
+            app_context.command_history.append(
+                f"selection_builder = selection_registry['{selection_handle}']"
+            )
 
         if body_names:
-            bodies = []
             for body_name in body_names:
                 body = find_body(design, body_name)
                 if body is None:
@@ -1189,6 +1254,8 @@ def create_named_selection(
                         f"Body '{body_name}' not found. Use list_entities to see available bodies."
                     )
                 bodies.append(body)
+
+        if bodies:
             kwargs["bodies"] = bodies
 
         if component_names:
@@ -1201,10 +1268,16 @@ def create_named_selection(
             kwargs["components"] = components
 
         if face_ids:
-            kwargs["faces"] = get_faces_from_ids(design, face_ids)
+            faces.extend(get_faces_from_ids(design, face_ids))
+
+        if faces:
+            kwargs["faces"] = faces
 
         if edge_ids:
-            kwargs["edges"] = get_edges_from_ids(design, edge_ids)
+            edges.extend(get_edges_from_ids(design, edge_ids))
+
+        if edges:
+            kwargs["edges"] = edges
 
         if vertex_ids:
             kwargs["vertices"] = get_vertices_from_ids(design, vertex_ids)
@@ -1246,6 +1319,13 @@ def create_named_selection(
 
         # Build fully expanded command history entry
         cmd_parts = []
+        if selection_handle:
+            if selected_bodies is not None and selected_bodies.items:
+                cmd_parts.append("bodies=selection_builder._bodies.items")
+            if selected_faces is not None and selected_faces.items:
+                cmd_parts.append("faces=selection_builder._faces.items")
+            if selected_edges is not None and selected_edges.items:
+                cmd_parts.append("edges=selection_builder._edges.items")
         if body_names:
             cmd_parts.append(f"bodies=[{', '.join(f'design.get_body({b!r})' for b in body_names)}]")
         if face_ids:
