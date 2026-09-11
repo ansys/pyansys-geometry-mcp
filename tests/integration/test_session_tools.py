@@ -130,7 +130,7 @@ def test_get_command_history(ctx):
 
     create_box(ctx, name="test_box", width=1.0, depth=1.0, height=1.0)
     result = get_command_history(ctx)
-    assert len(result) == 10
+    assert len(result) == 11
 
 
 def test_get_transcript(ctx):
