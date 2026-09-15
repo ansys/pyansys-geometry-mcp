@@ -44,11 +44,15 @@ with the server before it starts.
 
 """
 
+import json
+
 from ansys.common.mcp.logging_config import get_logger
+import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
 from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
+from ansys.geometry.mcp.misc.helpers import connect_to_modeler_in_persistent_python
 
 logger = get_logger(__name__)
 
@@ -163,65 +167,49 @@ async def run_python_code(ctx: Context, code: str) -> str:
         reporting the operation as impossible.
 
     """
-    import asyncio
-    import contextlib
-    import io
-    import json
-    import traceback
-
     app_context = get_geometry_ctx(ctx)
-
-    if app_context.product_instance is None:
+    session = app_context.python_session
+    if session is None:
         return json.dumps(
             {
                 "success": False,
                 "stdout": "",
                 "stderr": "",
-                "error": "Product backend is not connected. Cannot run Python code.",
+                "error": "No Python session available. The persistent Python session was not initialized.",
             },
             ensure_ascii=False,
         )
 
-    # Define ``instance`` and ``design`` for script running to use.
-    session_globals = app_context.python_globals
-    session_globals["instance"] = app_context.product_instance
-    try:
-        active_design = app_context.product_instance.get_active_design()
-    except Exception:
-        active_design = None
-    if active_design is not None:
-        session_globals["design"] = active_design
-    else:
-        session_globals.pop("design", None)
+    # Check if the product backend is connected before executing the code.
+    modeler_instance = session.metadata.get("instance", None)
+    if modeler_instance is None:
+        modeler_instance = connect_to_modeler_in_persistent_python(ctx)
 
-    def _execute() -> dict[str, str | bool]:
-        stdout, stderr = io.StringIO(), io.StringIO()
+    if modeler_instance is None:
         try:
-            with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-                exec(compile(code, "<run_python_code>", "exec"), session_globals)
-        except BaseException:
-            return {
-                "success": False,
-                "stdout": stdout.getvalue(),
-                "stderr": stderr.getvalue(),
-                "error": traceback.format_exc(),
-            }
-        return {
-            "success": True,
-            "stdout": stdout.getvalue(),
-            "stderr": stderr.getvalue(),
-            "error": "",
-        }
+            modeler_instance = connect_to_modeler_in_persistent_python(ctx)
+        except Exception as e:
+            logger.error(f"Failed to connect to the modeler in the persistent Python session: {e}")
+            return json.dumps(
+                {
+                    "success": False,
+                    "stdout": "",
+                    "stderr": "",
+                    "error": "Failed to connect to the modeler in the persistent Python session.",
+                },
+                ensure_ascii=False,
+            )
 
-    # Off the event loop: geometry calls are blocking and can take a while.
-    result = await asyncio.get_running_loop().run_in_executor(None, _execute)
+    result = await shared_tools.execute_python_code(ctx, code)
+    try:
+        parsed = json.loads(result)
+        if parsed.get("success"):
+            app_context = get_geometry_ctx(ctx)
+            app_context.command_history.append(code)
+    except (json.JSONDecodeError, AttributeError):
+        pass
 
-    if result["success"]:
-        app_context.command_history.append(code)
-    else:
-        logger.error(f"run_python_code failed: {result['error']}")
-
-    return json.dumps(result, ensure_ascii=False)
+    return result
 
 
 @app.tool()
