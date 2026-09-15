@@ -22,7 +22,7 @@
 
 """MCP server for PyAnsys Geometry MCP."""
 
-from ansys.common.mcp import PyAnsysBaseMCP
+from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
@@ -60,7 +60,12 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
 
         setup_commands = ["selection_registry = {}"]
 
-        return PyAnsysGeometryContext(command_history=setup_commands)
+        return PyAnsysGeometryContext(
+            python_session=PersistentPythonSession(
+                python_executable=self.python_executable, working_directory=self.working_directory
+            ),
+            command_history=setup_commands,
+        )
 
     def product_startup(self):
         """Launch the product instance when the server starts.
