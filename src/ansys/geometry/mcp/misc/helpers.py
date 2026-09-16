@@ -27,6 +27,8 @@ from typing import TYPE_CHECKING, Any
 from ansys.common.mcp.helpers import logger
 from fastmcp.server import Context
 
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
+
 if TYPE_CHECKING:
     from ansys.geometry.core import Modeler
 
@@ -54,6 +56,7 @@ def connect_to_modeler_in_persistent_python(
     if ctx.request_context is None:
         return "No request context available."
 
+    app_context = get_geometry_ctx(ctx)
     session = ctx.request_context.lifespan_context.python_session
     if session is None:
         return "No Python session available. The persistent Python session was not initialized."
@@ -72,15 +75,14 @@ def connect_to_modeler_in_persistent_python(
         if modeler_instance is None:
             return "No Modeler instance available in lifespan context."
 
-        connection_code = f"""
-# Connect to the persistent Modeler instance
-from ansys.geometry.core import Modeler  # pyright: ignore[reportMissingTypeStubs]
-
-modeler = Modeler(
-    host='{modeler_instance.client.ip}',
-    port={modeler_instance.client.port},
-)
-        """
+        # The session is a separate process, so it needs its own client to the same service.
+        connection_code = (
+            "from ansys.geometry.core import Modeler\n"
+            f"instance = Modeler(host={modeler_instance.client.host!r}, "
+            f"port={modeler_instance.client.port!r}, "
+            f"transport_mode={app_context.transport_mode!r})\n"
+            "design = None\n"
+        )
         session.execute(connection_code)
 
         # Store in persistent session
@@ -88,8 +90,10 @@ modeler = Modeler(
 
         logger.info(
             "Connected to persistent PyAnsys Geometry session successfully at"
-            f" {modeler_instance.client.ip}:{modeler_instance.client.port}!"
+            f" {modeler_instance.client.host}:{modeler_instance.client.port}!"
         )
+
+        refresh_design_in_persistent_python(ctx)
 
     except Exception as e:
         error_msg = (
@@ -98,3 +102,32 @@ modeler = Modeler(
         logger.error(error_msg)
 
     return session.metadata.get("instance", None)
+
+
+def refresh_design_in_persistent_python(ctx: Context) -> None:
+    """Rebind ``design`` in the persistent Python session to the active design.
+
+    The persistent session runs in its own process with its own ``Modeler`` client,
+    so the design it holds has to be re-read whenever the active design changes.
+    Does nothing when the session is not connected yet; the connection step
+    refreshes the design itself.
+
+    Parameters
+    ----------
+    ctx : Context
+        The MCP context containing server session and application context.
+
+    """
+    if ctx.request_context is None:
+        return
+
+    session = ctx.request_context.lifespan_context.python_session
+    if session is None or session.metadata.get("instance", None) is None:
+        return
+
+    result = session.execute("design = instance.read_existing_design()")
+    if isinstance(result, dict) and not result.get("success"):
+        logger.warning(
+            "Failed to refresh 'design' in the persistent PyAnsys Geometry session: "
+            f"{result.get('error')}"
+        )

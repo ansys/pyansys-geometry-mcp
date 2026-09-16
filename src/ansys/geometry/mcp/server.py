@@ -40,6 +40,10 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
     context: PyAnsysGeometryContext
     """The application context for the MCP server, containing the product instance and related information."""
 
+    def __init__(self, name: str = "pyansys-geometry-mcp", *args, **kwargs):
+        """Initialize the PyAnsys Geometry MCP server."""
+        super().__init__(name=name, *args, **kwargs)
+
     def create_context(self) -> PyAnsysGeometryContext:
         """Create (or return the pre-existing) product-specific context.
 
@@ -121,7 +125,6 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             self.context.port = instance.client.port
 
         self.context.product_instance = instance
-        self.context.python_globals["instance"] = instance
 
         # Log the successful launch of the product instance
         logger.info("PyAnsys Geometry MCP backend launched successfully.")
@@ -142,11 +145,8 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 logger.error(f"Error during product cleanup: {e}")
 
 
-# Create the MCP server instance used by tools.py and __main__.py.
+# Create the MCP server instance used by tools and __main__.py.
 # CLI arguments set in __main__.py are applied to this instance before app.run().
-# need_python=False: run_python_code() executes in this process, so the base class's
-# out-of-process interpreter is not needed.
 app = PyAnsysGeometryMCP(
     name="pyansys-geometry-mcp",
-    need_python=False,
 )

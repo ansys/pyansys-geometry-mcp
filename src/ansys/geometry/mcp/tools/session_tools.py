@@ -52,7 +52,10 @@ from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
 from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
-from ansys.geometry.mcp.misc.helpers import connect_to_modeler_in_persistent_python
+from ansys.geometry.mcp.misc.helpers import (
+    connect_to_modeler_in_persistent_python,
+    refresh_design_in_persistent_python,
+)
 
 logger = get_logger(__name__)
 
@@ -141,16 +144,16 @@ async def run_python_code(ctx: Context, code: str) -> str:
     script file on disk, and never write a temporary file to run a few statements.
 
     The session is persistent, so variables defined by one call stay available to the
-    next. ``instance`` (the ``Modeler``) and, once a design exists, ``design`` are
-    predefined; import anything else explicitly. Bodies, faces, and edges are reached
+    next. ``instance`` (the ``Modeler``) and ``design`` are predefined; import anything
+    else explicitly. Bodies, faces, and edges are reached
     through the design tree (``design.bodies[0].faces[0].edges``) and edits are methods
     on those objects. Only stdout is returned, so ``print()`` the values you need; if
     unsure of the exact API, introspect it first with ``dir()`` or ``help()``, then
     issue a second call with the real code.
 
-    The code runs against the same live objects the other tools use, so bodies they
-    created are immediately available here, and bodies created here are immediately
-    visible to them.
+    The code runs in a separate process that is connected to the same geometry
+    service the other tools use, so bodies they created are immediately available
+    here, and bodies created here are immediately visible to them.
 
     Parameters
     ----------
@@ -168,19 +171,20 @@ async def run_python_code(ctx: Context, code: str) -> str:
 
     """
     app_context = get_geometry_ctx(ctx)
-    session = app_context.python_session
-    if session is None:
+    instance = app_context.product_instance
+    if instance is None:
         return json.dumps(
             {
                 "success": False,
                 "stdout": "",
                 "stderr": "",
-                "error": "No Python session available. The persistent Python session was not initialized.",
+                "error": "The product backend is not connected.",
             },
             ensure_ascii=False,
         )
 
     # Check if the product backend is connected before executing the code.
+    session = ctx.request_context.lifespan_context.python_session
     modeler_instance = session.metadata.get("instance", None)
     if modeler_instance is None:
         modeler_instance = connect_to_modeler_in_persistent_python(ctx)
@@ -236,6 +240,7 @@ def create_design(ctx: Context, design_name: str) -> str:
 
     try:
         app_context.product_instance.create_design(design_name)
+        refresh_design_in_persistent_python(ctx)
 
         # Perform transcript
         app_context.command_history.append(f"design=instance.create_design({design_name!r})")
