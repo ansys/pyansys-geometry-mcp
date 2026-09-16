@@ -48,6 +48,15 @@ def use_tracker(request):
     pyansys_geometry.USE_TRACKER_TO_UPDATE_DESIGN = False
 
 
+@pytest.fixture(scope="session")
+def transport_mode(request):
+    """Fixture to determine transport mode to be used."""
+
+    value: str = request.config.getoption("--transport-mode", default="insecure")
+
+    return value.lower()
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--use-existing-service",
@@ -65,6 +74,13 @@ def pytest_addoption(parser):
         default="no",
         help=("Enable the tracker to update the design. Options: 'yes' or 'no'. By default, 'no'."),
         choices=("yes", "no"),
+    )
+    parser.addoption(
+        "--transport-mode",
+        action="store",
+        default="insecure",
+        help=("Specify the transport mode to use for the tests. By default, 'insecure'."),
+        choices=("insecure", "uds", "wnua", "mtls"),
     )
     parser.addoption(
         "--run-llm-eval",

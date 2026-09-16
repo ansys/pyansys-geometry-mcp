@@ -44,12 +44,18 @@ with the server before it starts.
 
 """
 
+import json
+
 from ansys.common.mcp.logging_config import get_logger
 import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
 from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
+from ansys.geometry.mcp.misc.helpers import (
+    connect_to_modeler_in_persistent_python,
+    refresh_design_in_persistent_python,
+)
 
 logger = get_logger(__name__)
 
@@ -128,27 +134,77 @@ def get_product_status(ctx: Context) -> str:
 
 @app.tool()
 async def run_python_code(ctx: Context, code: str) -> str:
-    """Execute arbitrary Python code in the product backend's Python session. Session is persistent - variables inside remain available.
+    """Perform ANY geometry/CAD operation that has no dedicated MCP tool, by running PyAnsys Geometry API code.
 
-    Predefined variables : ``instance`` -> is the instance of ansys.geometry.core.Modeler()
-    that should be used.
+    This is the general-purpose fallback tool. When the user asks for a modeling,
+    query, or modification action (fillet, chamfer, shell, measure, pattern, ...) and
+    no other tool matches it, do NOT answer that it is unsupported -- write the
+    equivalent ``ansys.geometry.core`` code and run it here. Prefer a dedicated tool
+    whenever one exists; use ``run_script_file`` for an existing Discovery/SpaceClaim
+    script file on disk, and never write a temporary file to run a few statements.
+
+    The session is persistent, so variables defined by one call stay available to the
+    next. ``instance`` (the ``Modeler``) and ``design`` are predefined; import anything
+    else explicitly. Bodies, faces, and edges are reached
+    through the design tree (``design.bodies[0].faces[0].edges``) and edits are methods
+    on those objects. Only stdout is returned, so ``print()`` the values you need; if
+    unsure of the exact API, introspect it first with ``dir()`` or ``help()``, then
+    issue a second call with the real code.
+
+    The code runs in a separate process that is connected to the same geometry
+    service the other tools use, so bodies they created are immediately available
+    here, and bodies created here are immediately visible to them.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
     code : str
-        The Python code to execute.
+        PyAnsys Geometry Python code to execute in the persistent session.
 
     Returns
     -------
     str
-        The output or result of the executed code, or an error message if execution fails.
+        JSON string with ``success``, ``stdout``, ``stderr``, and ``error`` keys.
+        On failure, read ``error``/``stderr``, correct the code, and retry rather than
+        reporting the operation as impossible.
 
     """
-    import json
+    app_context = get_geometry_ctx(ctx)
+    instance = app_context.product_instance
+    if instance is None:
+        return json.dumps(
+            {
+                "success": False,
+                "stdout": "",
+                "stderr": "",
+                "error": "The product backend is not connected.",
+            },
+            ensure_ascii=False,
+        )
 
-    result = await shared_tools.execute_python_code(ctx, code, timeout=60)
+    # Make sure the persistent Python session holds a Modeler before executing the code.
+    session = ctx.request_context.lifespan_context.python_session
+    if session.metadata.get("instance", None) is None:
+        error = None
+        try:
+            modeler_instance = connect_to_modeler_in_persistent_python(ctx)
+            # The helper returns a message instead of a Modeler when it cannot connect.
+            if modeler_instance is None:
+                error = "Failed to connect to the modeler in the persistent Python session."
+            elif isinstance(modeler_instance, str):
+                error = modeler_instance
+        except Exception as e:
+            error = f"Failed to connect to the modeler in the persistent Python session: {e}"
+
+        if error is not None:
+            logger.error(error)
+            return json.dumps(
+                {"success": False, "stdout": "", "stderr": "", "error": error},
+                ensure_ascii=False,
+            )
+
+    result = await shared_tools.execute_python_code(ctx, code)
     try:
         parsed = json.loads(result)
         if parsed.get("success"):
@@ -156,6 +212,7 @@ async def run_python_code(ctx: Context, code: str) -> str:
             app_context.command_history.append(code)
     except (json.JSONDecodeError, AttributeError):
         pass
+
     return result
 
 
@@ -183,6 +240,7 @@ def create_design(ctx: Context, design_name: str) -> str:
 
     try:
         app_context.product_instance.create_design(design_name)
+        refresh_design_in_persistent_python(ctx)
 
         # Perform transcript
         app_context.command_history.append(f"design=instance.create_design({design_name!r})")
@@ -399,3 +457,79 @@ def import_geometry_file(
     except Exception as e:
         logger.error(f"import_geometry_file failed: {e}")
         return f"Error importing '{file_path}': {e}"
+
+
+@app.tool()
+def run_script_file(
+    ctx: Context, file_path: str, args: dict[str, str] | None = None
+) -> str | dict[str, str]:
+    """Run an existing Discovery/SpaceClaim scripting API file on the geometry backend.
+
+    Use this tool when the user asks to run, execute, or play back a script file that
+    already exists on disk (for example "run C:/scripts/make_flange.py", "execute my
+    SpaceClaim script", "replay this .scscript").
+
+    When NOT to use this tool: to execute Python code you are writing yourself, use
+    ``run_python_code`` instead -- that tool runs the PyAnsys Geometry API
+    (``instance``, ``design``, ...) in a persistent session, while this tool runs a
+    different language surface entirely. To load a CAD/geometry file (``.scdocx``,
+    ``.step``, ``.iges``, ``.x_t``, ...), use ``import_geometry_file``. Never write a
+    temporary script file just to run a few statements; prefer ``run_python_code``.
+
+    Script language: the file must be written against the Discovery/SpaceClaim scripting
+    API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``, ``instance``,
+    ``design``) are NOT available inside the script, and script variables do not leak
+    into the ``run_python_code`` session (or vice versa).
+
+    Passing arguments: ``args`` values must all be strings. The script receives them as a
+    dictionary of strings named ``argsDict`` and is responsible for converting them, for
+    example ``radius = MM(int(argsDict["radius"]))``. Pass ``{"radius": "1"}``, never
+    ``{"radius": 1}``. Omit ``args`` when the script takes no arguments.
+
+    Returning values: to get values back, the script must assign a dictionary named
+    ``result``, for example ``result = {"numBodies": numBodies}``. A script that does not
+    define ``result`` returns an empty dictionary even though it ran successfully.
+
+    Side effects: the script may create or modify the active design on the backend. Those
+    changes are not mirrored into this server's in-process design state or command
+    history, so after a script that edits geometry, refresh your view with
+    ``get_design_info``, ``list_entities``, or ``get_screenshot`` before relying on
+    previously reported names, IDs, or counts.
+
+    Parameters
+    ----------
+    ctx : Context
+        MCP request context (injected automatically).
+    file_path : str
+        Path to the script file, including its extension. Must be readable by the
+        machine running this MCP server; use an absolute path when possible, since
+        relative paths are resolved against the server's working directory.
+    args : dict[str, str], optional
+        String-valued arguments exposed to the script as ``argsDict``. Default ``None``.
+
+    Returns
+    -------
+    str | dict[str, str]
+        On success, the script's ``result`` dictionary with string values (empty if the
+        script defined no ``result``). On failure, a plain string message.
+        Check the returned type: a ``str`` always means the script did not run, and the
+        message should be reported to the user rather than retried unchanged.
+
+    """
+    from pathlib import Path
+
+    app_context = get_geometry_ctx(ctx)
+
+    if app_context.product_instance is None:
+        return "Product backend is not connected. Cannot run script file."
+
+    resolved = Path(file_path).resolve()
+    if not resolved.exists():
+        return f"File not found: {resolved}"
+
+    try:
+        return app_context.product_instance.run_script_file(resolved, args)[0]
+
+    except Exception as e:
+        logger.error(f"run_script_file failed: {e}")
+        return f"Error running script file '{file_path}': {e}"
