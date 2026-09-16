@@ -267,79 +267,84 @@ def test_run_script_file_errors(ctx):
     assert "boom" in result
 
 
-async def test_run_python_code_success(ctx):
-    """Test persistence and history bookkeeping when the code succeeds."""
-    app_context = ctx.fastmcp._lifespan_result
-    app_context.python_globals.pop("answer", None)
-    baseline = list(app_context.command_history)
+async def test_run_python_code_not_connected(ctx, execute_mock, monkeypatch):
+    """Test that no code is executed when the product backend is not connected."""
+    # The app context is session scoped, so monkeypatch restores it for the next test.
+    monkeypatch.setattr(ctx.fastmcp._lifespan_result, "product_instance", None)
 
-    result = json.loads(await run_python_code(ctx, "answer = 6 * 7\nprint(answer)"))
-    assert result["success"] is True
-    assert "42" in result["stdout"]
-    assert app_context.command_history == [*baseline, "answer = 6 * 7\nprint(answer)"]
+    result = json.loads(await run_python_code(ctx, "print(1)"))
 
-    # The namespace is persistent, so earlier variables survive.
-    result = json.loads(await run_python_code(ctx, "print(answer * 2)"))
-    assert result["success"] is True
-    assert "84" in result["stdout"]
+    assert result["success"] is False
+    assert result["error"] == "The product backend is not connected."
+    execute_mock.assert_not_awaited()
 
 
-async def test_run_python_code_shares_live_objects(ctx):
-    """Test that the code runs against the same objects the other tools use."""
-    app_context = ctx.fastmcp._lifespan_result
-
-    result = json.loads(await run_python_code(ctx, "print(instance is not None)"))
-    assert result["success"] is True
-    assert "True" in result["stdout"]
-    assert app_context.python_globals["instance"] is app_context.product_instance
-
-    create_design(ctx, "InProcessDesign")
-    result = json.loads(await run_python_code(ctx, "print(design.name)"))
-    assert result["success"] is True
-    assert "InProcessDesign" in result["stdout"]
-
-    # A body created here is immediately visible through the product instance.
-    result = json.loads(
-        await run_python_code(
-            ctx,
-            "from ansys.geometry.core.math import Point2D\n"
-            "from ansys.geometry.core.misc import Distance\n"
-            "from ansys.geometry.core.sketch import Sketch\n"
-            "sketch = Sketch()\n"
-            "sketch.box(center=Point2D([0, 0]), width=1, height=1)\n"
-            "design.extrude_sketch(name='InProcessBody', sketch=sketch, distance=Distance(1))",
-        )
+async def test_run_python_code_success(ctx, execute_mock, connect_mock):
+    """Test that a successful execution is forwarded and appended to the command history."""
+    execute_mock.return_value = json.dumps(
+        {"success": True, "stdout": "42\n", "stderr": "", "message": "ok"}
     )
+
+    result = json.loads(await run_python_code(ctx, "print(42)"))
+
     assert result["success"] is True
-    bodies = app_context.product_instance.get_active_design().get_all_bodies()
-    assert [b.name for b in bodies] == ["InProcessBody"]
+    assert result["stdout"] == "42\n"
+    connect_mock.assert_called_once_with(ctx)
+    execute_mock.assert_awaited_once_with(ctx, "print(42)")
+    assert "print(42)" in get_command_history(ctx)
 
 
-async def test_run_python_code_failure_paths(ctx):
-    """Test that failures are reported without touching the history or the namespace."""
-    app_context = ctx.fastmcp._lifespan_result
-    baseline = list(app_context.command_history)
+async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_mock):
+    """Test that a failed execution is returned as-is and left out of the command history."""
+    execute_mock.return_value = json.dumps(
+        {"success": False, "stdout": "", "stderr": "boom", "error": "NameError: boom"}
+    )
 
-    # Code that raises is reported as a failure and is not recorded.
-    result = json.loads(await run_python_code(ctx, "never_defined = 1\nraise ValueError('bad')"))
+    result = json.loads(await run_python_code(ctx, "boom"))
+
     assert result["success"] is False
-    assert "bad" in result["error"]
-    assert "ValueError" in result["error"]
-    assert app_context.command_history == baseline
+    assert result["error"] == "NameError: boom"
+    assert "boom" not in get_command_history(ctx)
 
-    # Output produced before the exception is still returned.
-    result = json.loads(await run_python_code(ctx, "print('partial')\nraise ValueError('bad')"))
-    assert result["success"] is False
-    assert "partial" in result["stdout"]
 
-    # A disconnected backend is reported instead of executing anything.
-    instance = app_context.product_instance
-    app_context.product_instance = None
-    try:
-        result = json.loads(await run_python_code(ctx, "should_not_run = 1"))
-    finally:
-        app_context.product_instance = instance
+async def test_run_python_code_reuses_connected_session(ctx, connect_mock, monkeypatch):
+    """Test that no reconnection is attempted when the session already holds a Modeler."""
+    session = ctx.request_context.lifespan_context.python_session
+    monkeypatch.setitem(session.metadata, "instance", MagicMock())
+
+    result = json.loads(await run_python_code(ctx, "print(1)"))
+
+    assert result["success"] is True
+    connect_mock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected_error"),
+    [
+        (
+            RuntimeError("no route to service"),
+            "Failed to connect to the modeler in the persistent Python session:"
+            " no route to service",
+        ),
+        (None, "Failed to connect to the modeler in the persistent Python session."),
+        (
+            "No Modeler instance available in lifespan context.",
+            "No Modeler instance available in lifespan context.",
+        ),
+    ],
+    ids=["raises", "returns_none", "returns_message"],
+)
+async def test_run_python_code_connection_failure(
+    ctx, execute_mock, connect_mock, outcome, expected_error
+):
+    """Test that a failed connection aborts the execution instead of running the code."""
+    if isinstance(outcome, Exception):
+        connect_mock.side_effect = outcome
+    else:
+        connect_mock.return_value = outcome
+
+    result = json.loads(await run_python_code(ctx, "print(1)"))
+
     assert result["success"] is False
-    assert "not connected" in result["error"]
-    assert "should_not_run" not in app_context.python_globals
-    assert app_context.command_history == baseline
+    assert result["error"] == expected_error
+    execute_mock.assert_not_awaited()

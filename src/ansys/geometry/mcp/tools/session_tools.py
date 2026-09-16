@@ -183,24 +183,24 @@ async def run_python_code(ctx: Context, code: str) -> str:
             ensure_ascii=False,
         )
 
-    # Check if the product backend is connected before executing the code.
+    # Make sure the persistent Python session holds a Modeler before executing the code.
     session = ctx.request_context.lifespan_context.python_session
-    modeler_instance = session.metadata.get("instance", None)
-    if modeler_instance is None:
-        modeler_instance = connect_to_modeler_in_persistent_python(ctx)
-
-    if modeler_instance is None:
+    if session.metadata.get("instance", None) is None:
+        error = None
         try:
             modeler_instance = connect_to_modeler_in_persistent_python(ctx)
+            # The helper returns a message instead of a Modeler when it cannot connect.
+            if modeler_instance is None:
+                error = "Failed to connect to the modeler in the persistent Python session."
+            elif isinstance(modeler_instance, str):
+                error = modeler_instance
         except Exception as e:
-            logger.error(f"Failed to connect to the modeler in the persistent Python session: {e}")
+            error = f"Failed to connect to the modeler in the persistent Python session: {e}"
+
+        if error is not None:
+            logger.error(error)
             return json.dumps(
-                {
-                    "success": False,
-                    "stdout": "",
-                    "stderr": "",
-                    "error": "Failed to connect to the modeler in the persistent Python session.",
-                },
+                {"success": False, "stdout": "", "stderr": "", "error": error},
                 ensure_ascii=False,
             )
 

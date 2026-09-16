@@ -27,38 +27,43 @@ from unittest.mock import MagicMock
 from ansys.geometry.mcp.misc.helpers import connect_to_modeler_in_persistent_python
 
 
-def test_no_python_session(ctx):
+def test_no_python_session(ctx, monkeypatch):
     """Test connecting to the Modeler instance in the persistent Python session when no Python session is available."""
-    ctx.request_context.lifespan_context.python_session = None
+    # The app context is session scoped, so monkeypatch restores it for the next test.
+    monkeypatch.setattr(ctx.request_context.lifespan_context, "python_session", None)
     result = connect_to_modeler_in_persistent_python(ctx)
     assert (
         result == "No Python session available. The persistent Python session was not initialized."
     )
 
 
-def test_already_connected_python_session(ctx):
+def test_already_connected_python_session(ctx, monkeypatch):
     """Test connecting to the Modeler instance in the persistent Python session when already connected."""
     session = MagicMock()
     session.metadata = {"instance": MagicMock(host="localhost", port=50051)}
 
-    ctx.request_context.lifespan_context.python_session = session
+    monkeypatch.setattr(ctx.request_context.lifespan_context, "python_session", session)
     result = connect_to_modeler_in_persistent_python(ctx)
     assert "Already connected to persistent PyAnsys Geometry session" in result
 
 
-def test_no_modeler_in_lifespan_context(ctx):
+def test_no_modeler_in_lifespan_context(ctx, monkeypatch):
     """Test connecting to the Modeler instance in the persistent Python session when no Modeler instance is available in the lifespan context."""
     session = MagicMock()
     session.metadata = {}
 
-    ctx.request_context.lifespan_context.python_session = session
-    ctx.request_context.lifespan_context.product_instance = None
+    monkeypatch.setattr(ctx.request_context.lifespan_context, "python_session", session)
+    monkeypatch.setattr(ctx.request_context.lifespan_context, "product_instance", None)
     result = connect_to_modeler_in_persistent_python(ctx)
     assert result == "No Modeler instance available in lifespan context."
 
 
-def test_successful_python_session_connection(ctx):
+def test_successful_python_session_connection(ctx, monkeypatch):
     """Test successfully connecting to the Modeler instance in the persistent Python session."""
+    session = MagicMock()
+    session.metadata = {}
+
+    monkeypatch.setattr(ctx.request_context.lifespan_context, "python_session", session)
     assert ctx.request_context.lifespan_context.product_instance is not None
 
     result = connect_to_modeler_in_persistent_python(ctx)
