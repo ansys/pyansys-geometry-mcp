@@ -84,7 +84,10 @@ def build_sketch(
     from ansys.geometry.core.math import Plane, Point2D, Point3D, UnitVector3D
     from ansys.geometry.core.sketch import Sketch
 
-    accumulated_commands: list[str] = []
+    accumulated_commands: list[str] = [
+        "from ansys.geometry.core.sketch import Sketch",
+        "from ansys.geometry.core.math import Point2D",
+    ]
 
     if plane_origin is not None and plane_dir_x is not None and plane_dir_y is not None:
         sketch = Sketch(
@@ -93,6 +96,9 @@ def build_sketch(
                 direction_x=UnitVector3D(plane_dir_x),
                 direction_y=UnitVector3D(plane_dir_y),
             )
+        )
+        accumulated_commands.append(
+            "from ansys.geometry.core.math import Plane, Point3D, UnitVector3D"
         )
         accumulated_commands.append(
             f"sketch = Sketch(Plane(origin=Point3D({plane_origin}), "
@@ -133,7 +139,7 @@ def build_sketch(
                 end=Point2D([prim["end_x"], prim["end_y"]]),
             )
             accumulated_commands.append(
-                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}])"
+                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}]))"
             )
         elif prim_type == "arc":
             # arc requires start, end, and center points

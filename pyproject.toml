@@ -71,6 +71,14 @@ doc = [
   "sphinx-design>=0.5",
   "sphinx-jinja>=0.2",
 ]
+# Extra dependencies for the opt-in LLM tool-discoverability evaluation suite
+# (``tests/eval``). Not part of ``dev`` because the suite requires an Azure
+# OpenAI deployment and is never run as part of the regular test run.
+eval = [
+  "jsonschema>=4",
+  "openai>=1.60",
+  { include-group = "tests" },
+]
 tests = [
   "pytest>=7.0",
   "pytest-asyncio==1.4.0",
@@ -121,6 +129,9 @@ ini_options.addopts = [
   "--cov-report=term-missing",
   "--cov-report=html",
   "--cov-report=xml",
+]
+ini_options.markers = [
+  "llm_eval: LLM tool-discoverability evaluation; requires --run-llm-eval and Azure OpenAI credentials.",
 ]
 ini_options.asyncio_mode = "auto"
 

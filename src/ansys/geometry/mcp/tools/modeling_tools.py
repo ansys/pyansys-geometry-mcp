@@ -137,6 +137,7 @@ def create_box(
         app_context.command_history.append("from ansys.geometry.core.math import Point2D")
         app_context.command_history.append("from ansys.geometry.core.misc import Distance")
         app_context.command_history.append("from ansys.geometry.core.sketch import Sketch")
+        app_context.command_history.append("from ansys.geometry.core.math import Plane")
         app_context.command_history.append("from pint import Unit")
         app_context.command_history.append(f"plane = Plane(origin=[0, 0, {origin[2]}])")
         app_context.command_history.append(
@@ -169,10 +170,15 @@ def extrude_sketch(
     plane_dir_y: list[float] | None = None,
     component_name: str | None = None,
 ) -> str:
-    """Extrude a 2D sketch into a 3D body.
+    """Extrude (push/pull) a 2D sketch into a straight, prismatic 3D body.
 
     Builds a sketch from the given primitives on an optional plane and extrudes
-    it by ``distance`` metres along the plane normal (+Z by default).
+    it by ``distance`` metres along the plane normal (+Z by default). Use this
+    for shapes with a constant cross-section along a straight path (blocks,
+    plates, ribs, bosses, straight pipes). If the request instead describes
+    rotating, spinning, revolving, or lathing a profile around an axis to
+    produce a torus, cone, sphere, bottle, vase, or other axisymmetric shape,
+    use ``revolve_sketch`` instead.
 
     Parameters
     ----------
@@ -256,10 +262,14 @@ def revolve_sketch(
     plane_dir_y: list[float] | None = None,
     component_name: str | None = None,
 ) -> str:
-    """Revolve a 2D sketch around an axis to create a body of revolution.
+    """Revolve (rotate/spin/lathe) a 2D sketch or profile around an axis into a solid.
 
-    Preferred over sweep for axisymmetric and curved shapes (torus, pipe,
-    flange, fillet) due to higher backend reliability.
+    Use this whenever the request describes rotating, spinning, revolving, or
+    lathing a profile around an axis to produce an axisymmetric or curved
+    shape -- a torus, ring, cone, sphere, bottle, vase, bushing, or flange.
+    Use ``extrude_sketch`` instead for straight, prismatic shapes with a
+    constant cross-section. Preferred over sweep for axisymmetric and curved
+    shapes (torus, pipe, flange, fillet) due to higher backend reliability.
 
     Parameters
     ----------

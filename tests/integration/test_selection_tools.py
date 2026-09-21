@@ -583,3 +583,31 @@ def test_create_named_selection(ctx):
     datum_pt = design.datum_points[0]
     result = create_named_selection(ctx, "ns_datum_points", datum_point_ids=[datum_pt.id])
     assert "created successfully" in result
+
+
+def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContext):
+    """A selection built via create_selection_builder/select_entities can be saved by handle,
+    merged with explicit entities, and reports invalid handles or empty selections."""
+    assert "Invalid selection handle" in create_named_selection(
+        ctx, "ns_bad_handle", selection_handle="not-a-real-handle"
+    )
+
+    handle = _setup(ctx, "test_named_sel_handle", box_name="handle_box")
+    assert "no entities selected" in create_named_selection(
+        ctx, "ns_empty_selection", selection_handle=handle
+    )
+
+    select_entities(ctx, handle, "body", criteria="all")
+    result = create_named_selection(ctx, "ns_from_handle", selection_handle=handle)
+    assert "created successfully" in result
+
+    # Faces from the handle merge with an explicitly named body.
+    select_entities(ctx, handle, "face", criteria="all")
+    tools.create_box(ctx, name="extra_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+    result = create_named_selection(
+        ctx, "ns_from_handle_mixed", selection_handle=handle, body_names=["extra_box"]
+    )
+    assert "created successfully" in result
+
+    history = tools.get_command_history(ctx)
+    assert any("create_named_selection" in cmd and "ns_from_handle_mixed" in cmd for cmd in history)

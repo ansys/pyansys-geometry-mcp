@@ -23,7 +23,7 @@
 """Context for PyAnsys Geometry MCP server."""
 
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 from ansys.common.mcp import PyAnsysBaseAppContext
 from ansys.geometry.core import Modeler
@@ -56,7 +56,6 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
         When ``True``, connect to a running geometry service instead of
         launching a new one.
     selection_registry: Optional[dict[str, Any]]
-
 
     Examples
     --------

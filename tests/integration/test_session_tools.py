@@ -22,6 +22,7 @@
 
 """Unit tests for the session tools."""
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -36,7 +37,11 @@ from ansys.geometry.mcp.tools import (
     get_product_status,
     get_transcript,
     import_geometry_file,
+    run_python_code,
+    run_script_file,
 )
+
+from .conftest import FILES_DIR
 
 
 def test_get_product_status_tool(ctx):
@@ -125,7 +130,7 @@ def test_get_command_history(ctx):
 
     create_box(ctx, name="test_box", width=1.0, depth=1.0, height=1.0)
     result = get_command_history(ctx)
-    assert len(result) == 10
+    assert len(result) == 11
 
 
 def test_get_transcript(ctx):
@@ -227,3 +232,119 @@ def test_import_geometry_file_errors(tmp_path_factory: pytest.TempPathFactory):
     result = import_geometry_file(mock_ctx, file_path=str(file))
     assert "Error importing" in result
     assert "boom" in result
+
+
+def test_run_script_file(ctx):
+    """Test that running a script file with success."""
+    result = run_script_file(ctx, Path(FILES_DIR, "simple_script.py"))
+    assert "design" in result
+    assert "design_body" in result
+
+    # Test passing in args
+    create_design(ctx, "NewDesign")
+    create_box(ctx, "Box", 1, 1, 1)
+    result = run_script_file(ctx, Path(FILES_DIR, "integrated_script.py"), {"radius": "1"})
+    assert int(result["numBodies"]) == 2
+
+
+def test_run_script_file_errors(ctx):
+    """Test that running a nonexistent script file returns an error message."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance = None
+    result = run_script_file(mock_ctx, "anything.py")
+    assert "not connected" in result
+
+    result = run_script_file(ctx, Path(FILES_DIR, "nonexistent.py"))
+    assert "File not found" in result
+
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance.run_script_file.side_effect = RuntimeError(
+        "boom"
+    )
+
+    result = run_script_file(mock_ctx, Path(FILES_DIR, "simple_script.py"))
+    assert "Error running script file" in result
+    assert "boom" in result
+
+
+async def test_run_python_code_not_connected(ctx, execute_mock, monkeypatch):
+    """Test that no code is executed when the product backend is not connected."""
+    # The app context is session scoped, so monkeypatch restores it for the next test.
+    monkeypatch.setattr(ctx.fastmcp._lifespan_result, "product_instance", None)
+
+    result = json.loads(await run_python_code(ctx, "print(1)"))
+
+    assert result["success"] is False
+    assert result["error"] == "The product backend is not connected."
+    execute_mock.assert_not_awaited()
+
+
+async def test_run_python_code_success(ctx, execute_mock, connect_mock):
+    """Test that a successful execution is forwarded and appended to the command history."""
+    execute_mock.return_value = json.dumps(
+        {"success": True, "stdout": "42\n", "stderr": "", "message": "ok"}
+    )
+
+    result = json.loads(await run_python_code(ctx, "print(42)"))
+
+    assert result["success"] is True
+    assert result["stdout"] == "42\n"
+    connect_mock.assert_called_once_with(ctx)
+    execute_mock.assert_awaited_once_with(ctx, "print(42)")
+    assert "print(42)" in get_command_history(ctx)
+
+
+async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_mock):
+    """Test that a failed execution is returned as-is and left out of the command history."""
+    execute_mock.return_value = json.dumps(
+        {"success": False, "stdout": "", "stderr": "boom", "error": "NameError: boom"}
+    )
+
+    result = json.loads(await run_python_code(ctx, "boom"))
+
+    assert result["success"] is False
+    assert result["error"] == "NameError: boom"
+    assert "boom" not in get_command_history(ctx)
+
+
+async def test_run_python_code_reuses_connected_session(ctx, connect_mock, monkeypatch):
+    """Test that no reconnection is attempted when the session already holds a Modeler."""
+    session = ctx.request_context.lifespan_context.python_session
+    monkeypatch.setitem(session.metadata, "instance", MagicMock())
+
+    result = json.loads(await run_python_code(ctx, "print(1)"))
+
+    assert result["success"] is True
+    connect_mock.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("outcome", "expected_error"),
+    [
+        (
+            RuntimeError("no route to service"),
+            "Failed to connect to the modeler in the persistent Python session:"
+            " no route to service",
+        ),
+        (None, "Failed to connect to the modeler in the persistent Python session."),
+        (
+            "No Modeler instance available in lifespan context.",
+            "No Modeler instance available in lifespan context.",
+        ),
+    ],
+    ids=["raises", "returns_none", "returns_message"],
+)
+async def test_run_python_code_connection_failure(
+    ctx, execute_mock, connect_mock, outcome, expected_error
+):
+    """Test that a failed connection aborts the execution instead of running the code."""
+    if isinstance(outcome, Exception):
+        connect_mock.side_effect = outcome
+    else:
+        connect_mock.return_value = outcome
+
+    result = json.loads(await run_python_code(ctx, "print(1)"))
+
+    assert result["success"] is False
+    assert result["error"] == expected_error
+    execute_mock.assert_not_awaited()

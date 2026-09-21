@@ -24,7 +24,6 @@
 
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
 from ansys.common.mcp.logging_config import get_logger
-import ansys.common.mcp.tools as shared_tools
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 
@@ -41,6 +40,10 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
     context: PyAnsysGeometryContext
     """The application context for the MCP server, containing the product instance and related information."""
 
+    def __init__(self, name: str = "pyansys-geometry-mcp", *args, **kwargs):
+        """Initialize the PyAnsys Geometry MCP server."""
+        super().__init__(name=name, *args, **kwargs)
+
     def create_context(self) -> PyAnsysGeometryContext:
         """Create (or return the pre-existing) product-specific context.
 
@@ -52,7 +55,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         Returns
         -------
         PyAnsysGeometryContext
-            Context instance with Python session and command history.
+            Context instance with command history.
 
 
         """
@@ -92,21 +95,8 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 uds_id=self.context.uds_id,
             )
 
-            # creates the background instance of the modeler to be used when running python scripts in the interpreter
             self.context.host = instance.client.host
             self.context.port = instance.client.port
-            background_python_instance_creation = f"""
-from ansys.geometry.core import Modeler
-
-instance = Modeler(
-    host='{self.context.host}',
-    port={self.context.port},
-    transport_mode='{self.context.transport_mode}',
-    proto_version={self.context.proto_version!r},
-    uds_dir='{self.context.uds_dir}',
-    uds_id='{self.context.uds_id}')
-"""
-            self.context.python_session.execute(background_python_instance_creation)
 
             self.context.command_history.append("from ansys.geometry.core import Modeler")
             self.context.command_history.append(
@@ -131,23 +121,11 @@ instance = Modeler(
                 f"uds_id={self.context.uds_id!r})"
             )
 
-            # Mirror instance into the persistent Python session so that
-            # run_python_code() can reference it via the 'instance' variable.
             self.context.host = instance.client.host
             self.context.port = instance.client.port
-            background_python_instance_creation = f"""
-from ansys.geometry.core import launch_modeler
-
-instance = launch_modeler(
-    host='{self.context.host}',
-    port={self.context.port},
-    transport_mode='{self.context.transport_mode}',
-    uds_dir='{self.context.uds_dir}',
-    uds_id='{self.context.uds_id}')
-"""
-            self.context.python_session.execute(background_python_instance_creation)
 
         self.context.product_instance = instance
+
         # Log the successful launch of the product instance
         logger.info("PyAnsys Geometry MCP backend launched successfully.")
         logger.info(f"Product instance details:\n\n{self.context.product_instance}")
@@ -167,7 +145,7 @@ instance = launch_modeler(
                 logger.error(f"Error during product cleanup: {e}")
 
 
-# Create the MCP server instance used by tools.py and __main__.py.
+# Create the MCP server instance used by tools and __main__.py.
 # CLI arguments set in __main__.py are applied to this instance before app.run().
 app = PyAnsysGeometryMCP(
     name="pyansys-geometry-mcp",
