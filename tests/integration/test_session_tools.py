@@ -293,7 +293,7 @@ async def test_run_python_code_success(ctx, execute_mock, connect_mock):
     assert result["success"] is True
     assert result["stdout"] == "42\n"
     connect_mock.assert_called_once_with(ctx)
-    execute_mock.assert_called_once_with("print(42)", timeout=60, no_output_timeout=300)
+    execute_mock.assert_called_once_with("print(42)", timeout=300, no_output_timeout=300)
     assert "print(42)" in get_command_history(ctx)
 
 
