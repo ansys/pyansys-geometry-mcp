@@ -47,7 +47,6 @@ with the server before it starts.
 import json
 
 from ansys.common.mcp.logging_config import get_logger
-import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
@@ -204,16 +203,11 @@ async def run_python_code(ctx: Context, code: str) -> str:
                 ensure_ascii=False,
             )
 
-    result = await shared_tools.execute_python_code(ctx, code)
-    try:
-        parsed = json.loads(result)
-        if parsed.get("success"):
-            app_context = get_geometry_ctx(ctx)
-            app_context.command_history.append(code)
-    except (json.JSONDecodeError, AttributeError):
-        pass
+    result = session.execute(code, timeout=60, no_output_timeout=300)
+    if result.get("success"):
+        app_context.command_history.append(code)
 
-    return result
+    return json.dumps(result, ensure_ascii=False)
 
 
 @app.tool()
