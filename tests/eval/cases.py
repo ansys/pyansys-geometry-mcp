@@ -254,6 +254,45 @@ CASES: list[EvalCase] = [
         checker=expect_tool("get_design_3d_scene", arguments={}),
         expected="get_design_3d_scene",
     ),
+    # -- Repair (inspect vs. fix are mutually confusable) --------------------
+    EvalCase(
+        id="inspect_geometry",
+        prompt="This imported part looks dirty. What is actually wrong with it?",
+        checker=expect_tool("inspect_geometry", arguments={}),
+        expected="inspect_geometry",
+        note="Confusable with repair_geometry; asking what is wrong must not mutate the model.",
+    ),
+    EvalCase(
+        id="repair_geometry_all",
+        prompt=(
+            "I have already inspected this model and seen the issues. "
+            "Now run the automatic repair over the whole thing."
+        ),
+        checker=expect_tool("repair_geometry", arguments={"operation": "all"}),
+        expected="repair_geometry",
+        note="Undiagnosed 'just clean it up' prompts steer to inspect_geometry first by design.",
+    ),
+    EvalCase(
+        id="repair_stitch_faces",
+        prompt="These surfaces should form a closed solid. Stitch them together.",
+        checker=expect_tool("repair_geometry", arguments={"operation": "stitch_faces"}),
+        expected="repair_geometry(stitch_faces)",
+        note="Confusable with unite_body.",
+    ),
+    EvalCase(
+        id="repair_short_edges",
+        prompt="Remove the sliver edges shorter than 0.1 mm from the body named 'housing'.",
+        checker=expect_tool(
+            "repair_geometry",
+            arguments={
+                "operation": "short_edges",
+                "length": 0.0001,
+                "body_names": ["housing"],
+            },
+        ),
+        expected="repair_geometry(short_edges)",
+        note="Checks operation dispatch plus mm-to-m conversion and body scoping.",
+    ),
     # -- Negative cases: the model should answer without calling a tool -----
     EvalCase(
         id="no_tool_concept_question",
