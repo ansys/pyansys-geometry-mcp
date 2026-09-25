@@ -104,18 +104,26 @@ and an import can drop entities it has no representation for. Counts returned by
 Do not treat a partial result as a failed operation, and do not retry, escalate, or
 start diagnosing on that basis alone.
 
-Make one attempt, then report the outcome in measured terms:
+Make one attempt, then report what was applied (operation, parameters, entities in
+scope) and what the call itself returned. Let the user decide whether to iterate,
+change parameters, or narrow the scope. Investigate further only when the user asks,
+or when the result is self-contradictory in a way partial success does not explain —
+for example, a re-scan showing *more* problems than before, a body count that moves
+the wrong way, or an error raised by the call itself.
 
-- the relevant state before the attempt,
-- what was applied (operation, parameters, entities in scope),
-- the same measurement re-taken afterwards.
+**Do not measure the model unless asked.** The call's own report is the default
+evidence for what happened; quote it and stop there. Independent before/after metrics
+— edge, face, or problem-area counts — are a separate, billable piece of work. Take
+them only when the user asks for a comparison, or when the call's report contradicts
+itself.
 
-Re-measure from the backend rather than trusting the operation's own return value or a
-client-side object that may be stale. Let the user decide whether to iterate, change
-parameters, or narrow the scope. Investigate further only when the user asks, or when
-the result is self-contradictory in a way partial success does not explain — for
-example, a re-scan showing *more* problems than before, a body count that moves the
-wrong way, or an error raised by the call itself.
+When a measurement *is* warranted, take the cheapest one that answers the question:
+scope it to the bodies the operation actually touched, and prefer `inspect_geometry`
+over hand-written traversal. Never walk the whole design's topology through
+`run_python_code` — iterating `body.edges` or `body.faces` across every body pulls
+thousands of entities over gRPC one at a time and is far more expensive than the
+repair it is checking. If only an expensive measurement would settle the question, say
+so and let the user choose.
 
 **Ask before destructive or long-running geometry work.** Geometry repair operations
 can run for many minutes and mutate the active design in place. Confirm thresholds and

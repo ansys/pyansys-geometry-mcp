@@ -232,8 +232,10 @@ def repair_geometry(
     Partial repair is a normal outcome: the modeling kernel legitimately
     declines work that would invalidate adjacent topology, so problem areas can
     remain afterwards. The reported ``found``/``repaired`` counts are results
-    for this call only, not totals for the design. Re-run ``inspect_geometry``
-    to measure the real state afterwards rather than iterating blindly.
+    for this call only, not totals for the design; report them as such rather
+    than measuring the model to confirm them. If the user asks what state the
+    design is actually in, re-run ``inspect_geometry`` scoped to the bodies
+    this call modified — do not count edges or faces by hand.
 
     Parameters
     ----------
