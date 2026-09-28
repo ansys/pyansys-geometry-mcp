@@ -62,7 +62,7 @@ doc = [
   "myst-parser==5.1.0",
   "nbconvert==7.17.1",
   "nbsphinx==0.9.8",
-  "notebook==7.6.2",
+  "notebook==7.6.3",
   "pypdf>=4.0",
   "quarto-cli>=1.10.18",
   "sphinx>=7.0",
