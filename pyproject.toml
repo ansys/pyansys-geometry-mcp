@@ -38,6 +38,8 @@ classifiers = [
 dependencies = [
   "ansys-common-mcp>=0.3.0",
   "ansys-geometry-core[all]>=0.17.0",
+  "black>=23.7.0",
+  "isort>=5.13.0",
 ]
 urls.Documentation = "https://geometry-mcp.docs.pyansys.com/"
 urls.Homepage = "https://github.com/ansys/pyansys-geometry-mcp"
@@ -50,8 +52,6 @@ scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
 # only available when a developer clones the repository and installs the package
 # for local development.
 dev = [
-  "black==26.5.1",
-  "isort==9.0.1",
   "pre-commit==4.6.2",
   { include-group = "doc" },
   { include-group = "tests" },
