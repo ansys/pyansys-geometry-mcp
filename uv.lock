@@ -228,16 +228,16 @@ wheels = [
 
 [[package]]
 name = "ansys-common-mcp"
-version = "0.3.4"
+version = "0.3.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp" },
     { name = "mcp" },
     { name = "pydantic-settings" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/f6/a669b15734fd6b43d9b95dd258b614fc539b144c284fedb5b7fa4dc07bb9/ansys_common_mcp-0.3.4.tar.gz", hash = "sha256:8fc183a8a64533430587327bdc0bf08ffc6665ef1f63399b0637deed4c734dd7", size = 24236, upload-time = "2026-09-03T16:45:32Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/2d/250c5333192eab68c8cac7b5df1574de5b79a0009a8f5bf199833a47f579/ansys_common_mcp-0.3.5.tar.gz", hash = "sha256:992109578c8b3905d9e6561fefdaa8bfe88e97533f590ca31a1e48836e1cadab", size = 24587, upload-time = "2026-09-28T16:01:07.783Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/0e/36765dd20bf61fcefd397db850a31b4666c58da2dec76d5b020a047f3757/ansys_common_mcp-0.3.4-py3-none-any.whl", hash = "sha256:81311d274bc82065d039f4d4b09adbaa8a957451a26d882caaecbe0932d58a02", size = 27768, upload-time = "2026-09-03T16:45:30.708Z" },
+    { url = "https://files.pythonhosted.org/packages/dc/29/98608d1e1a179f1f4cdebcea5fe8596fffd6687ac60dc3050cd07d66f47b/ansys_common_mcp-0.3.5-py3-none-any.whl", hash = "sha256:79d5b175ef5797abeb3dd8b1a863468387bff5f67b82cbf69e8067b746c4e934", size = 28146, upload-time = "2026-09-28T16:01:06.512Z" },
 ]
 
 [[package]]
@@ -3022,7 +3022,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "3.15.0"
+version = "3.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3032,9 +3032,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/82/6b/f086332d9fdefcc3853f2457209fcf221985d01d32b5021ab8096be7d506/openai-3.15.0.tar.gz", hash = "sha256:47bc15f8b9db62ba9ff7fa32164c72f4fd6333b22d890251292aac1c6bfe998f", size = 1664554, upload-time = "2026-09-18T00:53:05.192Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/9d/a00f8bca3df57716771cca5b4c0ddb5c2e03e1dd2ddfbb1607371ffb8372/openai-3.17.0.tar.gz", hash = "sha256:28910914e6ffaf622f1bbf5dfe02e221cc2b929e492dd30d06b6826939dedf92", size = 1710984, upload-time = "2026-09-22T02:37:17.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/92/fc65194e6e92cf0202a2e5fff75e2fef62e7dbb7a6cf2b48c1239dfedb50/openai-3.15.0-py3-none-any.whl", hash = "sha256:95d6b2caf3823c7e0fc08911317b7f31b9f9ccf93b414e7a5c8d5b226af115f6", size = 2018693, upload-time = "2026-09-18T00:53:02.507Z" },
+    { url = "https://files.pythonhosted.org/packages/57/bc/5b80a0ca4069a6b5ba6c7d48ae7a4f8176b2c0bde0bebccdb867472ec6f6/openai-3.17.0-py3-none-any.whl", hash = "sha256:712bc2982a6da1af10f6948a1d2d9ff5ce3ee3604ded88002a53765a77cf5ae5", size = 2068574, upload-time = "2026-09-22T02:37:15.373Z" },
 ]
 
 [[package]]

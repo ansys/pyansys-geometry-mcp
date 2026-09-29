@@ -290,6 +290,7 @@ async def test_run_python_code_success(ctx, execute_mock, connect_mock):
 
     result = json.loads(await run_python_code(ctx, "print(42)"))
 
+    print(result)
     assert result["success"] is True
     assert result["stdout"] == "42\n"
     connect_mock.assert_called_once_with(ctx)
