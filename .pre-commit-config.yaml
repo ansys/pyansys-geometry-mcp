@@ -45,6 +45,7 @@ repos:
         files: (src|examples|tests|docker)/.*\.(py)|\.(proto)
         args:
           - --start_year=2026
+          - --custom_license=Apache-2.0
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.38.0
