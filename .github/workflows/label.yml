@@ -18,7 +18,7 @@ permissions: {} # Disable default permissions
 
 jobs:
   label-syncer:
-    name: Syncer
+    name: "Syncer"
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required to sync labels
@@ -32,7 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   labeler:
-    name: Set labels
+    name: "Set labels"
     needs: [label-syncer]
     permissions:
       contents: read
@@ -45,31 +45,31 @@ jobs:
     steps:
 
       # Label based on modified files
-      - name: Label based on changed files
+      - name: "Label based on changed files"
         uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true
 
       # Label based on branch name
-      - name: Label docs
+      - name: "Label docs"
         if: |
           startsWith(github.event.pull_request.head.ref, 'doc') ||
           startsWith(github.event.pull_request.head.ref, 'docs')
         run: gh pr edit "$PR_NUMBER" --add-label "documentation" --repo "$REPO"
 
-      - name: Label maintenance
+      - name: "Label maintenance"
         if: |
           startsWith(github.event.pull_request.head.ref, 'maint') ||
           startsWith(github.event.pull_request.head.ref, 'no-ci') ||
           startsWith(github.event.pull_request.head.ref, 'ci')
         run: gh pr edit "$PR_NUMBER" --add-label "maintenance" --repo "$REPO"
 
-      - name: Label enhancement
+      - name: "Label enhancement"
         if: startsWith(github.event.pull_request.head.ref, 'feat')
         run: gh pr edit "$PR_NUMBER" --add-label "enhancement" --repo "$REPO"
 
-      - name: Label bug
+      - name: "Label bug"
         if: |
           startsWith(github.event.pull_request.head.ref, 'fix') ||
           startsWith(github.event.pull_request.head.ref, 'patch')
@@ -82,7 +82,7 @@ jobs:
       contents: read
       pull-requests: write # Required to add comments to PRs
     steps:
-      - name: Suggest to add labels
+      - name: "Suggest to add labels"
         # Execute only when no labels have been applied to the pull request
         if: toJSON(github.event.pull_request.labels.*.name) == '{}'
         env:

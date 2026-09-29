@@ -28,8 +28,23 @@ permissions:
   pull-requests: read # Required to read PR content
 
 jobs:
+
+  update-changelog:
+    name: "Update CHANGELOG (on release)"
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to read and write repository contents
+      pull-requests: write # Needed to create pull requests
+    steps:
+      - uses: ansys/actions/doc-deploy-changelog@7410037bfb276c79ae91eb3617b9f5d2876f0c94 #v11.0.8
+        with:
+          token: ${{ secrets.PYANSYS_CI_BOT_TOKEN }}
+          bot-user: ${{ secrets.PYANSYS_CI_BOT_USERNAME }}
+          bot-email: ${{ secrets.PYANSYS_CI_BOT_EMAIL }}
+
   vulnerabilities:
-    name: Vulnerabilities
+    name: "Vulnerabilities"
     runs-on: ubuntu-latest
     steps:
       - uses: ansys/actions/check-vulnerabilities@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
@@ -41,7 +56,7 @@ jobs:
           hide-log: false
 
   actions-security:
-    name: Actions Security
+    name: "Actions Security"
     runs-on: ubuntu-latest
     steps:
       - uses: ansys/actions/check-actions-security@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
@@ -52,7 +67,7 @@ jobs:
 
   pr-name:
     if: github.event_name == 'pull_request'
-    name: Check the name of the PR
+    name: "Check the name of the PR"
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title
@@ -60,8 +75,18 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  code-style:
+    name: "Code Style"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: ansys/actions/code-style@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
+        with:
+          python-version: ${{ env.MAIN_PYTHON_VERSION }}
+
   docs-style:
-    name: Documentation Style Check
+    name: "Documentation Style Check"
     runs-on: ubuntu-latest
     steps:
       - name: PyAnsys documentation style checks
@@ -70,28 +95,28 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   docs:
-    name: Build Documentation
+    name: "Build Documentation"
     needs: [docs-style]
     runs-on: ubuntu-latest
     steps:
-      - name: Set up headless display
+      - name: "Set up headless display"
         uses: pyvista/setup-headless-display-action@c103a2ff45650d38cb71684b5dc6cdfeb9442c79 # v5.1.0
 
-      - name: Login to GitHub Container Registry
+      - name: "Login to GitHub Container Registry"
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull and launch geometry service
+      - name: "Pull and launch geometry service"
         env:
           TRANSPORT_MODE_SELECTION: ${{ secrets.TRANSPORT_MODE_SELECTION }}
         run: |
           docker pull ${ANSRV_GEO_IMAGE_DOCS_TAG}
           docker run --detach --name ${GEO_CONT_NAME} -e LICENSE_SERVER=${ANSRV_GEO_LICENSE_SERVER} -p ${ANSRV_GEO_PORT}:50051 ${ANSRV_GEO_IMAGE_DOCS_TAG} ${TRANSPORT_MODE_SELECTION}
 
-      - name: Run Ansys documentation building action
+      - name: "Run Ansys documentation building action"
         uses: ansys/actions/doc-build@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
         with:
           python-version: ${{ env.MAIN_PYTHON_VERSION }}
@@ -101,7 +126,7 @@ jobs:
           sphinxopts: '-j 1 -W --color'
           group-dependencies-name: "doc"
 
-      - name: Stop the Geometry service
+      - name: "Stop the Geometry service"
         if: always()
         run: |
           docker stop ${GEO_CONT_NAME}
@@ -109,7 +134,7 @@ jobs:
           docker rm ${GEO_CONT_NAME}
 
   doc-deploy-pr:
-    name: Deploy PR documentation
+    name: "Deploy PR documentation"
     if: contains(github.event.pull_request.labels.*.name, 'deploy-pr-doc')
     needs: [docs]
     runs-on: ubuntu-latest
@@ -126,7 +151,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   testing-windows:
-    name: Testing and coverage (Windows) (${{ matrix.tracker-label }})
+    name: "Testing and coverage (Windows) (${{ matrix.tracker-label }})"
     runs-on: windows-latest
     env:
       SKIP_UNSTABLE: false
@@ -146,20 +171,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup UV
+      - name: "Setup UV"
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: ${{ env.MAIN_PYTHON_VERSION }}
           activate-environment: true
           enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
-      - name: Set up headless display
+      - name: "Set up headless display"
         uses: pyvista/setup-headless-display-action@c103a2ff45650d38cb71684b5dc6cdfeb9442c79 # v5.1.0
 
-      - name: Install packages for testing
+      - name: "Install packages for testing"
         run: uv sync --group tests
 
-      - name: Ensure Docker service is running
+      - name: "Ensure Docker service is running"
         if: env.SKIP_UNSTABLE == 'false'
         run: |
           $maxRetries = 6
@@ -172,21 +197,21 @@ jobs:
           }
           Write-Host "Docker is ready"
 
-      - name: Login to GitHub Container Registry
+      - name: "Login to GitHub Container Registry"
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download Geometry service container (if needed)
+      - name: "Download Geometry service container (if needed)"
         env:
           FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-windows-latest"
         run: |
           Write-Host "Pulling Docker image: $env:FULL_IMAGE_NAME"
           docker pull $env:FULL_IMAGE_NAME
 
-      - name: Start Geometry service and verify start
+      - name: "Start Geometry service and verify start"
         env:
           FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-windows-latest"
           PORT_MAPPING: "${{ env.ANSRV_GEO_PORT }}:50051"
@@ -200,13 +225,13 @@ jobs:
           Start-Sleep -Seconds 10
           uv run python -c "from ansys.geometry.core.connection.validate import validate; validate()"
 
-      - name: Testing
+      - name: "Testing"
         timeout-minutes: 20 # Sometimes hangs...
         env:
           USE_TRACKER: ${{ matrix.use-tracker }}
         run: uv run pytest -v --use-tracker=$env:USE_TRACKER
 
-      - name: Upload integration test logs
+      - name: "Upload integration test logs"
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -214,7 +239,7 @@ jobs:
           path: tests/logs/integration_tests_logs.txt
           retention-days: 7
 
-      - name: Upload Coverage Results
+      - name: "Upload Coverage Results"
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -223,14 +248,14 @@ jobs:
           path: .cov/html
           retention-days: 7
 
-      - name: Upload coverage to Codecov
+      - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: .cov/xml
 
-      - name: Stop the Geometry service
+      - name: "Stop the Geometry service"
         if: always()
         run: |
           if ( "$env:SKIP_UNSTABLE" -match 'false')
@@ -241,7 +266,7 @@ jobs:
           }
 
   testing-linux:
-    name: Testing and coverage (Linux) (${{ matrix.tracker-label }})
+    name: "Testing and coverage (Linux) (${{ matrix.tracker-label }})"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -255,17 +280,17 @@ jobs:
             tracker-label: "With tracker"
 
     steps:
-      - name: Set up headless display
+      - name: "Set up headless display"
         uses: pyvista/setup-headless-display-action@c103a2ff45650d38cb71684b5dc6cdfeb9442c79 # v5.1.0
 
-      - name: Login in GitHub Container registry
+      - name: "Login in GitHub Container registry"
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Pull and launch geometry service
+      - name: "Pull and launch geometry service"
         env:
           FULL_IMAGE_NAME: "${{ env.ANSRV_GEO_IMAGE }}:core-linux-latest"
           TRANSPORT_MODE_SELECTION: ${{ secrets.TRANSPORT_MODE_SELECTION }}
@@ -274,12 +299,12 @@ jobs:
           docker pull ${FULL_IMAGE_NAME}
           docker run --detach --name ${GEO_CONT_NAME} -e LICENSE_SERVER=${ANSRV_GEO_LICENSE_SERVER} -p ${ANSRV_GEO_PORT}:50051 ${FULL_IMAGE_NAME} ${TRANSPORT_MODE_SELECTION}
 
-      - name: Checkout repository
+      - name: "Checkout repository"
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Run pytest
+      - name: "Run pytest"
         uses: ansys/actions/tests-pytest@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
         env:
           ALLOW_PLOTTING: true
@@ -290,14 +315,14 @@ jobs:
           randomize: true
           group-dependencies-name: "tests"
 
-      - name: Upload coverage to Codecov
+      - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           files: .cov/xml
 
-      - name: Upload integration test logs
+      - name: "Upload integration test logs"
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -305,7 +330,7 @@ jobs:
           path: tests/logs/integration_tests_logs.txt
           retention-days: 7
 
-      - name: Stop the Geometry service
+      - name: "Stop the Geometry service"
         if: always()
         run: |
           docker stop ${GEO_CONT_NAME}
@@ -313,7 +338,7 @@ jobs:
           docker rm ${GEO_CONT_NAME}
 
   package:
-    name: Package library
+    name: "Package library"
     needs: [testing-windows, testing-linux, docs]
     runs-on: ubuntu-latest
     permissions:
@@ -329,14 +354,14 @@ jobs:
           attest-provenance: true
 
   upload_dev_docs:
-    name: Upload dev documentation
+    name: "Upload dev documentation"
     if: github.ref == 'refs/heads/main'
     needs: [package]
     runs-on: ubuntu-latest
     permissions:
       contents: write # Required to push to the documentation branch (gh-pages)
     steps:
-      - name: Deploy the latest documentation
+      - name: "Deploy the latest documentation"
         uses: ansys/actions/doc-deploy-dev@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
         with:
           cname: ${{ env.DOCUMENTATION_CNAME }}
@@ -344,8 +369,51 @@ jobs:
           bot-user: ${{ secrets.PYANSYS_CI_BOT_USERNAME }}
           bot-email: ${{ secrets.PYANSYS_CI_BOT_EMAIL }}
 
+  release:
+    name: "Release project to GitHub and PyPI"
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
+    needs: [package, docs, update-changelog]
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      id-token: write # Required for GitHub release
+      contents: write # Required for GitHub release
+    steps:
+      - name: "Release to GitHub"
+        uses: ansys/actions/release-github@7410037bfb276c79ae91eb3617b9f5d2876f0c94 #v11.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          library-name: ${{ env.PACKAGE_NAME }}
+          add-artifact-attestation-notes: true
+          changelog-release-notes: true
+
+      - name: "Release to PyPI"
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: "https://upload.pypi.org/legacy/"
+          print-hash: true
+          packages-dir: dist/${{ env.PACKAGE_NAME }}-artifacts
+          skip-existing: false
+
+  doc-deploy-stable:
+    name: "Deploy stable documentation"
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to push documentation to gh-pages branch
+    needs: [release]
+    steps:
+      - name: "Deploy the stable documentation"
+        uses: ansys/actions/doc-deploy-stable@7410037bfb276c79ae91eb3617b9f5d2876f0c94 #v11.0.8
+        with:
+          cname: ${{ env.DOCUMENTATION_CNAME }}
+          token: ${{ secrets.PYANSYS_CI_BOT_TOKEN }}
+          render-last: '5'
+          bot-user: ${{ secrets.PYANSYS_CI_BOT_USERNAME }}
+          bot-email: ${{ secrets.PYANSYS_CI_BOT_EMAIL }}
+
   automerge-prs:
-    name: Automerge PRs (from dependabot)
+    name: "Automerge PRs (from dependabot)"
     runs-on: ubuntu-latest
     needs: [package]
     if: github.event_name == 'pull_request'
@@ -353,7 +421,7 @@ jobs:
       contents: write # Required to allow automerge
       pull-requests: write # Required to allow automerge
     steps:
-      - name: Automerge PRs
+      - name: "Automerge PRs"
         uses: ansys/actions/hk-automerge-prs@7410037bfb276c79ae91eb3617b9f5d2876f0c94 # v11.0.8
         with:
           approver: ${{ secrets.PYANSYS_CI_BOT_USERNAME }}

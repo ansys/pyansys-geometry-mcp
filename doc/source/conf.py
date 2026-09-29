@@ -63,6 +63,9 @@ html_theme_options = {
         "minMatchCharLength": 2,
         "ignoreLocation": True,
     },
+    "ansys_sphinx_theme_autoapi": {
+        "project": project,
+    },
 }
 
 linkcheck_ignore = [
@@ -76,6 +79,7 @@ if switcher_version != "dev":
 
 # Sphinx extensions
 extensions = [
+    "ansys_sphinx_theme.extension.autoapi",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "nbsphinx",
@@ -120,3 +124,17 @@ latex_additional_files = [watermark, ansys_logo_white, ansys_logo_white_cropped]
 suppress_warnings = ["ref.python"]
 
 exclude_patterns = ["changelog/*.md"]
+
+
+def prepare_jinja_env(jinja_env) -> None:
+    """Customize the jinja env.
+
+    Notes
+    -----
+    See https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.Environment
+
+    """
+    jinja_env.globals["project_name"] = project
+
+
+autoapi_prepare_jinja_env = prepare_jinja_env

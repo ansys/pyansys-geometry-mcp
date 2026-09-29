@@ -92,14 +92,14 @@ def get_transcript(ctx: Context) -> str:
     commands = "\n".join(app_context.command_history)
 
     # Format Python script using import sorting and black-style formatting
-    try:
-        import black
-        import isort
+    import black
+    import isort
 
+    try:
         sorted_commands = isort.code(commands)
         formatted_commands = black.format_str(sorted_commands, mode=black.Mode())
         return formatted_commands if formatted_commands else "No commands executed yet."
-    except (ImportError, black.InvalidInput):
+    except black.InvalidInput:
         return commands if commands else "No commands executed yet."
 
 
