@@ -32,6 +32,13 @@ Overview
 PyAnsys Geometry MCP is a Python package that provides MCP tools for working with
 PyAnsys Geometry MCP and AI.
 
+.. warning::
+
+    This server includes tools (``run_python_code``, ``run_script_file``) that execute
+    arbitrary code as the user running the server. Only connect it to AI clients and
+    content sources you trust. See `SECURITY.md
+    <https://github.com/ansys/pyansys-geometry-mcp/blob/main/SECURITY.md>`_ for details.
+
 
 Documentation and issues
 ------------------------
