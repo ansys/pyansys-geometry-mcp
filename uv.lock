@@ -187,16 +187,16 @@ wheels = [
 
 [[package]]
 name = "ansys-api-discovery"
-version = "1.2.13"
+version = "1.2.17"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-api-geometry" },
     { name = "grpcio" },
     { name = "protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/a9/2800b37cf9af1b730c81668cf05180301aa2bd04d41043985a34384a95cb/ansys_api_discovery-1.2.13.tar.gz", hash = "sha256:78f48c166b598f9dc36c6780dbe78074869198db99a223bbfbe70d0d518fb7d4", size = 88782, upload-time = "2026-08-21T10:59:13.806Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/89/8b068a6400508da84d029d2ae20666f8f1f816d91257ce1ae98eaf22f9b2/ansys_api_discovery-1.2.17.tar.gz", hash = "sha256:be506ac48d899b8e7e116a857135fc384fe75b39d6a4e9bae06c240f00cb04f9", size = 93809, upload-time = "2026-09-28T14:56:16.841Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cb/a4/c5d995289ef8c369ce88f5693be4854c15c770e172f45b07e33685c97d50/ansys_api_discovery-1.2.13-py3-none-any.whl", hash = "sha256:f9f9875ef1caaee6a6be95a08c3dc6d8f4d868b470239c209626e767eb84cda8", size = 1216085, upload-time = "2026-08-21T10:59:12.522Z" },
+    { url = "https://files.pythonhosted.org/packages/85/57/3b48cf985ba8c15d4e182e47d080793d8680dbb6fd8310e855c194597c44/ansys_api_discovery-1.2.17-py3-none-any.whl", hash = "sha256:c42621dc0b812079625ce3acdca6b656fe6aa540646749193cf8539abdb372cd", size = 1268451, upload-time = "2026-09-28T14:56:15.031Z" },
 ]
 
 [[package]]
@@ -242,7 +242,7 @@ wheels = [
 
 [[package]]
 name = "ansys-geometry-core"
-version = "0.17.2"
+version = "0.18.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-api-discovery" },
@@ -261,9 +261,9 @@ dependencies = [
     { name = "semver" },
     { name = "six" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/25/ba/b6ede208f5db314aa41c6e3475a03a21bf8ca240c615869ca17773ad8877/ansys_geometry_core-0.17.2.tar.gz", hash = "sha256:234dd4cba4e9e9ed5e92b357fec641626ec7c81f17ff779fbed591b9af137a55", size = 23304040, upload-time = "2026-09-09T09:40:32.075Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/6f/4e/163d7c67b9d29335cd72a973a5c7e1f0301643e47c0bfaa7a73fd2e492a4/ansys_geometry_core-0.18.1.tar.gz", hash = "sha256:69e8cf97ea649e82720c077f6fc738dbcbf2490f30b1ce77a413444d87f3712c", size = 23409488, upload-time = "2026-09-29T08:39:58.68Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/d8/7afc1f9be4f4352deea959dadc127762ff41141b2430751615e8e2c80b59/ansys_geometry_core-0.17.2-py3-none-any.whl", hash = "sha256:08d265462bd6a42ce71e37ef4f17df688e027addc5de7535537d95c6f70a8145", size = 596128, upload-time = "2026-09-09T09:40:29.621Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/ab/4aa7edda8b05626efc52c46ac7db2b842f336edd3efc15736481534f686d/ansys_geometry_core-0.18.1-py3-none-any.whl", hash = "sha256:490a9b98462a11850d0858a5604b65e6dbcd284010d1b45a7fd6a0f740331c58", size = 606428, upload-time = "2026-09-29T08:39:55.999Z" },
 ]
 
 [package.optional-dependencies]
@@ -3123,7 +3123,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess" },
+    { name = "ptyprocess", marker = "sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
@@ -3467,18 +3467,20 @@ memory = [
 
 [[package]]
 name = "pyansys-geometry-mcp"
-version = "0.1.0"
+version = "0.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "ansys-common-mcp" },
     { name = "ansys-geometry-core", extra = ["all"] },
-    { name = "black" },
-    { name = "isort" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
     { name = "ansys-sphinx-theme" },
+    { name = "black" },
+    { name = "isort" },
     { name = "jupytext" },
     { name = "myst-parser" },
     { name = "nbconvert" },
@@ -3498,6 +3500,8 @@ dev = [
     { name = "sphinx-jinja" },
 ]
 doc = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
     { name = "ansys-sphinx-theme" },
     { name = "jupytext" },
     { name = "myst-parser" },
@@ -3513,6 +3517,8 @@ doc = [
     { name = "sphinx-jinja" },
 ]
 eval = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
     { name = "jsonschema" },
     { name = "openai" },
     { name = "pytest" },
@@ -3521,6 +3527,8 @@ eval = [
     { name = "pytest-mock" },
 ]
 tests = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -3529,61 +3537,69 @@ tests = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ansys-common-mcp", specifier = ">=0.2.0" },
+    { name = "ansys-common-mcp", specifier = ">=0.3.0" },
     { name = "ansys-geometry-core", extras = ["all"], specifier = ">=0.17.0" },
-    { name = "black" },
-    { name = "isort" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "ansys-sphinx-theme", specifier = ">=0.14" },
+    { name = "ansys-common-mcp", specifier = "==0.3.4" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "ansys-sphinx-theme", specifier = "==1.11.0" },
+    { name = "black", specifier = "==26.5.1" },
+    { name = "isort", specifier = "==9.0.1" },
     { name = "jupytext", specifier = "==1.19.5" },
     { name = "myst-parser", specifier = "==5.1.0" },
     { name = "nbconvert", specifier = "==7.17.1" },
     { name = "nbsphinx", specifier = "==0.9.8" },
     { name = "notebook", specifier = "==7.6.3" },
     { name = "pre-commit", specifier = "==4.6.2" },
-    { name = "pypdf", specifier = ">=4.0" },
-    { name = "pytest", specifier = ">=7.0" },
+    { name = "pypdf", specifier = "==6.19.0" },
+    { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "pytest-cov", specifier = ">=4.0" },
-    { name = "pytest-mock", specifier = ">=3.10" },
-    { name = "quarto-cli", specifier = ">=1.10.18" },
-    { name = "sphinx", specifier = ">=7.0" },
-    { name = "sphinx-click", specifier = ">=5.0" },
-    { name = "sphinx-copybutton", specifier = ">=0.5" },
-    { name = "sphinx-design", specifier = ">=0.5" },
-    { name = "sphinx-jinja", specifier = ">=0.2" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
+    { name = "quarto-cli", specifier = "==1.10.18" },
+    { name = "sphinx", specifier = "==9.1.0" },
+    { name = "sphinx-click", specifier = "==6.2.0" },
+    { name = "sphinx-copybutton", specifier = "==0.5.2" },
+    { name = "sphinx-design", specifier = "==0.7.0" },
+    { name = "sphinx-jinja", specifier = "==2.0.2" },
 ]
 doc = [
-    { name = "ansys-sphinx-theme", specifier = ">=0.14" },
+    { name = "ansys-common-mcp", specifier = "==0.3.4" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "ansys-sphinx-theme", specifier = "==1.11.0" },
     { name = "jupytext", specifier = "==1.19.5" },
     { name = "myst-parser", specifier = "==5.1.0" },
     { name = "nbconvert", specifier = "==7.17.1" },
     { name = "nbsphinx", specifier = "==0.9.8" },
     { name = "notebook", specifier = "==7.6.3" },
-    { name = "pypdf", specifier = ">=4.0" },
-    { name = "quarto-cli", specifier = ">=1.10.18" },
-    { name = "sphinx", specifier = ">=7.0" },
-    { name = "sphinx-click", specifier = ">=5.0" },
-    { name = "sphinx-copybutton", specifier = ">=0.5" },
-    { name = "sphinx-design", specifier = ">=0.5" },
-    { name = "sphinx-jinja", specifier = ">=0.2" },
+    { name = "pypdf", specifier = "==6.19.0" },
+    { name = "quarto-cli", specifier = "==1.10.18" },
+    { name = "sphinx", specifier = "==9.1.0" },
+    { name = "sphinx-click", specifier = "==6.2.0" },
+    { name = "sphinx-copybutton", specifier = "==0.5.2" },
+    { name = "sphinx-design", specifier = "==0.7.0" },
+    { name = "sphinx-jinja", specifier = "==2.0.2" },
 ]
 eval = [
-    { name = "jsonschema", specifier = ">=4" },
-    { name = "openai", specifier = ">=1.60" },
-    { name = "pytest", specifier = ">=7.0" },
+    { name = "ansys-common-mcp", specifier = "==0.3.4" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "jsonschema", specifier = "==4.26.0" },
+    { name = "openai", specifier = "==3.17.0" },
+    { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "pytest-cov", specifier = ">=4.0" },
-    { name = "pytest-mock", specifier = ">=3.10" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
 ]
 tests = [
-    { name = "pytest", specifier = ">=7.0" },
+    { name = "ansys-common-mcp", specifier = "==0.3.4" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "pytest-cov", specifier = ">=4.0" },
-    { name = "pytest-mock", specifier = ">=3.10" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
 ]
 
 [[package]]
@@ -4381,8 +4397,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cryptography" },
-    { name = "jeepney" },
+    { name = "cryptography", marker = "sys_platform != 'win32'" },
+    { name = "jeepney", marker = "sys_platform != 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be", size = 19884, upload-time = "2025-11-23T19:02:53.191Z" }
 wheels = [
