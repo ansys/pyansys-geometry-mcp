@@ -50,9 +50,9 @@ scripts.pyansys-geometry-mcp = "ansys.geometry.mcp.__main__:main"
 # only available when a developer clones the repository and installs the package
 # for local development.
 dev = [
-  "pre-commit==4.6.2",
   "black==26.5.1",
   "isort==9.0.1",
+  "pre-commit==4.6.2",
   { include-group = "doc" },
   { include-group = "tests" },
 ]
