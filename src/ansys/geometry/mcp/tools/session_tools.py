@@ -206,11 +206,15 @@ async def run_python_code(ctx: Context, code: str, timeout: int = 300) -> str:
                 ensure_ascii=False,
             )
 
-    result = shared_tools.execute_python_code(ctx, code, timeout=300, no_output_timeout=300)
-    if result.get("success"):
-        app_context.command_history.append(code)
+    result = await shared_tools.execute_python_code(ctx, code, timeout=300, no_output_timeout=300)
+    try:
+        parsed = json.loads(result)
+        if parsed.get("success"):
+            app_context.command_history.append(code)
+    except (json.JSONDecodeError, AttributeError):
+        pass
 
-    return json.dumps(result, ensure_ascii=False)
+    return result
 
 
 @app.tool()
