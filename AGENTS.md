@@ -61,6 +61,10 @@ This rule governs *discovery*. Reading a tool's source is still expected once
   whether a model picks the tool. Treat docstring edits as behavioural changes.
 - New tool functions must be imported in `tools/__init__.py` or they are never
   registered.
+- `ansys-geometry-core` defaults to SI: a bare number is metres (m², m³ for areas
+  and volumes), and angles passed as `Quantity` need an explicit unit. Users
+  usually speak in millimetres, so convert at the boundary and state the unit in
+  every numeric parameter's docstring.
 - Keep the existing MIT license header at the top of source files.
 - Do not manually create changelog files. These are automatically created on PRs.
 
