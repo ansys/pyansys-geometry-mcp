@@ -31,7 +31,7 @@ If you want to override these defaults, set the following environment variables.
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import ansys.tools.visualization_interface as viz_interface
 import pytest
@@ -88,10 +88,10 @@ def ctx(context, startup_history):
 
 
 @pytest.fixture
-def execute_mock(monkeypatch):
-    """Replace the shared ``execute_python_code`` coroutine with an async mock."""
-    mock = AsyncMock(return_value=json.dumps({"success": True, "stdout": "", "stderr": ""}))
-    monkeypatch.setattr(f"{SESSION_TOOLS}.shared_tools.execute_python_code", mock)
+def execute_mock(monkeypatch, ctx):
+    """Replace ``PersistentPythonSession.execute`` with a mock returning a result dict."""
+    mock = MagicMock(return_value={"success": True, "stdout": "", "stderr": ""})
+    monkeypatch.setattr(ctx.request_context.lifespan_context.python_session, "execute", mock)
     return mock
 
 
