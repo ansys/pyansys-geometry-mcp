@@ -40,7 +40,7 @@ def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
     return ctx.fastmcp._lifespan_result  # type: ignore[return-value]
 
 
-def find_body(design, body_name: str) -> "Body" | None:
+def find_body(design, body_name: str) -> "Body | None":
     """Find a body by name across the full design tree.
 
     Uses ``Component.get_all_bodies()``, which recursively collects every body
@@ -65,7 +65,7 @@ def find_body(design, body_name: str) -> "Body" | None:
     return None
 
 
-def find_component(design, component_name: str) -> "Component" | None:
+def find_component(design, component_name: str) -> "Component | None":
     """Find a component by name across the full design tree.
 
     Uses ``Design._get_all_components()``, which recursively collects every
@@ -90,7 +90,7 @@ def find_component(design, component_name: str) -> "Component" | None:
     return None
 
 
-def find_named_selection(design, name: str) -> "NamedSelection" | None:
+def find_named_selection(design, name: str) -> "NamedSelection | None":
     """Find a named selection by name in the design.
 
     Parameters

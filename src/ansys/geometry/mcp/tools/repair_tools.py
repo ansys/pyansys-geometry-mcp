@@ -207,8 +207,11 @@ def repair_geometry(
     ``operation`` selects what to repair:
 
     - ``"all"``
-        Let the backend inspect and repair everything it can. Start here when
-        the problem is not yet diagnosed. Ignores the tuning parameters below.
+        Run the backend's blanket repair, letting it inspect and fix everything
+        it can across the scope. Use it when the user explicitly asks for an
+        automatic whole-design repair; an undiagnosed problem should go to
+        ``inspect_geometry`` first. Accepts no tuning parameters, and supplying
+        one (including ``comprehensive_result``) is rejected.
     - ``"short_edges"``
         Remove edges shorter than ``length``. Accepts ``length``.
     - ``"extra_edges"``
@@ -310,6 +313,13 @@ def repair_geometry(
     if operation != "all":
         kwargs["comprehensive_result"] = comprehensive_result
 
+    call_kwargs = dict(kwargs)
+    if "angle" in call_kwargs:
+        # PyAnsys Geometry reads a bare float as radians; this tool's contract is degrees.
+        from ansys.geometry.core.misc import UNITS, Angle
+
+        call_kwargs["angle"] = Angle(call_kwargs["angle"], UNITS.degree)
+
     try:
         design = app_context.product_instance.get_active_design()
         bodies, error = resolve_bodies(
@@ -319,9 +329,14 @@ def repair_geometry(
             return error
 
         method = getattr(app_context.product_instance.repair_tools, method_name)
-        message = method(bodies, **kwargs)
+        message = method(bodies, **call_kwargs)
 
-        kwargs_str = "".join(f", {name}={value!r}" for name, value in kwargs.items())
+        kwargs_str = "".join(
+            f", {name}=Angle({value!r}, UNITS.degree)" if name == "angle" else f", {name}={value!r}"
+            for name, value in kwargs.items()
+        )
+        if "angle" in kwargs:
+            app_context.command_history.append("from ansys.geometry.core.misc import UNITS, Angle")
         app_context.command_history.append(_bodies_transcript(bodies))
         app_context.command_history.append(
             f"instance.repair_tools.{method_name}(bodies{kwargs_str})"
