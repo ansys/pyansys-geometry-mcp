@@ -47,7 +47,7 @@ repos:
           - --start_year=2026
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.38.1
+    rev: 0.38.2
     hooks:
       - id: check-github-workflows
 
