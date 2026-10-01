@@ -121,7 +121,9 @@ nbsphinx_custom_formats = {
 
 typehints_defaults = "comma"
 latex_additional_files = [watermark, ansys_logo_white, ansys_logo_white_cropped]
-suppress_warnings = ["ref.python"]
+# autoapi.python_import_resolution: expected, since ansys.common.mcp and
+# ansys.geometry.core are external packages not part of this doc build.
+suppress_warnings = ["ref.python", "autoapi.python_import_resolution"]
 
 exclude_patterns = ["changelog/*.md"]
 
