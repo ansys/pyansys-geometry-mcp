@@ -123,7 +123,11 @@ typehints_defaults = "comma"
 latex_additional_files = [watermark, ansys_logo_white, ansys_logo_white_cropped]
 # autoapi.python_import_resolution: expected, since ansys.common.mcp and
 # ansys.geometry.core are external packages not part of this doc build.
-suppress_warnings = ["ref.python", "autoapi.python_import_resolution"]
+# toc.not_readable: autoapi's module summary emits toctree entries for classes
+# re-exported via `__all__` even though, by default, it does not render a
+# separate page for "imported" members (those are documented on their
+# defining submodule's page instead, e.g. ``context``, ``server``).
+suppress_warnings = ["ref.python", "autoapi.python_import_resolution", "toc.not_readable"]
 
 exclude_patterns = ["changelog/*.md"]
 
