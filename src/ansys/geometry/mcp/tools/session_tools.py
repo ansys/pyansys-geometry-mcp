@@ -127,7 +127,7 @@ def get_product_status(ctx: Context) -> str:
 
 
 @app.tool()
-async def run_python_code(ctx: Context, code: str) -> str:
+async def run_python_code(ctx: Context, code: str, timeout: int = 300) -> str:
     """Perform ANY geometry/CAD operation that has no dedicated MCP tool, by running PyAnsys Geometry API code.
 
     This is the general-purpose fallback tool. When the user asks for a modeling,
@@ -155,6 +155,8 @@ async def run_python_code(ctx: Context, code: str) -> str:
         MCP request context (injected automatically).
     code : str
         PyAnsys Geometry Python code to execute in the persistent session.
+    timeout : int, optional
+        Maximum time in seconds to allow the code to run (default is 60).
 
     Returns
     -------
@@ -198,11 +200,10 @@ async def run_python_code(ctx: Context, code: str) -> str:
                 ensure_ascii=False,
             )
 
-    result = await shared_tools.execute_python_code(ctx, code)
+    result = await shared_tools.execute_python_code(ctx, code, timeout=300, no_output_timeout=300)
     try:
         parsed = json.loads(result)
         if parsed.get("success"):
-            app_context = get_geometry_ctx(ctx)
             app_context.command_history.append(code)
     except (json.JSONDecodeError, AttributeError):
         pass

@@ -270,29 +270,36 @@ async def test_run_python_code_not_connected(ctx, execute_mock, monkeypatch):
 
     assert result["success"] is False
     assert result["error"] == "The product backend is not connected."
-    execute_mock.assert_not_awaited()
+    execute_mock.assert_not_called()
 
 
 async def test_run_python_code_success(ctx, execute_mock, connect_mock):
     """Test that a successful execution is forwarded and appended to the command history."""
-    execute_mock.return_value = json.dumps(
-        {"success": True, "stdout": "42\n", "stderr": "", "message": "ok"}
-    )
+    execute_mock.return_value = {
+        "success": True,
+        "stdout": "42\n",
+        "stderr": "",
+        "message": "ok",
+    }
 
     result = json.loads(await run_python_code(ctx, "print(42)"))
 
+    print(result)
     assert result["success"] is True
     assert result["stdout"] == "42\n"
     connect_mock.assert_called_once_with(ctx)
-    execute_mock.assert_awaited_once_with(ctx, "print(42)")
+    execute_mock.assert_called_once_with("print(42)", timeout=300, no_output_timeout=300)
     assert "print(42)" in get_command_history(ctx)
 
 
 async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_mock):
     """Test that a failed execution is returned as-is and left out of the command history."""
-    execute_mock.return_value = json.dumps(
-        {"success": False, "stdout": "", "stderr": "boom", "error": "NameError: boom"}
-    )
+    execute_mock.return_value = {
+        "success": False,
+        "stdout": "",
+        "stderr": "boom",
+        "error": "NameError: boom",
+    }
 
     result = json.loads(await run_python_code(ctx, "boom"))
 
@@ -301,7 +308,9 @@ async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_m
     assert "boom" not in get_command_history(ctx)
 
 
-async def test_run_python_code_reuses_connected_session(ctx, connect_mock, monkeypatch):
+async def test_run_python_code_reuses_connected_session(
+    ctx, execute_mock, connect_mock, monkeypatch
+):
     """Test that no reconnection is attempted when the session already holds a Modeler."""
     session = ctx.request_context.lifespan_context.python_session
     monkeypatch.setitem(session.metadata, "instance", MagicMock())
@@ -341,4 +350,4 @@ async def test_run_python_code_connection_failure(
 
     assert result["success"] is False
     assert result["error"] == expected_error
-    execute_mock.assert_not_awaited()
+    execute_mock.assert_not_called()
