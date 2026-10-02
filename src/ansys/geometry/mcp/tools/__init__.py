@@ -41,12 +41,11 @@ from ansys.geometry.mcp.tools.selection_tools import (
 )
 from ansys.geometry.mcp.tools.session_tools import (
     create_design,
-    export_design_to,
+    file_io,
     get_command_history,
     get_design_info,
     get_product_status,
     get_transcript,
-    import_geometry_file,
     run_python_code,
     run_script_file,
 )

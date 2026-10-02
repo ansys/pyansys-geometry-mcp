@@ -64,19 +64,20 @@ CASES: list[EvalCase] = [
         expected="get_design_info",
     ),
     EvalCase(
-        id="import_geometry",
+        id="file_io_import",
         prompt=r"Open the file C:\models\flange.scdocx in the geometry service.",
         checker=expect_tool(
-            "import_geometry_file", arguments={"file_path": r"C:\models\flange.scdocx"}
+            "file_io",
+            arguments={"operation": "import", "file_path": r"C:\models\flange.scdocx"},
         ),
-        expected="import_geometry_file",
+        expected="file_io",
     ),
     EvalCase(
-        id="export_design",
+        id="file_io_export",
         prompt=r"Save the current design out as a STEP file at D:\out\flange.stp.",
-        checker=expect_tool("export_design_to", arguments={"file_format": "step"}),
-        expected="export_design_to",
-        note="Confusable with import_geometry_file.",
+        checker=expect_tool("file_io", arguments={"operation": "export", "file_format": "step"}),
+        expected="file_io",
+        note="Confusable with file_io import.",
     ),
     EvalCase(
         id="command_history",
