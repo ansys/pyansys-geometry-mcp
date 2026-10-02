@@ -38,9 +38,9 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
         Transport mode for the geometry service connection.
     proto_version : str
         Geometry service protocol version for an existing service connection.
-    host : str
+    geometry_host : str
         Host name or IP address of the geometry service.
-    port : int
+    geometry_port : int
         Port number of the geometry service.
     uds_dir : Optional[str]
         Directory for the Unix Domain Socket.
@@ -63,8 +63,8 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     mode: Optional[str] = None
     transport_mode: Optional[str] = None
     proto_version: str = "v1"
-    host: str = "localhost"
-    port: int = 50051
+    geometry_host: str = "localhost"
+    geometry_port: int = 50051
     uds_dir: Optional[str] = None
     uds_id: Optional[str] = None
     connect_to_existing_service: bool = False

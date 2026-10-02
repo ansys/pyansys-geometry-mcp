@@ -67,7 +67,7 @@ async def _fetch_tools(args: list[str]):
 def mcp_tools(_require_llm_eval_opt_in, use_existing_service):
     """Tool definitions advertised by the MCP server over a real stdio session."""
     args = [
-        "--mcp-transport",
+        "--transport",
         "stdio",
         "--transport-mode",
         os.environ.get("GEOMETRY_TRANSPORT_MODE", "insecure"),
@@ -75,9 +75,9 @@ def mcp_tools(_require_llm_eval_opt_in, use_existing_service):
     if use_existing_service:
         args += [
             "--connect-to-existing-service",
-            "--host",
+            "--geometry-host",
             os.environ.get("GEOMETRY_SERVICE_HOST", "localhost"),
-            "--port",
+            "--geometry-port",
             os.environ.get("GEOMETRY_SERVICE_PORT", "50051"),
         ]
 

@@ -39,7 +39,7 @@ As a result:
   injection in untrusted content could induce the assistant to run malicious code through
   `run_python_code` or point `run_script_file` at a malicious script.
 - Do not expose the server's HTTP/SSE transport to untrusted networks. Prefer the default
-  `stdio` transport, and if you must use `--mcp-transport http`, bind to `127.0.0.1` (the
+  `stdio` transport, and if you must use `--transport http`, bind to `127.0.0.1` (the
   default) and add your own network-level access control, since the server does not include
   built-in authentication.
 - Treat the machine running the server as being within the same trust boundary as the AI
