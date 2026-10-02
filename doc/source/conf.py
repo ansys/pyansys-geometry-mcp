@@ -63,6 +63,9 @@ html_theme_options = {
         "minMatchCharLength": 2,
         "ignoreLocation": True,
     },
+    "ansys_sphinx_theme_autoapi": {
+        "project": project,
+    },
 }
 
 linkcheck_ignore = [
@@ -76,6 +79,7 @@ if switcher_version != "dev":
 
 # Sphinx extensions
 extensions = [
+    "ansys_sphinx_theme.extension.autoapi",
     "sphinx.ext.intersphinx",
     "sphinx_copybutton",
     "nbsphinx",
@@ -117,6 +121,26 @@ nbsphinx_custom_formats = {
 
 typehints_defaults = "comma"
 latex_additional_files = [watermark, ansys_logo_white, ansys_logo_white_cropped]
-suppress_warnings = ["ref.python"]
+# autoapi.python_import_resolution: expected, since ansys.common.mcp and
+# ansys.geometry.core are external packages not part of this doc build.
+# toc.not_readable: autoapi's module summary emits toctree entries for classes
+# re-exported via `__all__` even though, by default, it does not render a
+# separate page for "imported" members (those are documented on their
+# defining submodule's page instead, e.g. ``context``, ``server``).
+suppress_warnings = ["ref.python", "autoapi.python_import_resolution", "toc.not_readable"]
 
 exclude_patterns = ["changelog/*.md"]
+
+
+def prepare_jinja_env(jinja_env) -> None:
+    """Customize the jinja env.
+
+    Notes
+    -----
+    See https://jinja.palletsprojects.com/en/3.0.x/api/#jinja2.Environment
+
+    """
+    jinja_env.globals["project_name"] = project
+
+
+autoapi_prepare_jinja_env = prepare_jinja_env

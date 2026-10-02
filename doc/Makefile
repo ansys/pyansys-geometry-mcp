@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    = -j auto -W --color
 SPHINXBUILD   = sphinx-build
-APIDIR        = api
+AUTOAPIDIR 	  ?= $(SOURCEDIR)/api
 SOURCEDIR     = source
 BUILDDIR      = _build
 
@@ -22,7 +22,7 @@ help:
 # Customized clean to remove generated API docs
 clean:
 	rm -rf $(BUILDDIR)/*
-	find . -type d -name $(APIDIR) -exec rm -rf {} +
+	rm -rf $(AUTOAPIDIR)/*
 
 # Create PDF
 pdf:

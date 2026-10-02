@@ -1,22 +1,22 @@
 PyAnsys Geometry MCP
 ====================
-|pyansys| |python| |pypi| |MIT| |GH-CI| |pre-commit|
+|pyansys| |python| |pypi| |Apache| |GH-CI| |pre-commit|
 
 .. |pyansys| image:: https://img.shields.io/badge/Py-Ansys-ffc107.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABDklEQVQ4jWNgoDfg5mD8vE7q/3bpVyskbW0sMRUwofHD7Dh5OBkZGBgW7/3W2tZpa2tLQEOyOzeEsfumlK2tbVpaGj4N6jIs1lpsDAwMJ278sveMY2BgCA0NFRISwqkhyQ1q/Nyd3zg4OBgYGNjZ2ePi4rB5loGBhZnhxTLJ/9ulv26Q4uVk1NXV/f///////69du4Zdg78lx//t0v+3S88rFISInD59GqIH2esIJ8G9O2/XVwhjzpw5EAam1xkkBJn/bJX+v1365hxxuCAfH9+3b9/+////48cPuNehNsS7cDEzMTAwMMzb+Q2u4dOnT2vWrMHu9ZtzxP9vl/69RVpCkBlZ3N7enoDXBwEAAA+YYitOilMVAAAAAElFTkSuQmCC
    :target: https://docs.pyansys.com/
    :alt: PyAnsys
 
-.. |python| image:: https://img.shields.io/pypi/pyversions/pyansys-geometry-mcp?logo=pypi
-   :target: https://pypi.org/project/pyansys-geometry-mcp/
+.. |python| image:: https://img.shields.io/pypi/pyversions/ansys-geometry-mcp?logo=pypi
+   :target: https://pypi.org/project/ansys-geometry-mcp/
    :alt: Python
 
-.. |pypi| image:: https://img.shields.io/pypi/v/pyansys-geometry-mcp.svg?logo=python&logoColor=white
-   :target: https://pypi.org/project/pyansys-geometry-mcp
+.. |pypi| image:: https://img.shields.io/pypi/v/ansys-geometry-mcp.svg?logo=python&logoColor=white
+   :target: https://pypi.org/project/ansys-geometry-mcp
    :alt: PyPI
 
-.. |MIT| image:: https://img.shields.io/badge/License-MIT-yellow.svg
-   :target: https://opensource.org/licenses/MIT
-   :alt: MIT
+.. |Apache| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
+   :target: https://opensource.org/licenses/Apache-2.0
+   :alt: Apache
 
 .. |GH-CI| image:: https://github.com/ansys/pyansys-geometry-mcp/actions/workflows/cicd.yml/badge.svg
    :target: https://github.com/ansys/pyansys-geometry-mcp/actions/workflows/cicd.yml
@@ -31,6 +31,13 @@ Overview
 
 PyAnsys Geometry MCP is a Python package that provides MCP tools for working with
 PyAnsys Geometry MCP and AI.
+
+.. warning::
+
+    This server includes tools (``run_python_code``, ``run_script_file``) that execute
+    arbitrary code as the user running the server. Only connect it to AI clients and
+    content sources you trust. See `SECURITY.md
+    <https://github.com/ansys/pyansys-geometry-mcp/blob/main/SECURITY.md>`_ for details.
 
 
 Documentation and issues
@@ -68,6 +75,6 @@ License
 -------
 
 PyAnsys Geometry MCP is licensed under the
-`MIT License <https://github.com/ansys/pyansys-geometry-mcp/blob/main/LICENSE>`_.
+`Apache License 2.0 <https://github.com/ansys/pyansys-geometry-mcp/blob/main/LICENSE>`_.
 
 PyAnsys Geometry MCP makes no commercial claim over Ansys whatsoever.

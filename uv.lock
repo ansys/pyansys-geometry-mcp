@@ -226,16 +226,12 @@ wheels = [
 
 [[package]]
 name = "ansys-common-mcp"
-version = "0.3.5"
-source = { registry = "https://pypi.org/simple" }
+version = "0.4.dev0"
+source = { git = "https://github.com/ansys/pyansys-common-mcp.git#84ab37d5f5a57cd236108a6c43a1fa9f7c01e0de" }
 dependencies = [
     { name = "fastmcp" },
     { name = "mcp" },
     { name = "pydantic-settings" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/2d/250c5333192eab68c8cac7b5df1574de5b79a0009a8f5bf199833a47f579/ansys_common_mcp-0.3.5.tar.gz", hash = "sha256:992109578c8b3905d9e6561fefdaa8bfe88e97533f590ca31a1e48836e1cadab", size = 24587, upload-time = "2026-09-28T16:01:07.783Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/29/98608d1e1a179f1f4cdebcea5fe8596fffd6687ac60dc3050cd07d66f47b/ansys_common_mcp-0.3.5-py3-none-any.whl", hash = "sha256:79d5b175ef5797abeb3dd8b1a863468387bff5f67b82cbf69e8067b746c4e934", size = 28146, upload-time = "2026-09-28T16:01:06.512Z" },
 ]
 
 [[package]]
@@ -276,6 +272,143 @@ all = [
 ]
 
 [[package]]
+name = "ansys-geometry-mcp"
+version = "0.1.dev0"
+source = { editable = "." }
+dependencies = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core", extra = ["all"] },
+    { name = "black" },
+    { name = "isort" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
+    { name = "ansys-sphinx-theme", extra = ["autoapi", "changelog"] },
+    { name = "jupytext" },
+    { name = "myst-parser" },
+    { name = "nbconvert" },
+    { name = "nbsphinx" },
+    { name = "notebook" },
+    { name = "pre-commit" },
+    { name = "pypdf" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "quarto-cli" },
+    { name = "sphinx" },
+    { name = "sphinx-click" },
+    { name = "sphinx-copybutton" },
+    { name = "sphinx-design" },
+    { name = "sphinx-jinja" },
+]
+doc = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
+    { name = "ansys-sphinx-theme", extra = ["autoapi", "changelog"] },
+    { name = "jupytext" },
+    { name = "myst-parser" },
+    { name = "nbconvert" },
+    { name = "nbsphinx" },
+    { name = "notebook" },
+    { name = "pypdf" },
+    { name = "quarto-cli" },
+    { name = "sphinx" },
+    { name = "sphinx-click" },
+    { name = "sphinx-copybutton" },
+    { name = "sphinx-design" },
+    { name = "sphinx-jinja" },
+]
+eval = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
+    { name = "jsonschema" },
+    { name = "openai" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+]
+tests = [
+    { name = "ansys-common-mcp" },
+    { name = "ansys-geometry-core" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = ">=0.17.0" },
+    { name = "black", specifier = ">=23.7.0" },
+    { name = "isort", specifier = ">=5.13.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.11.0" },
+    { name = "jupytext", specifier = "==1.19.5" },
+    { name = "myst-parser", specifier = "==5.1.0" },
+    { name = "nbconvert", specifier = "==7.17.1" },
+    { name = "nbsphinx", specifier = "==0.9.8" },
+    { name = "notebook", specifier = "==7.6.3" },
+    { name = "pre-commit", specifier = "==4.6.2" },
+    { name = "pypdf", specifier = "==6.19.0" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
+    { name = "quarto-cli", specifier = "==1.10.18" },
+    { name = "sphinx", specifier = "==9.1.0" },
+    { name = "sphinx-click", specifier = "==6.2.0" },
+    { name = "sphinx-copybutton", specifier = "==0.5.2" },
+    { name = "sphinx-design", specifier = "==0.7.0" },
+    { name = "sphinx-jinja", specifier = "==2.0.2" },
+]
+doc = [
+    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.11.0" },
+    { name = "jupytext", specifier = "==1.19.5" },
+    { name = "myst-parser", specifier = "==5.1.0" },
+    { name = "nbconvert", specifier = "==7.17.1" },
+    { name = "nbsphinx", specifier = "==0.9.8" },
+    { name = "notebook", specifier = "==7.6.3" },
+    { name = "pypdf", specifier = "==6.19.0" },
+    { name = "quarto-cli", specifier = "==1.10.18" },
+    { name = "sphinx", specifier = "==9.1.0" },
+    { name = "sphinx-click", specifier = "==6.2.0" },
+    { name = "sphinx-copybutton", specifier = "==0.5.2" },
+    { name = "sphinx-design", specifier = "==0.7.0" },
+    { name = "sphinx-jinja", specifier = "==2.0.2" },
+]
+eval = [
+    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "jsonschema", specifier = "==4.26.0" },
+    { name = "openai", specifier = "==3.17.0" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
+]
+tests = [
+    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-geometry-core", specifier = "==0.18.1" },
+    { name = "pytest", specifier = "==9.1.1" },
+    { name = "pytest-asyncio", specifier = "==1.4.0" },
+    { name = "pytest-cov", specifier = "==7.1.0" },
+    { name = "pytest-mock", specifier = "==3.15.1" },
+]
+
+[[package]]
 name = "ansys-platform-instancemanagement"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -304,6 +437,17 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f2/4c/60c0704874713fe7683c08e01c9e95cf8a3e921e9a4f268de2509ab6d3cd/ansys_sphinx_theme-1.11.0.tar.gz", hash = "sha256:76bdb71d805a8104d483a91666a358411607184c942362fbaf0d65693fa16352", size = 1162113, upload-time = "2026-09-02T09:30:37.356Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/ef/b7bdb2c67e92eacbdf2997fe91cd9a4a3339e91373e2e9afc6e0bfab1ef6/ansys_sphinx_theme-1.11.0-py3-none-any.whl", hash = "sha256:a388fd4adb3e385f95ca927659c41165cb37631aa698aec7b7812338131d463c", size = 1667793, upload-time = "2026-09-02T09:30:35.425Z" },
+]
+
+[package.optional-dependencies]
+autoapi = [
+    { name = "sphinx-autoapi" },
+    { name = "sphinx-design" },
+    { name = "sphinx-jinja" },
+]
+changelog = [
+    { name = "pyyaml" },
+    { name = "sphinx-design" },
 ]
 
 [[package]]
@@ -430,6 +574,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/b9/33/032cdc44182491aa708d06a68b62434140d8c50820a087fac7af37703357/arrow-1.4.0.tar.gz", hash = "sha256:ed0cc050e98001b8779e84d461b0098c4ac597e88704a655582b21d116e526d7", size = 152931, upload-time = "2025-10-18T17:46:46.761Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ed/c9/d7977eaacb9df673210491da99e6a247e93df98c715fc43fd136ce1d3d33/arrow-1.4.0-py3-none-any.whl", hash = "sha256:749f0769958ebdc79c173ff0b0670d59051a535fa26e8eba02953dc19eb43205", size = 68797, upload-time = "2025-10-18T17:46:45.663Z" },
+]
+
+[[package]]
+name = "astroid"
+version = "4.3.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/be/ae2dbb9687591b236dfa45113812c8b9616f4a49318ec4ca6dc927fdf21f/astroid-4.3.2.tar.gz", hash = "sha256:8cdaf5b7f3f4f39557ae05ed8b0852136b43a04ab686db7d39255b206233677a", size = 441025, upload-time = "2026-09-25T20:54:04.543Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/13/9f/9948796a11806a209b7658d8dbe1a344d3de41b7965925dd296a90d65b63/astroid-4.3.2-py3-none-any.whl", hash = "sha256:6d7b483f37281a697fa0878a9eaaa3dbefb302970e90c680712bf746a4ebb3a1", size = 287411, upload-time = "2026-09-25T20:54:02.909Z" },
 ]
 
 [[package]]
@@ -3151,7 +3304,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "3.22.1"
+version = "3.17.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3161,9 +3314,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/db/b135830095e2ae120ea04b0a53d3a1644eb65554385a8ef4c9cb4de3f5fd/openai-3.22.1.tar.gz", hash = "sha256:2575f961e4c1df8761f8eeb4d78e967de3f9b9f91b22f7120d60e393e970094d", size = 1751626, upload-time = "2026-09-30T00:25:55.548Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/9d/a00f8bca3df57716771cca5b4c0ddb5c2e03e1dd2ddfbb1607371ffb8372/openai-3.17.0.tar.gz", hash = "sha256:28910914e6ffaf622f1bbf5dfe02e221cc2b929e492dd30d06b6826939dedf92", size = 1710984, upload-time = "2026-09-22T02:37:17.443Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/32/74/e3b77d1157c8b9ad815a87d5719545097e5edb06156869c1657fbb6b797b/openai-3.22.1-py3-none-any.whl", hash = "sha256:43ff3de5457a8beb4afa177d4e0ba6841cfadd5219ebc62297fde6c8a9d401a6", size = 2090965, upload-time = "2026-09-30T00:25:53.524Z" },
+    { url = "https://files.pythonhosted.org/packages/57/bc/5b80a0ca4069a6b5ba6c7d48ae7a4f8176b2c0bde0bebccdb867472ec6f6/openai-3.17.0-py3-none-any.whl", hash = "sha256:712bc2982a6da1af10f6948a1d2d9ff5ce3ee3604ded88002a53765a77cf5ae5", size = 2068574, upload-time = "2026-09-22T02:37:15.373Z" },
 ]
 
 [[package]]
@@ -3612,127 +3765,6 @@ memory = [
 ]
 
 [[package]]
-name = "pyansys-geometry-mcp"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "ansys-common-mcp" },
-    { name = "ansys-geometry-core", extra = ["all"] },
-    { name = "black" },
-    { name = "isort" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ansys-sphinx-theme" },
-    { name = "jupytext" },
-    { name = "myst-parser" },
-    { name = "nbconvert" },
-    { name = "nbsphinx" },
-    { name = "notebook" },
-    { name = "pre-commit" },
-    { name = "pypdf" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-    { name = "quarto-cli" },
-    { name = "sphinx" },
-    { name = "sphinx-click" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-design" },
-    { name = "sphinx-jinja" },
-]
-doc = [
-    { name = "ansys-sphinx-theme" },
-    { name = "jupytext" },
-    { name = "myst-parser" },
-    { name = "nbconvert" },
-    { name = "nbsphinx" },
-    { name = "notebook" },
-    { name = "pypdf" },
-    { name = "quarto-cli" },
-    { name = "sphinx" },
-    { name = "sphinx-click" },
-    { name = "sphinx-copybutton" },
-    { name = "sphinx-design" },
-    { name = "sphinx-jinja" },
-]
-eval = [
-    { name = "jsonschema" },
-    { name = "openai" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-]
-tests = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ansys-common-mcp", specifier = ">=0.2.0" },
-    { name = "ansys-geometry-core", extras = ["all"], specifier = ">=0.17.0" },
-    { name = "black" },
-    { name = "isort" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ansys-sphinx-theme", specifier = ">=0.14" },
-    { name = "jupytext", specifier = "==1.19.5" },
-    { name = "myst-parser", specifier = "==5.1.0" },
-    { name = "nbconvert", specifier = "==7.17.1" },
-    { name = "nbsphinx", specifier = "==0.9.8" },
-    { name = "notebook", specifier = "==7.6.3" },
-    { name = "pre-commit", specifier = "==4.6.2" },
-    { name = "pypdf", specifier = ">=4.0" },
-    { name = "pytest", specifier = ">=7.0" },
-    { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "pytest-cov", specifier = ">=4.0" },
-    { name = "pytest-mock", specifier = ">=3.10" },
-    { name = "quarto-cli", specifier = ">=1.10.18" },
-    { name = "sphinx", specifier = ">=7.0" },
-    { name = "sphinx-click", specifier = ">=5.0" },
-    { name = "sphinx-copybutton", specifier = ">=0.5" },
-    { name = "sphinx-design", specifier = ">=0.5" },
-    { name = "sphinx-jinja", specifier = ">=0.2" },
-]
-doc = [
-    { name = "ansys-sphinx-theme", specifier = ">=0.14" },
-    { name = "jupytext", specifier = "==1.19.5" },
-    { name = "myst-parser", specifier = "==5.1.0" },
-    { name = "nbconvert", specifier = "==7.17.1" },
-    { name = "nbsphinx", specifier = "==0.9.8" },
-    { name = "notebook", specifier = "==7.6.3" },
-    { name = "pypdf", specifier = ">=4.0" },
-    { name = "quarto-cli", specifier = ">=1.10.18" },
-    { name = "sphinx", specifier = ">=7.0" },
-    { name = "sphinx-click", specifier = ">=5.0" },
-    { name = "sphinx-copybutton", specifier = ">=0.5" },
-    { name = "sphinx-design", specifier = ">=0.5" },
-    { name = "sphinx-jinja", specifier = ">=0.2" },
-]
-eval = [
-    { name = "jsonschema", specifier = ">=4" },
-    { name = "openai", specifier = ">=1.60" },
-    { name = "pytest", specifier = ">=7.0" },
-    { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "pytest-cov", specifier = ">=4.0" },
-    { name = "pytest-mock", specifier = ">=3.10" },
-]
-tests = [
-    { name = "pytest", specifier = ">=7.0" },
-    { name = "pytest-asyncio", specifier = "==1.4.0" },
-    { name = "pytest-cov", specifier = ">=4.0" },
-    { name = "pytest-mock", specifier = ">=3.10" },
-]
-
-[[package]]
 name = "pycparser"
 version = "3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -4010,14 +4042,14 @@ wheels = [
 
 [[package]]
 name = "pytest-mock"
-version = "3.16.0"
+version = "3.15.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7a/7f/6ed29931d5c8cd396e7c0a55412e6cc88020373365c8685985dea53d26d7/pytest_mock-3.16.0.tar.gz", hash = "sha256:5a8395528b8f498205f3718f575228d0edaed7425fff638f87d1a6c3e0383636", size = 35362, upload-time = "2026-09-27T14:57:55.46Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/68/14/eb014d26be205d38ad5ad20d9a80f7d201472e08167f0bb4361e251084a9/pytest_mock-3.15.1.tar.gz", hash = "sha256:1849a238f6f396da19762269de72cb1814ab44416fa73a8686deac10b0d87a0f", size = 34036, upload-time = "2025-09-16T16:37:27.081Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/db/5b/b83a9bf1a3b4ec222f9fa083147ff6816245223da0ab92370e7e056f113f/pytest_mock-3.16.0-py3-none-any.whl", hash = "sha256:007cfeb257801d88d9c0b2a7b5a15a15e73b71968dfd72e7bf8c4a2f8393aec8", size = 10016, upload-time = "2026-09-27T14:57:54.283Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/cc/06253936f4a7fa2e0f48dfe6d851d9c56df896a9ab09ac019d70b760619c/pytest_mock-3.15.1-py3-none-any.whl", hash = "sha256:0a25e2eb88fe5168d535041d09a4529a188176ae608a6d249ee65abc0949630d", size = 10095, upload-time = "2025-09-16T16:37:25.734Z" },
 ]
 
 [[package]]
@@ -4665,6 +4697,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cd/bd/f08eb0f4eed5c83f1ba2a3bd18f7745a2b1525fad70660a1c00224ec468a/sphinx-9.1.0.tar.gz", hash = "sha256:7741722357dd75f8190766926071fed3bdc211c74dd2d7d4df5404da95930ddb", size = 8718324, upload-time = "2025-12-31T15:09:27.646Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/73/f7/b1884cb3188ab181fc81fa00c266699dab600f927a964df02ec3d5d1916a/sphinx-9.1.0-py3-none-any.whl", hash = "sha256:c84fdd4e782504495fe4f2c0b3413d6c2bf388589bb352d439b2a3bb99991978", size = 3921742, upload-time = "2025-12-31T15:09:25.561Z" },
+]
+
+[[package]]
+name = "sphinx-autoapi"
+version = "3.8.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astroid" },
+    { name = "jinja2" },
+    { name = "pyyaml" },
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/09/5e/7b42f3f774aa116741b8031b740c854612ed7dd7d616695e934a2b7fb94f/sphinx_autoapi-3.8.1.tar.gz", hash = "sha256:04643fc50485039294ace8b660d0d1b821a1686824a975725a5106e8cf1fb30b", size = 58898, upload-time = "2026-08-23T17:04:25.612Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/4e/e49564ab6f38341921ae855451aed2ba9915f61c43780200d5aebb57ae4d/sphinx_autoapi-3.8.1-py3-none-any.whl", hash = "sha256:9a3bd3ee1ba82d537f1620a3922292d43ee8b9ff9c69bc198965ac4bcd5a6775", size = 35975, upload-time = "2026-08-23T17:04:24.168Z" },
 ]
 
 [[package]]

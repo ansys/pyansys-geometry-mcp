@@ -45,6 +45,7 @@ repos:
         files: (src|examples|tests|docker)/.*\.(py)|\.(proto)
         args:
           - --start_year=2026
+          - --custom_license=Apache-2.0
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
     rev: 0.38.2
@@ -56,3 +57,10 @@ repos:
     hooks:
       - id: ruff-check
       - id: ruff-format
+
+  - repo: https://github.com/crate-ci/typos
+    rev: b859c0df7f391deba73030f79b957e62b4d81dc6 # frozen: varcon-core-v5.0.7
+    hooks:
+      - id: typos
+        args: ["--config", "doc/styles/typos.toml"]
+        exclude: "doc/styles/config/vocabularies"
