@@ -6,12 +6,12 @@ PyAnsys Geometry MCP
    :target: https://docs.pyansys.com/
    :alt: PyAnsys
 
-.. |python| image:: https://img.shields.io/pypi/pyversions/pyansys-geometry-mcp?logo=pypi
-   :target: https://pypi.org/project/pyansys-geometry-mcp/
+.. |python| image:: https://img.shields.io/pypi/pyversions/ansys-geometry-mcp?logo=pypi
+   :target: https://pypi.org/project/ansys-geometry-mcp/
    :alt: Python
 
-.. |pypi| image:: https://img.shields.io/pypi/v/pyansys-geometry-mcp.svg?logo=python&logoColor=white
-   :target: https://pypi.org/project/pyansys-geometry-mcp
+.. |pypi| image:: https://img.shields.io/pypi/v/ansys-geometry-mcp.svg?logo=python&logoColor=white
+   :target: https://pypi.org/project/ansys-geometry-mcp
    :alt: PyPI
 
 .. |Apache| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg

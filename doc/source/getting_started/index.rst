@@ -15,7 +15,7 @@ run this command:
 
 .. code:: bash
 
-    pip install pyansys-geometry-mcp
+    pip install ansys-geometry-mcp
 
 Alternatively, to install the latest version from this library's
 `GitHub repository <https://github.com/ansys/pyansys-geometry-mcp/>`_,
