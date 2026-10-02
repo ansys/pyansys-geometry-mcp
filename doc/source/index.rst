@@ -42,5 +42,6 @@ PyAnsys Geometry MCP provides MCP tools for the PyAnsys ecosystem.
 
     getting_started/index
     user_guide/index
+    api/index
     examples
     contributing
