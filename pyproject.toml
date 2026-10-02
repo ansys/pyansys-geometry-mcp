@@ -3,7 +3,7 @@ build-backend = "hatchling.build"
 requires = [ "hatchling" ]
 
 [project]
-name = "pyansys-geometry-mcp"
+name = "ansys-geometry-mcp"
 version = "0.1.dev0"
 description = "MCP server for PyAnsys Geometry"
 readme = "README.rst"
