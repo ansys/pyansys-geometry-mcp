@@ -22,9 +22,12 @@
 
 """Unit tests for the shared auxiliary helpers."""
 
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
 import pytest
 
-from ansys.geometry.mcp.misc.auxiliary import build_sketch
+from ansys.geometry.mcp.misc.auxiliary import build_sketch, resolve_bodies
 
 
 def test_build_sketch_primitives():
@@ -58,3 +61,72 @@ def test_build_sketch_primitives():
 
     with pytest.raises(ValueError, match="Unsupported sketch primitive type"):
         build_sketch([{"type": "triangle"}])
+
+
+def test_resolve_bodies_scoping(design):
+    """Test the resolution precedence: handle, then named selection, then names, then all."""
+    app_context = MagicMock()
+    app_context.selection_registry = {
+        "sel-1": SimpleNamespace(_bodies=SimpleNamespace(items=[design.get_all_bodies()[1]])),
+        "sel-empty": SimpleNamespace(_bodies=SimpleNamespace(items=[])),
+    }
+
+    bodies, error = resolve_bodies(app_context, design)
+    assert error is None
+    assert [b.name for b in bodies] == ["box", "cylinder"]
+
+    bodies, error = resolve_bodies(app_context, design, body_names=["cylinder"])
+    assert error is None
+    assert [b.name for b in bodies] == ["cylinder"]
+
+    bodies, error = resolve_bodies(app_context, design, named_selection="hot_side")
+    assert error is None
+    assert [b.name for b in bodies] == ["box"]
+
+    bodies, error = resolve_bodies(app_context, design, selection_handle="sel-1")
+    assert error is None
+    assert [b.name for b in bodies] == ["cylinder"]
+
+    # A handle wins over the other scoping arguments.
+    bodies, error = resolve_bodies(
+        app_context,
+        design,
+        body_names=["box"],
+        named_selection="hot_side",
+        selection_handle="sel-1",
+    )
+    assert error is None
+    assert [b.name for b in bodies] == ["cylinder"]
+
+
+def test_resolve_bodies_errors(design):
+    """Test every error path returns an empty body list and an explanatory message."""
+    app_context = MagicMock()
+    app_context.selection_registry = {
+        "sel-empty": SimpleNamespace(_bodies=SimpleNamespace(items=[])),
+    }
+
+    bodies, error = resolve_bodies(app_context, design, selection_handle="nope")
+    assert bodies == []
+    assert "Invalid selection handle" in error
+
+    bodies, error = resolve_bodies(app_context, design, selection_handle="sel-empty")
+    assert bodies == []
+    assert "no bodies selected" in error
+
+    bodies, error = resolve_bodies(app_context, design, named_selection="missing")
+    assert bodies == []
+    assert "hot_side" in error
+
+    bodies, error = resolve_bodies(app_context, design, named_selection="empty_group")
+    assert bodies == []
+    assert "contains no bodies" in error
+
+    bodies, error = resolve_bodies(app_context, design, body_names=["box", "ghost"])
+    assert bodies == []
+    assert "ghost" in error
+
+    empty_design = SimpleNamespace(get_all_bodies=lambda: [], named_selections=[])
+    bodies, error = resolve_bodies(app_context, empty_design)
+    assert bodies == []
+    assert "no bodies" in error

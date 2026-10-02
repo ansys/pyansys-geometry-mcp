@@ -22,4 +22,10 @@
 
 """Miscellaneous PyAnsys Geometry MCP helpers package."""
 
-from ansys.geometry.mcp.misc.auxiliary import build_sketch, find_body, find_component  # noqa: F401
+from ansys.geometry.mcp.misc.auxiliary import (  # noqa: F401
+    build_sketch,
+    find_body,
+    find_component,
+    find_named_selection,
+    resolve_bodies,
+)

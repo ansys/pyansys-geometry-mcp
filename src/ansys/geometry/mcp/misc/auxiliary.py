@@ -22,9 +22,17 @@
 
 """Shared helpers used by the MCP tool modules."""
 
+from typing import TYPE_CHECKING
+
 from fastmcp.server import Context
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
+
+if TYPE_CHECKING:
+    from ansys.geometry.core.designer.body import Body
+    from ansys.geometry.core.designer.component import Component
+    from ansys.geometry.core.designer.selection import NamedSelection
+    from ansys.geometry.core.sketch import Sketch
 
 
 def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
@@ -32,11 +40,24 @@ def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
     return ctx.fastmcp._lifespan_result  # type: ignore[return-value]
 
 
-def find_body(design, body_name: str):
+def find_body(design, body_name: str) -> "Body | None":
     """Find a body by name across the full design tree.
 
     Uses ``Component.get_all_bodies()``, which recursively collects every body
     in the component hierarchy.
+
+    Parameters
+    ----------
+    design : Design
+        Active design to search within.
+    body_name : str
+        Name of the body to find.
+
+    Returns
+    -------
+    Body | None
+        The body with the specified name, or None if not found.
+
     """
     for body in design.get_all_bodies():
         if body.name == body_name:
@@ -44,11 +65,24 @@ def find_body(design, body_name: str):
     return None
 
 
-def find_component(design, component_name: str):
+def find_component(design, component_name: str) -> "Component | None":
     """Find a component by name across the full design tree.
 
     Uses ``Design._get_all_components()``, which recursively collects every
     component in the design hierarchy.
+
+    Parameters
+    ----------
+    design : Design
+        Active design to search within.
+    component_name : str
+        Name of the component to find.
+
+    Returns
+    -------
+    Component | None
+        The component with the specified name, or None if not found.
+
     """
     for comp in design._get_all_components():
         if comp.name == component_name:
@@ -56,12 +90,108 @@ def find_component(design, component_name: str):
     return None
 
 
+def find_named_selection(design, name: str) -> "NamedSelection | None":
+    """Find a named selection by name in the design.
+
+    Parameters
+    ----------
+    design : Design
+        Active design to search within.
+    name : str
+        Name of the named selection to find.
+
+    Returns
+    -------
+    NamedSelection | None
+        The named selection with the specified name, or None if not found.
+
+    """
+    for named_selection in design.named_selections:
+        if named_selection.name == name:
+            return named_selection
+    return None
+
+
+def resolve_bodies(
+    app_context,
+    design,
+    body_names: list[str] | None = None,
+    named_selection: str | None = None,
+    selection_handle: str | None = None,
+) -> tuple[list["Body"], str | None]:
+    """Resolve the bodies a tool should act on from the ways a caller can name them.
+
+    Precedence is ``selection_handle``, then ``named_selection``, then
+    ``body_names``, then every body in the design.
+
+    Parameters
+    ----------
+    app_context : PyAnsysGeometryContext
+        Application state, used to look up ``selection_handle``.
+    design : Design
+        Active design to resolve against.
+    body_names : list of str, optional
+        Body names, as reported by ``list_entities``.
+    named_selection : str, optional
+        Label of a named selection whose bodies should be used.
+    selection_handle : str, optional
+        Handle of a selection builder from ``create_selection_builder``.
+
+    Returns
+    -------
+    tuple[list[Body], str | None]
+        ``(bodies, error)``. ``error`` is ``None`` on success; otherwise the
+        body list is empty and the string is meant to be returned to the caller.
+
+    """
+    if selection_handle:
+        selection_builder = app_context.selection_registry.get(selection_handle)
+        if selection_builder is None:
+            return [], f"Invalid selection handle: {selection_handle}"
+        selected = getattr(selection_builder, "_bodies", None)
+        bodies = list(selected.items) if selected is not None else []
+        if not bodies:
+            return [], f"Selection '{selection_handle}' has no bodies selected."
+        return bodies, None
+
+    if named_selection:
+        found = find_named_selection(design, named_selection)
+        if found is None:
+            available = ", ".join(ns.name for ns in design.named_selections) or "none"
+            return [], (f"Named selection '{named_selection}' not found. Available: {available}.")
+        bodies = list(found.bodies)
+        if not bodies:
+            return [], f"Named selection '{named_selection}' contains no bodies."
+        return bodies, None
+
+    if body_names:
+        bodies = []
+        missing = []
+        for body_name in body_names:
+            body = find_body(design, body_name)
+            if body is None:
+                missing.append(body_name)
+            else:
+                bodies.append(body)
+        if missing:
+            return [], (
+                f"Bodies not found: {', '.join(missing)}. "
+                "Use list_entities to see available bodies."
+            )
+        return bodies, None
+
+    bodies = list(design.get_all_bodies())
+    if not bodies:
+        return [], "The active design contains no bodies."
+    return bodies, None
+
+
 def build_sketch(
     sketch_primitives: list[dict],
     plane_origin: list[float] | None = None,
     plane_dir_x: list[float] | None = None,
     plane_dir_y: list[float] | None = None,
-):
+) -> tuple["Sketch", list[str]]:
     """Build a Sketch from a list of primitive dicts and an optional plane definition.
 
     Parameters
@@ -77,8 +207,8 @@ def build_sketch(
 
     Returns
     -------
-    Sketch
-        The populated sketch object.
+    tuple[Sketch, list[str]]
+        The populated sketch object and the list of accumulated commands.
 
     """
     from ansys.geometry.core.math import Plane, Point2D, Point3D, UnitVector3D
