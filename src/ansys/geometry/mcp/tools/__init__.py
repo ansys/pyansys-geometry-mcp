@@ -20,7 +20,7 @@ Importing this package registers every ``@app.tool()`` defined in its submodules
 """
 
 from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
-from ansys.geometry.mcp.tools.edit_tools import intersect_body, subtract_body, unite_body
+from ansys.geometry.mcp.tools.edit_tools import boolean_operation
 from ansys.geometry.mcp.tools.modeling_tools import (
     add_component,
     create_box,

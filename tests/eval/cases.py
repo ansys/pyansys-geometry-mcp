@@ -125,31 +125,44 @@ CASES: list[EvalCase] = [
     ),
     # -- Boolean operations (mutually confusable) ---------------------------
     EvalCase(
-        id="subtract_body",
+        id="boolean_operation_subtract",
         prompt="Cut the body named 'pin' out of the body named 'block'.",
         checker=expect_tool(
-            "subtract_body", arguments={"target_body_name": "block", "tool_body_name": "pin"}
+            "boolean_operation",
+            arguments={
+                "operation": "subtract",
+                "target_body_name": "block",
+                "tool_body_name": "pin",
+            },
         ),
-        expected="subtract_body",
+        expected="boolean_operation",
     ),
     EvalCase(
-        id="unite_body",
+        id="boolean_operation_unite",
         prompt="Merge 'plate_left' and 'plate_right' together into a single body.",
         checker=expect_tool(
-            "unite_body",
-            arguments={"target_body_name": "plate_left", "tool_body_name": "plate_right"},
+            "boolean_operation",
+            arguments={
+                "operation": "unite",
+                "target_body_name": "plate_left",
+                "tool_body_name": "plate_right",
+            },
         ),
-        expected="unite_body",
+        expected="boolean_operation",
         note="Union is symmetric; target/tool role is only a guess at which name survives.",
     ),
     EvalCase(
-        id="intersect_body",
+        id="boolean_operation_intersect",
         prompt="Keep only the volume that 'sphere_a' and 'sphere_b' have in common.",
         checker=expect_tool(
-            "intersect_body",
-            arguments={"target_body_name": "sphere_a", "tool_body_name": "sphere_b"},
+            "boolean_operation",
+            arguments={
+                "operation": "intersect",
+                "target_body_name": "sphere_a",
+                "tool_body_name": "sphere_b",
+            },
         ),
-        expected="intersect_body",
+        expected="boolean_operation",
         note="Intersection is symmetric; target/tool role is only a guess at which name survives.",
     ),
     # -- Components ---------------------------------------------------------
@@ -271,7 +284,7 @@ CASES: list[EvalCase] = [
         prompt="These surfaces should form a closed solid. Stitch them together.",
         checker=expect_tool("repair_geometry", arguments={"operation": "stitch_faces"}),
         expected="repair_geometry(stitch_faces)",
-        note="Confusable with unite_body.",
+        note="Confusable with boolean_operation.",
     ),
     EvalCase(
         id="repair_short_edges",

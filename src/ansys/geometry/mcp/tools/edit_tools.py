@@ -41,6 +41,8 @@ with the server before it starts.
 
 """
 
+from typing import Literal
+
 from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
@@ -50,17 +52,19 @@ from ansys.geometry.mcp.misc.auxiliary import find_body, get_geometry_ctx
 logger = get_logger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Boolean operation tools
-# ---------------------------------------------------------------------------
-
-
 @app.tool()
-def subtract_body(ctx: Context, target_body_name: str, tool_body_name: str) -> str:
-    """Subtract one body from another (boolean subtract).
+def boolean_operation(
+    ctx: Context,
+    operation: Literal["subtract", "unite", "intersect"],
+    target_body_name: str,
+    tool_body_name: str,
+) -> str:
+    """Perform a boolean subtract, union, or intersection on two bodies.
 
-    Removes the volume of ``tool_body_name`` from ``target_body_name``.
-    The tool body is consumed (deleted) after the operation.
+    The target body survives the operation and the tool body is consumed. For
+    ``subtract``, the tool body's volume is removed from the target. For ``unite``,
+    the tool is merged into the target. For ``intersect``, the target is reduced to
+    the volume common to both bodies.
 
     Use ``list_entities`` first to confirm exact body names.
 
@@ -68,10 +72,12 @@ def subtract_body(ctx: Context, target_body_name: str, tool_body_name: str) -> s
     ----------
     ctx : Context
         MCP request context (injected automatically).
+    operation : Literal["subtract", "unite", "intersect"]
+        Boolean operation to perform.
     target_body_name : str
-        Name of the body to subtract from (survives the operation).
+        Name of the body to modify (survives the operation).
     tool_body_name : str
-        Name of the body whose volume is removed (consumed after the operation).
+        Name of the body used in the operation (consumed afterward).
 
     Returns
     -------
@@ -82,7 +88,7 @@ def subtract_body(ctx: Context, target_body_name: str, tool_body_name: str) -> s
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot subtract bodies."
+        return "Product backend is not connected. Cannot perform boolean operation."
 
     try:
         design = app_context.product_instance.get_active_design()
@@ -95,132 +101,25 @@ def subtract_body(ctx: Context, target_body_name: str, tool_body_name: str) -> s
         tool = find_body(design, tool_body_name)
         if tool is None:
             return f"Tool body '{tool_body_name}' not found. Use list_entities to see available bodies."
-        target.subtract(tool)
-        logger.info(f"subtract_body: target={target_body_name!r}, tool={tool_body_name!r}")
+        operation_methods = {
+            "subtract": target.subtract,
+            "unite": target.unite,
+            "intersect": target.intersect,
+        }
+        operation_methods[operation](tool)
 
-        # Perform transcript
         app_context.command_history.append(f"target = design.get_body({target_body_name!r})")
         app_context.command_history.append(f"tool = design.get_body({tool_body_name!r})")
-        app_context.command_history.append("target.subtract(tool)")
+        app_context.command_history.append(f"target.{operation}(tool)")
 
+        logger.info(
+            f"boolean_operation: operation={operation!r}, target={target_body_name!r}, "
+            f"tool={tool_body_name!r}"
+        )
         return (
-            f"Boolean subtract complete: '{tool_body_name}' subtracted from "
-            f"'{target_body_name}'. '{tool_body_name}' has been consumed."
+            f"Boolean {operation} complete for '{target_body_name}' using '{tool_body_name}'. "
+            f"'{tool_body_name}' has been consumed."
         )
     except Exception as e:
-        logger.error(f"subtract_body failed: {e}")
-        return f"Error subtracting '{tool_body_name}' from '{target_body_name}': {e}"
-
-
-@app.tool()
-def unite_body(ctx: Context, target_body_name: str, tool_body_name: str) -> str:
-    """Merge two bodies into one (boolean union).
-
-    Merges ``tool_body_name`` into ``target_body_name``.
-    The tool body is consumed (deleted) after the operation.
-
-    Use ``list_entities`` first to confirm exact body names.
-
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-    target_body_name : str
-        Name of the body to merge into (survives the operation).
-    tool_body_name : str
-        Name of the body to merge from (consumed after the operation).
-
-    Returns
-    -------
-    str
-        Confirmation message, or an error message.
-
-    """
-    app_context = get_geometry_ctx(ctx)
-
-    if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot unite bodies."
-
-    try:
-        design = app_context.product_instance.get_active_design()
-        target = find_body(design, target_body_name)
-        if target is None:
-            return (
-                f"Target body '{target_body_name}' not found. "
-                "Use list_entities to see available bodies."
-            )
-        tool = find_body(design, tool_body_name)
-        if tool is None:
-            return f"Tool body '{tool_body_name}' not found. Use list_entities to see available bodies."
-        target.unite(tool)
-
-        # Perform transcript
-        app_context.command_history.append(f"target = design.get_body({target_body_name!r})")
-        app_context.command_history.append(f"tool = design.get_body({tool_body_name!r})")
-        app_context.command_history.append("target.unite(tool)")
-
-        logger.info(f"unite_body: target={target_body_name!r}, tool={tool_body_name!r}")
-        return (
-            f"Boolean union complete: '{tool_body_name}' merged into "
-            f"'{target_body_name}'. '{tool_body_name}' has been consumed."
-        )
-    except Exception as e:
-        logger.error(f"unite_body failed: {e}")
-        return f"Error uniting '{tool_body_name}' into '{target_body_name}': {e}"
-
-
-@app.tool()
-def intersect_body(ctx: Context, target_body_name: str, tool_body_name: str) -> str:
-    """Keep only the overlapping volume of two bodies (boolean intersection).
-
-    ``target_body_name`` is replaced with the volume common to both bodies.
-    The tool body is consumed (deleted) after the operation.
-
-    Use ``list_entities`` first to confirm exact body names.
-
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-    target_body_name : str
-        Name of the body to intersect into (survives the operation, modified).
-    tool_body_name : str
-        Name of the body to intersect with (consumed after the operation).
-
-    Returns
-    -------
-    str
-        Confirmation message, or an error message.
-
-    """
-    app_context = get_geometry_ctx(ctx)
-
-    if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot intersect bodies."
-
-    try:
-        design = app_context.product_instance.get_active_design()
-        target = find_body(design, target_body_name)
-        if target is None:
-            return (
-                f"Target body '{target_body_name}' not found. "
-                "Use list_entities to see available bodies."
-            )
-        tool = find_body(design, tool_body_name)
-        if tool is None:
-            return f"Tool body '{tool_body_name}' not found. Use list_entities to see available bodies."
-        target.intersect(tool)
-
-        # Perform transcript
-        app_context.command_history.append(f"target = design.get_body({target_body_name!r})")
-        app_context.command_history.append(f"tool = design.get_body({tool_body_name!r})")
-        app_context.command_history.append("target.intersect(tool)")
-
-        logger.info(f"intersect_body: target={target_body_name!r}, tool={tool_body_name!r}")
-        return (
-            f"Boolean intersection complete: '{target_body_name}' now contains only the "
-            f"overlapping volume. '{tool_body_name}' has been consumed."
-        )
-    except Exception as e:
-        logger.error(f"intersect_body failed: {e}")
-        return f"Error intersecting '{tool_body_name}' with '{target_body_name}': {e}"
+        logger.error(f"boolean_operation failed: {e}")
+        return f"Error performing boolean {operation} on '{target_body_name}' with '{tool_body_name}': {e}"
