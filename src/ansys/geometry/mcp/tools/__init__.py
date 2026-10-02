@@ -28,6 +28,7 @@ from ansys.geometry.mcp.tools.modeling_tools import (
     move_body_to_component,
     revolve_sketch,
 )
+from ansys.geometry.mcp.tools.repair_tools import inspect_geometry, repair_geometry
 from ansys.geometry.mcp.tools.selection_tools import (
     create_named_selection,
     create_selection_builder,

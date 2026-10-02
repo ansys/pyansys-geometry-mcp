@@ -16,6 +16,8 @@
 
 """Configuration for MCP tool test modules."""
 
+from types import SimpleNamespace
+
 import ansys.geometry.core as pyansys_geometry
 import pytest
 
@@ -49,6 +51,20 @@ def transport_mode(request):
     value: str = request.config.getoption("--transport-mode", default="insecure")
 
     return value.lower()
+
+
+@pytest.fixture
+def design():
+    """Stub design with two bodies and one named selection."""
+    box = SimpleNamespace(name="box")
+    cyl = SimpleNamespace(name="cylinder")
+    return SimpleNamespace(
+        get_all_bodies=lambda: [box, cyl],
+        named_selections=[
+            SimpleNamespace(name="hot_side", bodies=[box]),
+            SimpleNamespace(name="empty_group", bodies=[]),
+        ],
+    )
 
 
 def pytest_addoption(parser):
