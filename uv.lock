@@ -226,12 +226,16 @@ wheels = [
 
 [[package]]
 name = "ansys-common-mcp"
-version = "0.4.dev0"
-source = { git = "https://github.com/ansys/pyansys-common-mcp.git#84ab37d5f5a57cd236108a6c43a1fa9f7c01e0de" }
+version = "0.3.6"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastmcp" },
     { name = "mcp" },
     { name = "pydantic-settings" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/c0/df1063a9a6d9009b063fb1a2b38973eec5f972f4a83d0129b26f9ba200c5/ansys_common_mcp-0.3.6.tar.gz", hash = "sha256:97bcf0a7fa701958b004409bf8bc039d7fa14c3f9ebca484fd12336a345f662b", size = 24644, upload-time = "2026-10-05T15:52:08.566Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/40/05/7f69467312ecffb834653f1e42691ed105205c446b7bdad481c4a6e1793a/ansys_common_mcp-0.3.6-py3-none-any.whl", hash = "sha256:5c4f97576335ac14007184515659fa95200a84c80cdc5c1b58b383ae7a5ed1c7", size = 28208, upload-time = "2026-10-05T15:52:07.158Z" },
 ]
 
 [[package]]
@@ -343,7 +347,7 @@ tests = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-common-mcp", specifier = ">=0.3.6" },
     { name = "ansys-geometry-core", extras = ["all"], specifier = ">=0.17.0" },
     { name = "black", specifier = ">=23.7.0" },
     { name = "isort", specifier = ">=5.13.0" },
@@ -351,7 +355,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-common-mcp", specifier = "==0.3.6" },
     { name = "ansys-geometry-core", specifier = "==0.18.1" },
     { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.11.0" },
     { name = "jupytext", specifier = "==1.19.5" },
@@ -373,7 +377,7 @@ dev = [
     { name = "sphinx-jinja", specifier = "==2.0.2" },
 ]
 doc = [
-    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-common-mcp", specifier = "==0.3.6" },
     { name = "ansys-geometry-core", specifier = "==0.18.1" },
     { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.11.0" },
     { name = "jupytext", specifier = "==1.19.5" },
@@ -390,7 +394,7 @@ doc = [
     { name = "sphinx-jinja", specifier = "==2.0.2" },
 ]
 eval = [
-    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-common-mcp", specifier = "==0.3.6" },
     { name = "ansys-geometry-core", specifier = "==0.18.1" },
     { name = "jsonschema", specifier = "==4.26.0" },
     { name = "openai", specifier = "==3.20.0" },
@@ -400,7 +404,7 @@ eval = [
     { name = "pytest-mock", specifier = "==3.16.0" },
 ]
 tests = [
-    { name = "ansys-common-mcp", git = "https://github.com/ansys/pyansys-common-mcp.git" },
+    { name = "ansys-common-mcp", specifier = "==0.3.6" },
     { name = "ansys-geometry-core", specifier = "==0.18.1" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
