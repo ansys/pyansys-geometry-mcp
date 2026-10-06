@@ -23,18 +23,16 @@ from unittest.mock import MagicMock
 import pytest
 
 from ansys.geometry.mcp.tools import (
-    create_box,
     create_design,
     file_io,
-    get_command_history,
     get_design_info,
     get_product_status,
-    get_transcript,
+    get_session_script,
     run_python_code,
     run_script_file,
 )
 
-from .conftest import FILES_DIR
+from .conftest import FILES_DIR, create_box
 
 
 def test_get_product_status_tool(ctx):
@@ -113,32 +111,18 @@ def test_file_io_export_not_connected():
     assert "not connected" in result
 
 
-def test_get_command_history(ctx):
-    """Test that command history returns a list of strings after executing commands."""
-    result = get_command_history(ctx)
-    assert len(result) == 3
-    assert result[0] == "selection_registry = {}"
+def test_get_session_script(ctx):
+    """Test that the session script contains setup and newly executed commands."""
+    initial_script = get_session_script(ctx)
+    assert isinstance(initial_script, str)
+    assert "selection_registry = {}" in initial_script
+    assert "instance = " in initial_script
 
-    create_design(ctx, "test_get_command_history_001")
-    result = get_command_history(ctx)
-    assert len(result) == 4
-
-    create_box(ctx, name="test_box", width=1.0, depth=1.0, height=1.0)
-    result = get_command_history(ctx)
-    assert len(result) == 11
-
-
-def test_get_transcript(ctx):
-    """Test that the transcript contains the correct commands after each operation."""
-    create_design(ctx, "test_transcript_001")
-    result = get_transcript(ctx)
-    assert result.count("test_transcript_001") == 1
-    assert 'design = instance.create_design("test_transcript_001")' in result
-
-    create_box(ctx, name="transcript_box", width=1.0, depth=1.0, height=1.0)
-    result = get_transcript(ctx)
-    assert result.count("transcript_box") == 1
-    assert "sketch.box(center=Point2D([0.0, 0.0]), width=1.0, height=1.0)" in result
+    create_design(ctx, "test_get_session_script_001")
+    script = get_session_script(ctx)
+    assert len(script) > len(initial_script)
+    assert script.count("test_get_session_script_001") == 1
+    assert 'design = instance.create_design("test_get_session_script_001")' in script
 
 
 def _export_box_design(
@@ -166,7 +150,7 @@ def test_file_io_import_open(ctx, file_format: str, tmp_path_factory: pytest.Tem
     assert "Imported" in result
     assert exported.name in result
     assert "1 bodies" in result
-    assert "open_file(" in get_command_history(ctx)[-1]
+    assert "open_file(" in get_session_script(ctx)
 
 
 def test_file_io_import_insert(ctx, tmp_path_factory: pytest.TempPathFactory):
@@ -177,7 +161,7 @@ def test_file_io_import_insert(ctx, tmp_path_factory: pytest.TempPathFactory):
     result = file_io(ctx, operation="import", file_path=str(exported), mode="insert")
     assert "Inserted" in result
     assert "test_import_insert_host" in result
-    assert "insert_file(" in get_command_history(ctx)[-1]
+    assert "insert_file(" in get_session_script(ctx)
 
 
 def test_file_io_import_with_options(ctx, tmp_path_factory: pytest.TempPathFactory):
@@ -293,7 +277,7 @@ async def test_run_python_code_success(ctx, execute_mock, connect_mock):
     assert result["stdout"] == "42\n"
     connect_mock.assert_called_once_with(ctx)
     execute_mock.assert_called_once_with("print(42)", timeout=300, no_output_timeout=300)
-    assert "print(42)" in get_command_history(ctx)
+    assert "print(42)" in get_session_script(ctx)
 
 
 async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_mock):
@@ -309,7 +293,7 @@ async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_m
 
     assert result["success"] is False
     assert result["error"] == "NameError: boom"
-    assert "boom" not in get_command_history(ctx)
+    assert "boom" not in get_session_script(ctx)
 
 
 async def test_run_python_code_reuses_connected_session(

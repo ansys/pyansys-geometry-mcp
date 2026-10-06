@@ -17,12 +17,13 @@
 """Unit tests for the repair tools."""
 
 from ansys.geometry.mcp.tools import (
-    create_box,
     create_design,
     create_named_selection,
     inspect_geometry,
     repair_geometry,
 )
+
+from .conftest import create_box
 
 
 def test_repair_geometry_rejects_bad_input(ctx):

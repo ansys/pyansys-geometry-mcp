@@ -35,10 +35,9 @@ from ansys.geometry.mcp.tools.selection_tools import (
 from ansys.geometry.mcp.tools.session_tools import (
     create_design,
     file_io,
-    get_command_history,
     get_design_info,
     get_product_status,
-    get_transcript,
+    get_session_script,
     run_python_code,
     run_script_file,
 )

@@ -18,9 +18,10 @@
 
 from ansys.geometry.mcp.tools import (
     boolean_operation,
-    create_box,
     create_design,
 )
+
+from .conftest import create_box
 
 
 def test_boolean_operations(ctx):

@@ -32,6 +32,7 @@ import pytest
 import pyvista as pv
 
 from ansys.geometry.mcp import app
+from ansys.geometry.mcp.misc.auxiliary import find_component, get_geometry_ctx
 
 pv.OFF_SCREEN = True
 viz_interface.TESTING_MODE = True
@@ -99,3 +100,34 @@ def connect_mock(monkeypatch):
     mock = MagicMock(return_value=MagicMock(name="modeler"))
     monkeypatch.setattr(f"{SESSION_TOOLS}.connect_to_modeler_in_persistent_python", mock)
     return mock
+
+
+def create_box(
+    ctx,
+    name: str,
+    width: float,
+    depth: float,
+    height: float,
+    parent_component_name: str | None = None,
+    origin: list[float] = [0.0, 0.0, 0.0],
+):
+    """Create a box using the backend stored in the MCP context."""
+    design = get_geometry_ctx(ctx).product_instance.get_active_design()
+    parent = (
+        design if parent_component_name is None else find_component(design, parent_component_name)
+    )
+
+    from ansys.geometry.core.math.plane import Plane
+    from ansys.geometry.core.math.point import Point2D
+    from ansys.geometry.core.misc.measurements import Distance
+    from ansys.geometry.core.misc.units import Unit
+    from ansys.geometry.core.sketch import Sketch
+
+    plane = Plane(origin=[0, 0, origin[2]])
+    sketch = Sketch(plane)
+    sketch.box(center=Point2D(origin[:2]), width=width, height=depth)
+    return parent.extrude_sketch(
+        name=name,
+        sketch=sketch,
+        distance=Distance(height, unit=Unit("m")),
+    )

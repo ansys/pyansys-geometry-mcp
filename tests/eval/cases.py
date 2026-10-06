@@ -82,8 +82,14 @@ CASES: list[EvalCase] = [
     EvalCase(
         id="command_history",
         prompt="Which commands have been run so far in this session?",
-        checker=expect_tool("get_command_history", arguments={}),
-        expected="get_command_history",
+        checker=expect_tool("get_session_script", arguments={}),
+        expected="get_session_script",
+    ),
+    EvalCase(
+        id="session_script",
+        prompt="Return this session as a reusable Python script that I can run again.",
+        checker=expect_tool("get_session_script", arguments={}),
+        expected="get_session_script",
     ),
     EvalCase(
         id="run_python_code",

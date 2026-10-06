@@ -22,12 +22,13 @@ import pytest
 from pyvista.plotting import system_supports_plotting
 
 from ansys.geometry.mcp.tools import (
-    create_box,
     create_design,
     get_design_3d_scene,
     get_screenshot,
     read_image_in_base64,
 )
+
+from .conftest import create_box
 
 skip_no_xserver = pytest.mark.skipif(
     not system_supports_plotting(), reason="Requires active X Server"

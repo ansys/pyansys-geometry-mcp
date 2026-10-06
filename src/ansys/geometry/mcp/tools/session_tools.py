@@ -56,27 +56,14 @@ logger = get_logger(__name__)
 
 
 @app.tool()
-def get_command_history(ctx: Context) -> list[str]:
-    """Get the history of commands executed in the product backend.
+def get_session_script(ctx: Context) -> str:
+    """Return recorded session commands as a reusable PyAnsys Geometry Python script.
 
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-
-    Returns
-    -------
-    list of str
-        List of command strings that have been executed.
-
-    """
-    app_context = get_geometry_ctx(ctx)
-    return app_context.command_history
-
-
-@app.tool()
-def get_transcript(ctx: Context) -> str:
-    """Get a transcript of the current session, including all executed commands.
+    Includes recorded backend connection setup and commands in execution order.
+    Returns Python source, not a list of commands or Markdown. Replay requires
+    ansys-geometry-core and access to the recorded backend and referenced files.
+    Replaying the script repeats its recorded geometry changes. Only operations
+    recorded in command history are included; backend script-file operations are not.
 
     Parameters
     ----------
@@ -86,13 +73,17 @@ def get_transcript(ctx: Context) -> str:
     Returns
     -------
     str
-        A formatted transcript of the session.
+        Formatted Python source, or an empty string if no commands were recorded.
+
+    Raises
+    ------
+    ValueError
+        If recorded commands cannot be formatted as valid Python.
 
     """
     app_context = get_geometry_ctx(ctx)
     commands = "\n".join(app_context.command_history)
 
-    # Format Python script using import sorting and black-style formatting
     import black
     import isort
 
@@ -100,8 +91,8 @@ def get_transcript(ctx: Context) -> str:
         sorted_commands = isort.code(commands)
         formatted_commands = black.format_str(sorted_commands, mode=black.Mode())
         return formatted_commands if formatted_commands else "No commands executed yet."
-    except black.InvalidInput:
-        return commands if commands else "No commands executed yet."
+    except black.InvalidInput as error:
+        raise ValueError("Recorded session commands are not valid Python.") from error
 
 
 @app.tool()

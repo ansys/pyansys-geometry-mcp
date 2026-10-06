@@ -384,7 +384,7 @@ def test_extend_bodies_nearby(ctx: PyAnsysGeometryContext):
         assert isinstance(
             extend_selection(ctx, handle, "body", criteria="nearby", distance=5.0), list
         )
-    assert any("extend_nearby_bodies(5.0, 'all')" in cmd for cmd in tools.get_command_history(ctx))
+    assert 'extend_nearby_bodies(5.0, "all")' in tools.get_session_script(ctx)
 
 
 @pytest.mark.parametrize(
@@ -603,5 +603,5 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
     )
     assert "created successfully" in result
 
-    history = tools.get_command_history(ctx)
+    history = tools.get_session_script(ctx).splitlines()
     assert any("create_named_selection" in cmd and "ns_from_handle_mixed" in cmd for cmd in history)
