@@ -131,3 +131,12 @@ def create_box(
         sketch=sketch,
         distance=Distance(height, unit=Unit("m")),
     )
+
+
+def add_component(ctx, name: str, parent_component_name: str | None = None):
+    """Add a component under the active design or a named parent component."""
+    design = get_geometry_ctx(ctx).product_instance.get_active_design()
+    parent = (
+        design if parent_component_name is None else find_component(design, parent_component_name)
+    )
+    return parent.add_component(name)
