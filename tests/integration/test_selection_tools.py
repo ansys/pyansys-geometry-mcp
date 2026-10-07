@@ -605,5 +605,6 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
     )
     assert "created successfully" in result
 
-    history = tools.get_session_script(ctx).splitlines()
-    assert any("create_named_selection" in cmd and "ns_from_handle_mixed" in cmd for cmd in history)
+    history = tools.get_session_script(ctx)
+    assert "create_named_selection" in history
+    assert "ns_from_handle_mixed" in history
