@@ -91,15 +91,34 @@ def test_tool_unsupported_criteria(ctx: PyAnsysGeometryContext, fn, criteria, er
 
 @pytest.mark.parametrize("fn, criteria, error", _HANDLE_TOOLS)
 def test_tool_reports_backend_errors(ctx: PyAnsysGeometryContext, fn, criteria, error):
-    """A failure while building the result is returned as an error string, not raised."""
+    """Tools preserve selections and record item updates even when reporting errors."""
     handle = _setup(ctx, "test_tool_backend_errors")
     select_entities(ctx, handle, "body", criteria="all")
+    app_context = get_geometry_ctx(ctx)
+    selection_builder = app_context.selection_registry[handle]
+    selection = selection_builder.bodies
 
     with patch(
         "ansys.geometry.mcp.tools.selection_tools._identifiers",
         side_effect=Exception("Test error"),
     ):
         assert error in fn(ctx, handle, "body", criteria=criteria)
+    assert selection_builder._bodies is selection
+    assert [body.name for body in selection.items] == ["box"]
+    result_name = {
+        select_entities: "matching",
+        filter_entities: "matching",
+        order_entities: "ordered",
+        group_entities: "groups",
+        extend_selection: "extended",
+    }[fn]
+    assert app_context.command_history[-2].startswith(f"{result_name} = selection_builder.bodies.")
+    result_items = (
+        "[item for group in groups for item in group.items]"
+        if fn is group_entities
+        else f"{result_name}.items"
+    )
+    assert app_context.command_history[-1] == f"selection_builder._bodies.items[:] = {result_items}"
 
 
 # ---------------------------------------------------------------------------
@@ -132,10 +151,14 @@ def test_tool_reports_backend_errors(ctx: PyAnsysGeometryContext, fn, criteria, 
 def test_select_bodies_by_criteria(ctx: PyAnsysGeometryContext, criteria, kwargs, matches):
     """Each body criterion finds the box when it should and misses it when it should not."""
     handle = _setup(ctx, f"test_select_{criteria}", box_name="sel_box")
+    selection_builder = get_geometry_ctx(ctx).selection_registry[handle]
+    selection = selection_builder.bodies
 
     result = select_entities(ctx, handle, "body", criteria=criteria, **kwargs)
     assert isinstance(result, list)
     assert ("sel_box" in result) is matches
+    assert selection_builder._bodies is selection
+    assert [body.name for body in selection.items] == result
 
 
 def test_select_bodies_named_selection_and_color(ctx: PyAnsysGeometryContext):
@@ -152,6 +175,9 @@ def test_select_bodies_named_selection_and_color(ctx: PyAnsysGeometryContext):
 def test_select_faces_and_edges(ctx: PyAnsysGeometryContext):
     """Face and edge queries return IDs; their location queries also pass a range type."""
     handle = _setup(ctx, "test_select_faces_edges", box_name="fe_box")
+    selection_builder = get_geometry_ctx(ctx).selection_registry[handle]
+    face_selection = selection_builder.faces
+    edge_selection = selection_builder.edges
 
     assert len(select_entities(ctx, handle, "face", criteria="all")) == 6
     assert len(select_entities(ctx, handle, "edge", criteria="all")) == 12
@@ -164,6 +190,10 @@ def test_select_faces_and_edges(ctx: PyAnsysGeometryContext):
     )
     assert len(faces) > 0
     assert len(edges) > 0
+    assert selection_builder._faces is face_selection
+    assert selection_builder._edges is edge_selection
+    assert [face.id for face in face_selection.items] == faces
+    assert [edge.id for edge in edge_selection.items] == edges
 
 
 @pytest.mark.parametrize(
@@ -229,6 +259,7 @@ def test_filter_bodies_excluding_criteria(ctx: PyAnsysGeometryContext):
 
     select_entities(ctx, handle, "body", criteria="all")
     assert filter_entities(ctx, handle, "body", criteria="is_surface") == []
+    assert get_geometry_ctx(ctx).selection_registry[handle].bodies.items == []
 
 
 def test_filter_bodies_by_color(ctx: PyAnsysGeometryContext):
@@ -316,10 +347,15 @@ def test_order_entities(ctx: PyAnsysGeometryContext, entity_type, kwargs, count)
     """Ordering returns every selected entity, just rearranged."""
     handle = _setup(ctx, "test_order_entities", box_name="order_box")
     select_entities(ctx, handle, entity_type, criteria="all")
+    selection_builder = get_geometry_ctx(ctx).selection_registry[handle]
+    attr = {"body": "bodies", "face": "faces", "edge": "edges"}[entity_type]
+    selection = getattr(selection_builder, attr)
 
     ordered = order_entities(ctx, handle, entity_type, **kwargs)
     assert isinstance(ordered, list)
     assert len(ordered) == count
+    assert getattr(selection_builder, f"_{attr}") is selection
+    assert [item.name if entity_type == "body" else item.id for item in selection.items] == ordered
 
 
 def test_order_faces_number_curves_requires_curve_type(ctx: PyAnsysGeometryContext):
@@ -346,10 +382,17 @@ def test_group_entities(ctx: PyAnsysGeometryContext, entity_type, criteria, coun
     """Grouping partitions the selection, so the group sizes add up to the selection size."""
     handle = _setup(ctx, "test_group_entities", box_name="group_box")
     select_entities(ctx, handle, entity_type, criteria="all")
+    selection_builder = get_geometry_ctx(ctx).selection_registry[handle]
+    attr = {"body": "bodies", "face": "faces", "edge": "edges"}[entity_type]
+    selection = getattr(selection_builder, attr)
 
     groups = group_entities(ctx, handle, entity_type, criteria=criteria)
     assert isinstance(groups, list)
     assert sum(len(group) for group in groups) == count
+    assert getattr(selection_builder, f"_{attr}") is selection
+    assert [item.name if entity_type == "body" else item.id for item in selection.items] == [
+        identifier for group in groups for identifier in group
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -401,8 +444,14 @@ def test_extend_selection_criteria(ctx: PyAnsysGeometryContext, entity_type, cri
     """Every remaining extend rule returns a list rather than an error string."""
     handle = _setup(ctx, "test_extend_criteria", box_name="extend_crit_box")
     select_entities(ctx, handle, entity_type, criteria="all")
+    selection_builder = get_geometry_ctx(ctx).selection_registry[handle]
+    attr = {"body": "bodies", "face": "faces", "edge": "edges"}[entity_type]
+    selection = getattr(selection_builder, attr)
 
-    assert isinstance(extend_selection(ctx, handle, entity_type, criteria=criteria), list)
+    extended = extend_selection(ctx, handle, entity_type, criteria=criteria)
+    assert isinstance(extended, list)
+    assert getattr(selection_builder, f"_{attr}") is selection
+    assert [item.name if entity_type == "body" else item.id for item in selection.items] == extended
 
 
 # ---------------------------------------------------------------------------

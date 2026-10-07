@@ -533,10 +533,10 @@ def select_entities(
             matching = method(color)
             call = f"{method_name}('{color}')"
 
-        app_context.command_history.append(f"selection_builder.{attr}.{call}")
-        setattr(selection_builder, _RESULT_ATTR[entity_type], matching)
+        app_context.command_history.append(f"matching = selection_builder.{attr}.{call}")
+        getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = matching.items
         app_context.command_history.append(
-            f"selection_builder.{_RESULT_ATTR[entity_type]} = matching"
+            f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = matching.items"
         )
         logger.info(
             f"Selected {len(matching.items)} {entity_type} entities using criterion '{criteria}'."
@@ -780,10 +780,10 @@ def filter_entities(
             matching = selection.filter_solid_bodies()
             call = "filter_solid_bodies()"
 
-        app_context.command_history.append(f"selection_builder.{attr}.{call}")
-        setattr(selection_builder, _RESULT_ATTR[entity_type], matching)
+        app_context.command_history.append(f"matching = selection_builder.{attr}.{call}")
+        getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = matching.items
         app_context.command_history.append(
-            f"selection_builder.{_RESULT_ATTR[entity_type]} = matching"
+            f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = matching.items"
         )
         logger.info(
             f"Filtered to {len(matching.items)} {entity_type} entities using criterion '{criteria}'."
@@ -885,10 +885,10 @@ def order_entities(
             ordered = method()
             call = f"order_{attr}_by_{criteria}()"
 
-        app_context.command_history.append(f"selection_builder.{attr}.{call}")
-        setattr(selection_builder, _RESULT_ATTR[entity_type], ordered)
+        app_context.command_history.append(f"ordered = selection_builder.{attr}.{call}")
+        getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = ordered.items
         app_context.command_history.append(
-            f"selection_builder.{_RESULT_ATTR[entity_type]} = ordered"
+            f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = ordered.items"
         )
         logger.info(f"Ordered {len(ordered.items)} {entity_type} entities by '{criteria}'.")
         return _identifiers(entity_type, ordered)
@@ -977,11 +977,16 @@ def group_entities(
 
         attr = _SELECTION_ATTR[entity_type]
         groups = getattr(getattr(selection_builder, attr), f"group_{attr}_by_{criteria}")()
-        app_context.command_history.append(f"selection_builder.{attr}.group_{attr}_by_{criteria}()")
-
-        setattr(selection_builder, _RESULT_ATTR[entity_type], groups)
         app_context.command_history.append(
-            f"selection_builder.{_RESULT_ATTR[entity_type]} = groups"
+            f"groups = selection_builder.{attr}.group_{attr}_by_{criteria}()"
+        )
+
+        getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = [
+            item for group in groups for item in group.items
+        ]
+        app_context.command_history.append(
+            f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = "
+            "[item for group in groups for item in group.items]"
         )
         logger.info(f"Grouped {entity_type} entities into {len(groups)} groups by '{criteria}'.")
         return [_identifiers(entity_type, group) for group in groups]
@@ -1096,10 +1101,10 @@ def extend_selection(
             extended = method(scope_val)
             call = f"{method_name}('{scope}')"
 
-        app_context.command_history.append(f"selection_builder.{attr}.{call}")
-        setattr(selection_builder, _RESULT_ATTR[entity_type], extended)
+        app_context.command_history.append(f"extended = selection_builder.{attr}.{call}")
+        getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = extended.items
         app_context.command_history.append(
-            f"selection_builder.{_RESULT_ATTR[entity_type]} = extended"
+            f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = extended.items"
         )
         logger.info(
             f"Extended selection to {len(extended.items)} {entity_type} entities using '{criteria}'."
