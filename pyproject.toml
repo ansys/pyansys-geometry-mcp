@@ -37,7 +37,7 @@ classifiers = [
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-  "ansys-common-mcp @ git+https://github.com/ansys/pyansys-common-mcp.git",
+  "ansys-common-mcp>=0.3.6",
   "ansys-geometry-core[all]>=0.17.0",
   "black>=23.7.0",
   "isort>=5.13.0",
@@ -58,7 +58,7 @@ dev = [
   { include-group = "tests" },
 ]
 doc = [
-  "ansys-common-mcp @ git+https://github.com/ansys/pyansys-common-mcp.git",
+  "ansys-common-mcp==0.3.6",
   "ansys-geometry-core==0.18.1",
   "ansys-sphinx-theme[autoapi,changelog]==1.11.0",
   "jupytext==1.19.5",
@@ -79,16 +79,16 @@ doc = [
 # OpenAI deployment and is never run as part of the regular test run.
 eval = [
   "jsonschema==4.26.0",
-  "openai==3.17.0",
+  "openai==3.22.1",
   { include-group = "tests" },
 ]
 tests = [
-  "ansys-common-mcp @ git+https://github.com/ansys/pyansys-common-mcp.git",
+  "ansys-common-mcp==0.3.6",
   "ansys-geometry-core==0.18.1",
   "pytest==9.1.1",
   "pytest-asyncio==1.4.0",
   "pytest-cov==7.1.0",
-  "pytest-mock==3.15.1",
+  "pytest-mock==3.16.0",
 ]
 
 [tool.hatch]
