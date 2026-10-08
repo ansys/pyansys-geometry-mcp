@@ -39,6 +39,7 @@ with the server before it starts.
 """
 
 import json
+from typing import Literal
 
 from ansys.common.mcp.logging_config import get_logger
 import ansys.common.mcp.tools as shared_tools
@@ -55,27 +56,14 @@ logger = get_logger(__name__)
 
 
 @app.tool()
-def get_command_history(ctx: Context) -> list[str]:
-    """Get the history of commands executed in the product backend.
+def get_session_script(ctx: Context) -> str:
+    """Return recorded session commands as a reusable PyAnsys Geometry Python script.
 
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-
-    Returns
-    -------
-    list of str
-        List of command strings that have been executed.
-
-    """
-    app_context = get_geometry_ctx(ctx)
-    return app_context.command_history
-
-
-@app.tool()
-def get_transcript(ctx: Context) -> str:
-    """Get a transcript of the current session, including all executed commands.
+    Includes recorded backend connection setup and commands in execution order.
+    Returns Python source, not a list of commands or Markdown. Replay requires
+    ansys-geometry-core and access to the recorded backend and referenced files.
+    Replaying the script repeats its recorded geometry changes. Only operations
+    recorded in command history are included; backend script-file operations are not.
 
     Parameters
     ----------
@@ -85,13 +73,17 @@ def get_transcript(ctx: Context) -> str:
     Returns
     -------
     str
-        A formatted transcript of the session.
+        Formatted Python source, or an empty string if no commands were recorded.
+
+    Raises
+    ------
+    ValueError
+        If recorded commands cannot be formatted as valid Python.
 
     """
     app_context = get_geometry_ctx(ctx)
     commands = "\n".join(app_context.command_history)
 
-    # Format Python script using import sorting and black-style formatting
     import black
     import isort
 
@@ -99,8 +91,8 @@ def get_transcript(ctx: Context) -> str:
         sorted_commands = isort.code(commands)
         formatted_commands = black.format_str(sorted_commands, mode=black.Mode())
         return formatted_commands if formatted_commands else "No commands executed yet."
-    except black.InvalidInput:
-        return commands if commands else "No commands executed yet."
+    except black.InvalidInput as error:
+        raise ValueError("Recorded session commands are not valid Python.") from error
 
 
 @app.tool()
@@ -284,72 +276,12 @@ def get_design_info(ctx: Context) -> str:
 
 
 @app.tool()
-def export_design_to(ctx: Context, file_format: str, folder: str | None = None) -> str:
-    """Export/Save the current active design to a specified format.
-
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-    file_format : str
-        The format to export the design to. Options are 'fmd', 'step', 'iges', 'scdocx',
-        'disco', 'parasolid_text', 'parasolid_bin'.
-    folder : str, optional
-        Folder on disk to save the design. If not provided, the file
-        is saved in the current working directory.
-
-    Returns
-    -------
-    str
-        The path to the saved design file, or an error message if export fails.
-
-    """
-    app_context = get_geometry_ctx(ctx)
-
-    if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot export design."
-
-    try:
-        from ansys.geometry.core.designer import DesignFileFormat
-
-        design = app_context.product_instance.get_active_design()
-        # Depending on format... Use DesignFileFormat enum
-        if file_format.lower() == DesignFileFormat.FMD.name.lower():
-            saved_path = design.export_to_fmd(folder)
-            app_context.command_history.append(f"design.export_to_fmd({folder!r})")
-        elif file_format.lower() == DesignFileFormat.STEP.name.lower():
-            saved_path = design.export_to_step(folder)
-            app_context.command_history.append(f"design.export_to_step({folder!r})")
-        elif file_format.lower() == DesignFileFormat.IGES.name.lower():
-            saved_path = design.export_to_iges(folder)
-            app_context.command_history.append(f"design.export_to_iges({folder!r})")
-        elif file_format.lower() == DesignFileFormat.SCDOCX.name.lower():
-            saved_path = design.export_to_scdocx(folder)
-            app_context.command_history.append(f"design.export_to_scdocx({folder!r})")
-        elif file_format.lower() == DesignFileFormat.DISCO.name.lower():
-            saved_path = design.export_to_disco(folder)
-            app_context.command_history.append(f"design.export_to_disco({folder!r})")
-        elif file_format.lower() == DesignFileFormat.PARASOLID_TEXT.name.lower():
-            saved_path = design.export_to_parasolid_text(folder)
-            app_context.command_history.append(f"design.export_to_parasolid_text({folder!r})")
-        elif file_format.lower() == DesignFileFormat.PARASOLID_BIN.name.lower():
-            saved_path = design.export_to_parasolid_bin(folder)
-            app_context.command_history.append(f"design.export_to_parasolid_bin({folder!r})")
-        else:
-            return f"Unsupported format '{file_format}'. Supported formats are:"
-        " fmd, step, iges, scdocx, disco, parasolid_text, parasolid_bin."
-
-        logger.info(f"export_design_to called, saved to {saved_path}")
-        return f"Design exported to {file_format.upper()} file: {saved_path}"
-    except Exception as e:
-        logger.error(f"export_design_to failed: {e}")
-        return f"Error exporting design to {file_format.upper()}: {e}"
-
-
-@app.tool()
-def import_geometry_file(
+def file_io(
     ctx: Context,
-    file_path: str,
+    operation: Literal["import", "export"],
+    file_path: str | None = None,
+    file_format: str | None = None,
+    folder: str | None = None,
     mode: str = "open",
     import_names: bool = False,
     import_curves: bool = False,
@@ -357,21 +289,30 @@ def import_geometry_file(
     import_named_selections: bool = True,
     cleanup_bodies: bool = False,
 ) -> str:
-    """Import, open, or load a geometry file from disk into the product backend.
+    """Import a geometry file or export the active design.
 
-    Use this tool when asked to import, open, load, or insert a CAD or geometry file.
-    Supported extensions include 'scdocx', 'dsco', 'pmdb', 'step', 'iges', 'x_t', 'xmt_txt',
-    'stride', and reader formats such as CATIA, Creo, NX, JT, SOLIDWORKS, Solid Edge,
-    Inventor, Rhino, and AutoCAD.
+    Use ``operation="import"`` to open a geometry file as a new design or insert it
+    into the active design. Supported extensions include 'scdocx', 'dsco', 'pmdb',
+    'step', 'iges', 'x_t', 'xmt_txt', 'stride', and reader formats such as CATIA,
+    Creo, NX, JT, SOLIDWORKS, Solid Edge, Inventor, Rhino, and AutoCAD.
+    Use ``operation="export"`` to save the active design in 'fmd', 'step', 'iges',
+    'scdocx', 'disco', 'parasolid_text', or 'parasolid_bin' format.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    file_path : str
-        Path on disk of the file to import. The extension must be included. For a shattered
-        assembly, give the path of the assembly file; the files it references in the same
-        folder are included automatically.
+    operation : Literal["import", "export"]
+        Whether to import a file or export the active design.
+    file_path : str, optional
+        Path of the file to import, including its extension. For a shattered assembly,
+        give the path of the assembly file; referenced files in the same folder are
+        included automatically. Required for import.
+    file_format : str, optional
+        Export format: 'fmd', 'step', 'iges', 'scdocx', 'disco', 'parasolid_text', or
+        'parasolid_bin'. Required for export.
+    folder : str, optional
+        Export destination. If omitted, the file is saved in the current working directory.
     mode : str, optional
         How to import the file. Use 'open' (default) to close the active design and open the
         file as a new design. Use 'insert' to add the file into the current active design as
@@ -390,18 +331,66 @@ def import_geometry_file(
     Returns
     -------
     str
-        Result message describing the imported geometry, or an error message if the
-        import fails.
+        Result message describing the imported or exported file, or an error message.
 
     """
-    from pathlib import Path
-
-    from ansys.geometry.core.misc import ImportOptions
-
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot import geometry file."
+        return "Product backend is not connected. Cannot perform file operation."
+
+    if operation == "export":
+        if file_format is None:
+            return "file_format is required when operation is 'export'."
+
+        try:
+            from ansys.geometry.core.designer import DesignFileFormat
+
+            design = app_context.product_instance.get_active_design()
+            if file_format.lower() == DesignFileFormat.FMD.name.lower():
+                saved_path = design.export_to_fmd(folder)
+                command = f"design.export_to_fmd({folder!r})"
+            elif file_format.lower() == DesignFileFormat.STEP.name.lower():
+                saved_path = design.export_to_step(folder)
+                command = f"design.export_to_step({folder!r})"
+            elif file_format.lower() == DesignFileFormat.IGES.name.lower():
+                saved_path = design.export_to_iges(folder)
+                command = f"design.export_to_iges({folder!r})"
+            elif file_format.lower() == DesignFileFormat.SCDOCX.name.lower():
+                saved_path = design.export_to_scdocx(folder)
+                command = f"design.export_to_scdocx({folder!r})"
+            elif file_format.lower() == DesignFileFormat.DISCO.name.lower():
+                saved_path = design.export_to_disco(folder)
+                command = f"design.export_to_disco({folder!r})"
+            elif file_format.lower() == DesignFileFormat.PARASOLID_TEXT.name.lower():
+                saved_path = design.export_to_parasolid_text(folder)
+                command = f"design.export_to_parasolid_text({folder!r})"
+            elif file_format.lower() == DesignFileFormat.PARASOLID_BIN.name.lower():
+                saved_path = design.export_to_parasolid_bin(folder)
+                command = f"design.export_to_parasolid_bin({folder!r})"
+            else:
+                return (
+                    f"Unsupported format '{file_format}'. Supported formats are: fmd, step, "
+                    "iges, scdocx, disco, parasolid_text, parasolid_bin."
+                )
+
+            app_context.command_history.append(command)
+            logger.info(f"file_io export called, saved to {saved_path}")
+            return f"Design exported to {file_format.upper()} file: {saved_path}"
+        except Exception as e:
+            logger.error(f"file_io export failed: {e}")
+            return f"Error exporting design to {file_format.upper()}: {e}"
+
+    if operation != "import":
+        return (
+            f"Unsupported file operation '{operation}'. Supported operations are: import, export."
+        )
+    if file_path is None:
+        return "file_path is required when operation is 'import'."
+
+    from pathlib import Path
+
+    from ansys.geometry.core.misc import ImportOptions
 
     mode = mode.lower()
     if mode not in ("open", "insert"):
@@ -440,7 +429,7 @@ def import_geometry_file(
                 f"design = instance.open_file({str(resolved)!r}, import_options=import_options)"
             )
             body_count = len(design.get_all_bodies())
-            logger.info(f"import_geometry_file opened {resolved}")
+            logger.info(f"file_io import opened {resolved}")
             return (
                 f"Imported '{resolved.name}' into new design '{design.name}' ({body_count} bodies)."
             )
@@ -451,13 +440,13 @@ def import_geometry_file(
             f"component = design.insert_file({str(resolved)!r}, import_options=import_options)"
         )
         body_count = len(component.get_all_bodies())
-        logger.info(f"import_geometry_file inserted {resolved}")
+        logger.info(f"file_io import inserted {resolved}")
         return (
             f"Inserted '{resolved.name}' into design '{design.name}' as component "
             f"'{component.name}' ({body_count} bodies)."
         )
     except Exception as e:
-        logger.error(f"import_geometry_file failed: {e}")
+        logger.error(f"file_io import failed: {e}")
         return f"Error importing '{file_path}': {e}"
 
 
@@ -475,7 +464,7 @@ def run_script_file(
     ``run_python_code`` instead -- that tool runs the PyAnsys Geometry API
     (``instance``, ``design``, ...) in a persistent session, while this tool runs a
     different language surface entirely. To load a CAD/geometry file (``.scdocx``,
-    ``.step``, ``.iges``, ``.x_t``, ...), use ``import_geometry_file``. Never write a
+    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``. Never write a
     temporary script file just to run a few statements; prefer ``run_python_code``.
 
     Script language: the file must be written against the Discovery/SpaceClaim scripting

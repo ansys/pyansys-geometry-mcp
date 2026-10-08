@@ -23,19 +23,16 @@ from unittest.mock import MagicMock
 import pytest
 
 from ansys.geometry.mcp.tools import (
-    create_box,
     create_design,
-    export_design_to,
-    get_command_history,
+    file_io,
     get_design_info,
     get_product_status,
-    get_transcript,
-    import_geometry_file,
+    get_session_script,
     run_python_code,
     run_script_file,
 )
 
-from .conftest import FILES_DIR
+from .conftest import FILES_DIR, create_box
 
 
 def test_get_product_status_tool(ctx):
@@ -59,7 +56,7 @@ def test_get_design_info(ctx):
     assert len(result) > 0
 
 
-def test_export_design_to(ctx, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_export(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test exporting the active design to scdocx format."""
     design_name = "test_export_design_001"
     create_design(ctx, design_name)
@@ -68,7 +65,7 @@ def test_export_design_to(ctx, tmp_path_factory: pytest.TempPathFactory):
     location = tmp_path_factory.mktemp("test_export_to_scdocx")
     file_location = location / f"{design_name}.scdocx"
 
-    result = export_design_to(ctx, file_format="scdocx", folder=str(file_location))
+    result = file_io(ctx, operation="export", file_format="scdocx", folder=str(file_location))
     assert "Design exported to SCDOCX file:" in result
 
 
@@ -76,7 +73,7 @@ def test_export_design_to(ctx, tmp_path_factory: pytest.TempPathFactory):
     "file_format",
     ["fmd", "step", "iges", "disco", "parasolid_text", "parasolid_bin"],
 )
-def test_export_design_to_formats(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_export_formats(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
     """Test exporting the active design to each supported file format."""
     design_name = f"test_export_{file_format}_001"
     create_design(ctx, design_name)
@@ -85,13 +82,13 @@ def test_export_design_to_formats(ctx, file_format: str, tmp_path_factory: pytes
     # Define the location and expected file location
     location = tmp_path_factory.mktemp(f"test_export_to_{file_format}")
     file_location = location / f"{design_name}.{file_format}"
-    result = export_design_to(ctx, file_format=file_format, folder=str(file_location))
+    result = file_io(ctx, operation="export", file_format=file_format, folder=str(file_location))
 
     assert f"Design exported to {file_format.upper()} file:" in result
     assert file_location.exists()
 
 
-def test_export_design_to_unsupported_format(ctx, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_export_unsupported_format(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test that an unsupported format returns an error message."""
     design_name = "test_export_unsupported_001"
     create_design(ctx, design_name)
@@ -100,44 +97,32 @@ def test_export_design_to_unsupported_format(ctx, tmp_path_factory: pytest.TempP
     location = tmp_path_factory.mktemp("test_export_to_scdocx")
     file_location = location / f"{design_name}"
 
-    result = export_design_to(ctx, file_format="xyz_unsupported", folder=str(file_location))
+    result = file_io(
+        ctx, operation="export", file_format="xyz_unsupported", folder=str(file_location)
+    )
     assert "Unsupported format" in result
 
 
-def test_export_design_to_not_connected():
+def test_file_io_export_not_connected():
     """Test that exporting when not connected returns an error message."""
     mock_ctx = MagicMock()
     mock_ctx.fastmcp._lifespan_result.product_instance = None
-    result = export_design_to(mock_ctx, file_format="scdocx")
+    result = file_io(mock_ctx, operation="export", file_format="scdocx")
     assert "not connected" in result
 
 
-def test_get_command_history(ctx):
-    """Test that command history returns a list of strings after executing commands."""
-    result = get_command_history(ctx)
-    assert len(result) == 3
-    assert result[0] == "selection_registry = {}"
+def test_get_session_script(ctx):
+    """Test that the session script contains setup and newly executed commands."""
+    initial_script = get_session_script(ctx)
+    assert isinstance(initial_script, str)
+    assert "selection_registry = {}" in initial_script
+    assert "instance = " in initial_script
 
-    create_design(ctx, "test_get_command_history_001")
-    result = get_command_history(ctx)
-    assert len(result) == 4
-
-    create_box(ctx, name="test_box", width=1.0, depth=1.0, height=1.0)
-    result = get_command_history(ctx)
-    assert len(result) == 11
-
-
-def test_get_transcript(ctx):
-    """Test that the transcript contains the correct commands after each operation."""
-    create_design(ctx, "test_transcript_001")
-    result = get_transcript(ctx)
-    assert result.count("test_transcript_001") == 1
-    assert 'design = instance.create_design("test_transcript_001")' in result
-
-    create_box(ctx, name="transcript_box", width=1.0, depth=1.0, height=1.0)
-    result = get_transcript(ctx)
-    assert result.count("transcript_box") == 1
-    assert "sketch.box(center=Point2D([0.0, 0.0]), width=1.0, height=1.0)" in result
+    create_design(ctx, "test_get_session_script_001")
+    script = get_session_script(ctx)
+    assert len(script) > len(initial_script)
+    assert script.count("test_get_session_script_001") == 1
+    assert 'design = instance.create_design("test_get_session_script_001")' in script
 
 
 def _export_box_design(
@@ -148,43 +133,44 @@ def _export_box_design(
     create_box(ctx, name=f"{name}_box", width=1.0, depth=1.0, height=1.0)
 
     location = tmp_path_factory.mktemp(name)
-    result = export_design_to(ctx, file_format=fmt, folder=str(location))
+    result = file_io(ctx, operation="export", file_format=fmt, folder=str(location))
     # The written extension is format-dependent (e.g. STEP writes .stp), so read it back.
     return Path(result.split("file: ", 1)[1])
 
 
 @pytest.mark.parametrize("file_format", ["scdocx", "step"])
-def test_import_geometry_file_open(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_import_open(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
     """Test round-tripping a design: export it to disk and open it again."""
     exported = _export_box_design(
         ctx, tmp_path_factory, f"test_import_open_{file_format}", file_format
     )
     assert exported.exists()
 
-    result = import_geometry_file(ctx, file_path=str(exported), mode="open")
+    result = file_io(ctx, operation="import", file_path=str(exported), mode="open")
     assert "Imported" in result
     assert exported.name in result
     assert "1 bodies" in result
-    assert "open_file(" in get_command_history(ctx)[-1]
+    assert "open_file(" in get_session_script(ctx)
 
 
-def test_import_geometry_file_insert(ctx, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_import_insert(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test inserting an exported file into an existing design as a new component."""
     exported = _export_box_design(ctx, tmp_path_factory, "test_import_insert")
 
     create_design(ctx, "test_import_insert_host")
-    result = import_geometry_file(ctx, file_path=str(exported), mode="insert")
+    result = file_io(ctx, operation="import", file_path=str(exported), mode="insert")
     assert "Inserted" in result
     assert "test_import_insert_host" in result
-    assert "insert_file(" in get_command_history(ctx)[-1]
+    assert "insert_file(" in get_session_script(ctx)
 
 
-def test_import_geometry_file_with_options(ctx, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_import_with_options(ctx, tmp_path_factory: pytest.TempPathFactory):
     """Test importing with non-default import options."""
     exported = _export_box_design(ctx, tmp_path_factory, "test_import_options")
 
-    result = import_geometry_file(
+    result = file_io(
         ctx,
+        operation="import",
         file_path=str(exported),
         import_names=True,
         import_curves=True,
@@ -195,35 +181,37 @@ def test_import_geometry_file_with_options(ctx, tmp_path_factory: pytest.TempPat
     assert "Imported" in result
 
 
-def test_import_geometry_file_errors(tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_import_errors(tmp_path_factory: pytest.TempPathFactory):
     """Test the import error paths: disconnected, bad mode, bad path, and backend failure."""
     tmp_dir = tmp_path_factory.mktemp("test_import_errors")
 
     # Not connected
     disconnected_ctx = MagicMock()
     disconnected_ctx.fastmcp._lifespan_result.product_instance = None
-    assert "not connected" in import_geometry_file(disconnected_ctx, file_path="anything.scdocx")
+    assert "not connected" in file_io(
+        disconnected_ctx, operation="import", file_path="anything.scdocx"
+    )
 
     mock_ctx = MagicMock()
 
     # Unsupported mode
-    assert "Unsupported mode" in import_geometry_file(
-        mock_ctx, file_path="anything.scdocx", mode="merge"
+    assert "Unsupported mode" in file_io(
+        mock_ctx, operation="import", file_path="anything.scdocx", mode="merge"
     )
 
     # Nonexistent path
-    assert "File not found" in import_geometry_file(
-        mock_ctx, file_path=str(tmp_dir / "nope.scdocx")
+    assert "File not found" in file_io(
+        mock_ctx, operation="import", file_path=str(tmp_dir / "nope.scdocx")
     )
 
     # Directory instead of a file
-    assert "directory" in import_geometry_file(mock_ctx, file_path=str(tmp_dir))
+    assert "directory" in file_io(mock_ctx, operation="import", file_path=str(tmp_dir))
 
     # Backend failure
     file = tmp_dir / "broken.scdocx"
     file.write_bytes(b"not a real design")
     mock_ctx.fastmcp._lifespan_result.product_instance.open_file.side_effect = RuntimeError("boom")
-    result = import_geometry_file(mock_ctx, file_path=str(file))
+    result = file_io(mock_ctx, operation="import", file_path=str(file))
     assert "Error importing" in result
     assert "boom" in result
 
@@ -289,7 +277,7 @@ async def test_run_python_code_success(ctx, execute_mock, connect_mock):
     assert result["stdout"] == "42\n"
     connect_mock.assert_called_once_with(ctx)
     execute_mock.assert_called_once_with("print(42)", timeout=300, no_output_timeout=300)
-    assert "print(42)" in get_command_history(ctx)
+    assert "print(42)" in get_session_script(ctx)
 
 
 async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_mock):
@@ -305,7 +293,7 @@ async def test_run_python_code_failure_not_recorded(ctx, execute_mock, connect_m
 
     assert result["success"] is False
     assert result["error"] == "NameError: boom"
-    assert "boom" not in get_command_history(ctx)
+    assert "boom" not in get_session_script(ctx)
 
 
 async def test_run_python_code_reuses_connected_session(

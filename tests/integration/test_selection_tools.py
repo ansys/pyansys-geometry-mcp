@@ -34,6 +34,8 @@ from ansys.geometry.mcp.tools.selection_tools import (
     select_entities,
 )
 
+from .conftest import add_component, create_box
+
 # Every handle-based tool, with a criterion valid for bodies and its error prefix.
 # "volume" on an edge is invalid for all of them, so it doubles as the unsupported case.
 _HANDLE_TOOLS = [
@@ -48,7 +50,7 @@ _HANDLE_TOOLS = [
 def _setup(ctx, design_name, box_name="box"):
     """Create a fresh design, a 1×1×1 m box, and a selection builder; return the handle."""
     tools.create_design(ctx, design_name)
-    tools.create_box(ctx, name=box_name, width=1.0, height=1.0, depth=1.0)
+    create_box(ctx, name=box_name, width=1.0, height=1.0, depth=1.0)
     return tools.create_selection_builder(ctx)
 
 
@@ -403,7 +405,7 @@ def test_group_entities(ctx: PyAnsysGeometryContext, entity_type, criteria, coun
 def test_extend_bodies_by_shared_property(ctx: PyAnsysGeometryContext):
     """Two identical boxes: extending from one by volume pulls in the other."""
     handle = _setup(ctx, "test_extend_shared", box_name="extend_box")
-    tools.create_box(ctx, name="extend_twin", width=1.0, height=1.0, depth=1.0)
+    create_box(ctx, name="extend_twin", width=1.0, height=1.0, depth=1.0)
 
     select_entities(ctx, handle, "body", criteria="name", name="extend_box")
     extended = extend_selection(ctx, handle, "body", criteria="volume")
@@ -427,7 +429,7 @@ def test_extend_bodies_nearby(ctx: PyAnsysGeometryContext):
         assert isinstance(
             extend_selection(ctx, handle, "body", criteria="nearby", distance=5.0), list
         )
-    assert any("extend_nearby_bodies(5.0, 'all')" in cmd for cmd in tools.get_command_history(ctx))
+    assert 'extend_nearby_bodies(5.0, "all")' in tools.get_session_script(ctx)
 
 
 @pytest.mark.parametrize(
@@ -462,9 +464,9 @@ def test_extend_selection_criteria(ctx: PyAnsysGeometryContext, entity_type, cri
 def test_list_bodies_and_components(ctx: PyAnsysGeometryContext):
     """Bodies can be listed design-wide or scoped to a component; components list as a tree."""
     tools.create_design(ctx, "test_list_bodies_001")
-    tools.add_component(ctx, name="body_comp")
-    tools.add_component(ctx, name="empty_comp")
-    tools.create_box(
+    add_component(ctx, name="body_comp")
+    add_component(ctx, name="empty_comp")
+    create_box(
         ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp"
     )
 
@@ -491,7 +493,7 @@ def test_list_faces_and_edges(ctx: PyAnsysGeometryContext, entity_type, detail, 
     tools.create_design(ctx, f"test_list_{entity_type}_001")
     assert "not found" in list_entities(ctx, entity_type, body_name="nonexistent_body")
 
-    tools.create_box(ctx, name="list_box", width=1.0, depth=1.0, height=1.0)
+    create_box(ctx, name="list_box", width=1.0, depth=1.0, height=1.0)
     result = list_entities(ctx, entity_type, body_name="list_box")
     assert "id=" in result
     assert detail in result
@@ -521,8 +523,8 @@ def test_create_named_selection(ctx):
 
     # Test setup: design with a box and a component
     tools.create_design(ctx, "test_named_sel_001")
-    tools.add_component(ctx, name="ns_comp")
-    tools.create_box(
+    add_component(ctx, name="ns_comp")
+    create_box(
         ctx,
         name="ns_box",
         width=1.0,
@@ -530,7 +532,7 @@ def test_create_named_selection(ctx):
         height=1.0,
         parent_component_name="ns_comp",
     )
-    tools.create_box(ctx, name="root_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+    create_box(ctx, name="root_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
 
     # Test not-found error paths
     assert "not found" in create_named_selection(ctx, "bad_ns", body_names=["no_such_body"])
@@ -646,11 +648,12 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
 
     # Faces from the handle merge with an explicitly named body.
     select_entities(ctx, handle, "face", criteria="all")
-    tools.create_box(ctx, name="extra_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+    create_box(ctx, name="extra_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
     result = create_named_selection(
         ctx, "ns_from_handle_mixed", selection_handle=handle, body_names=["extra_box"]
     )
     assert "created successfully" in result
 
-    history = tools.get_command_history(ctx)
-    assert any("create_named_selection" in cmd and "ns_from_handle_mixed" in cmd for cmd in history)
+    history = tools.get_session_script(ctx)
+    assert "create_named_selection" in history
+    assert "ns_from_handle_mixed" in history

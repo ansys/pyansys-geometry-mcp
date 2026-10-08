@@ -20,14 +20,7 @@ Importing this package registers every ``@app.tool()`` defined in its submodules
 """
 
 from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
-from ansys.geometry.mcp.tools.edit_tools import intersect_body, subtract_body, unite_body
-from ansys.geometry.mcp.tools.modeling_tools import (
-    add_component,
-    create_box,
-    extrude_sketch,
-    move_body_to_component,
-    revolve_sketch,
-)
+from ansys.geometry.mcp.tools.edit_tools import boolean_operation
 from ansys.geometry.mcp.tools.repair_tools import inspect_geometry, repair_geometry
 from ansys.geometry.mcp.tools.selection_tools import (
     create_named_selection,
@@ -41,12 +34,10 @@ from ansys.geometry.mcp.tools.selection_tools import (
 )
 from ansys.geometry.mcp.tools.session_tools import (
     create_design,
-    export_design_to,
-    get_command_history,
+    file_io,
     get_design_info,
     get_product_status,
-    get_transcript,
-    import_geometry_file,
+    get_session_script,
     run_python_code,
     run_script_file,
 )

@@ -64,25 +64,32 @@ CASES: list[EvalCase] = [
         expected="get_design_info",
     ),
     EvalCase(
-        id="import_geometry",
+        id="file_io_import",
         prompt=r"Open the file C:\models\flange.scdocx in the geometry service.",
         checker=expect_tool(
-            "import_geometry_file", arguments={"file_path": r"C:\models\flange.scdocx"}
+            "file_io",
+            arguments={"operation": "import", "file_path": r"C:\models\flange.scdocx"},
         ),
-        expected="import_geometry_file",
+        expected="file_io",
     ),
     EvalCase(
-        id="export_design",
+        id="file_io_export",
         prompt=r"Save the current design out as a STEP file at D:\out\flange.stp.",
-        checker=expect_tool("export_design_to", arguments={"file_format": "step"}),
-        expected="export_design_to",
-        note="Confusable with import_geometry_file.",
+        checker=expect_tool("file_io", arguments={"operation": "export", "file_format": "step"}),
+        expected="file_io",
+        note="Confusable with file_io import.",
     ),
     EvalCase(
         id="command_history",
         prompt="Which commands have been run so far in this session?",
-        checker=expect_tool("get_command_history", arguments={}),
-        expected="get_command_history",
+        checker=expect_tool("get_session_script", arguments={}),
+        expected="get_session_script",
+    ),
+    EvalCase(
+        id="session_script",
+        prompt="Return this session as a reusable Python script that I can run again.",
+        checker=expect_tool("get_session_script", arguments={}),
+        expected="get_session_script",
     ),
     EvalCase(
         id="run_python_code",
@@ -125,31 +132,44 @@ CASES: list[EvalCase] = [
     ),
     # -- Boolean operations (mutually confusable) ---------------------------
     EvalCase(
-        id="subtract_body",
+        id="boolean_operation_subtract",
         prompt="Cut the body named 'pin' out of the body named 'block'.",
         checker=expect_tool(
-            "subtract_body", arguments={"target_body_name": "block", "tool_body_name": "pin"}
+            "boolean_operation",
+            arguments={
+                "operation": "subtract",
+                "target_body_name": "block",
+                "tool_body_name": "pin",
+            },
         ),
-        expected="subtract_body",
+        expected="boolean_operation",
     ),
     EvalCase(
-        id="unite_body",
+        id="boolean_operation_unite",
         prompt="Merge 'plate_left' and 'plate_right' together into a single body.",
         checker=expect_tool(
-            "unite_body",
-            arguments={"target_body_name": "plate_left", "tool_body_name": "plate_right"},
+            "boolean_operation",
+            arguments={
+                "operation": "unite",
+                "target_body_name": "plate_left",
+                "tool_body_name": "plate_right",
+            },
         ),
-        expected="unite_body",
+        expected="boolean_operation",
         note="Union is symmetric; target/tool role is only a guess at which name survives.",
     ),
     EvalCase(
-        id="intersect_body",
+        id="boolean_operation_intersect",
         prompt="Keep only the volume that 'sphere_a' and 'sphere_b' have in common.",
         checker=expect_tool(
-            "intersect_body",
-            arguments={"target_body_name": "sphere_a", "tool_body_name": "sphere_b"},
+            "boolean_operation",
+            arguments={
+                "operation": "intersect",
+                "target_body_name": "sphere_a",
+                "tool_body_name": "sphere_b",
+            },
         ),
-        expected="intersect_body",
+        expected="boolean_operation",
         note="Intersection is symmetric; target/tool role is only a guess at which name survives.",
     ),
     # -- Components ---------------------------------------------------------
@@ -271,7 +291,7 @@ CASES: list[EvalCase] = [
         prompt="These surfaces should form a closed solid. Stitch them together.",
         checker=expect_tool("repair_geometry", arguments={"operation": "stitch_faces"}),
         expected="repair_geometry(stitch_faces)",
-        note="Confusable with unite_body.",
+        note="Confusable with boolean_operation.",
     ),
     EvalCase(
         id="repair_short_edges",
