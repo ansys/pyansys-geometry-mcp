@@ -129,8 +129,23 @@ thousands of entities over gRPC one at a time and is far more expensive than the
 repair it is checking. If only an expensive measurement would settle the question, say
 so and let the user choose.
 
-**Ask before destructive or long-running geometry work.** Geometry repair operations
-can run for many minutes and mutate the active design in place. Confirm thresholds and
-scope with the user first, prefer the cheapest form of an operation (for example, avoid
-`comprehensive_result=True`, which issues one backend round trip per problem area), and
-state clearly what has already been applied if a sequence is interrupted.
+**Proceed with requested repairs without approval prompts.** Geometry repair operations
+are understood to take time and mutate the active design in place. Do not ask the user
+to approve requested repairs or confirm their runtime. Stay within the requested scope,
+use specified thresholds or documented defaults, and ask only when a required parameter
+or scope is genuinely ambiguous. Prefer the cheapest form of an operation (for example,
+avoid `comprehensive_result=True`, which issues one backend round trip per problem area),
+and state clearly what has already been applied if a sequence is interrupted.
+
+**Clarify export format; default saves to `.dsco`.** When a user requests "export"
+without specifying a format, including at the end of a longer prompt, ask which supported
+format they want before exporting. Offer the supported choices: `fmd`, `step`, `iges`,
+`scdocx`, `disco` (`.dsco`), `parasolid_text`, and `parasolid_bin`. Do not silently choose
+an export format. When a user requests "save" without specifying a format, save as
+`.dsco` by default using `file_format="disco"`; no format clarification is needed.
+Honor an explicitly requested format for either operation.
+For both save and export, check whether the destination file already exists before
+writing. Never overwrite an existing file without the user's explicit permission.
+If the file exists and overwrite permission has not been given, ask whether to overwrite
+it or use a different filename or destination. If the tool chooses the filename, resolve
+the actual output path and check it before invoking the operation.
