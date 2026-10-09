@@ -31,6 +31,7 @@ tools with the server before it starts.
 
 """
 
+from types import SimpleNamespace
 from typing import Literal
 
 from ansys.common.mcp.logging_config import get_logger
@@ -48,6 +49,8 @@ RepairOperation = Literal[
     "split_edges",
     "simplify",
     "stitch_faces",
+    "missing_faces",
+    "small_faces",
 ]
 
 # Operation -> (RepairTools method, tuning parameters that method accepts).
@@ -66,7 +69,11 @@ _REPAIR_OPERATIONS: dict[str, tuple[str, tuple[str, ...]]] = {
             "check_for_coincidence",
         ),
     ),
+    "missing_faces": ("find_missing_faces", ("angle", "distance")),
+    "small_faces": ("find_small_faces", ("area", "width")),
 }
+
+_PROBLEM_AREA_OPERATIONS = {"missing_faces", "small_faces"}
 
 
 def _bodies_transcript(bodies) -> str:
@@ -186,12 +193,15 @@ def repair_geometry(
     maintain_components: bool | None = None,
     check_for_coincidence: bool | None = None,
     comprehensive_result: bool = False,
+    distance: float | None = None,
+    area: float | None = None,
+    width: float | None = None,
 ) -> str:
     """Repair defective geometry by finding and fixing one class of problem area.
 
-    Use this to clean up imported or faulty CAD: remove slivers, merge
-    fragmented edges, simplify over-complex faces, or stitch surfaces into
-    solids.
+    Use this to clean up imported or faulty CAD: remove slivers and small
+    faces, fill missing faces, merge fragmented edges, simplify over-complex
+    faces, or stitch surfaces into solids.
 
     When the user has already named the defect ("fix the short edges under
     0.5 mm", "stitch these surfaces"), call this tool directly — running
@@ -218,6 +228,13 @@ def repair_geometry(
         Join adjacent surface bodies into solids. Accepts ``max_distance``,
         ``allow_multiple_bodies``, ``maintain_components``, and
         ``check_for_coincidence``.
+    - ``"missing_faces"``
+        Find gaps where faces are missing and fix each detected region.
+        This can help solidify open surface bodies by closing missing-face gaps.
+        Accepts ``angle`` and ``distance`` thresholds.
+    - ``"small_faces"``
+        Find and fix small face regions. Accepts ``area`` and ``width``
+        thresholds.
 
     Passing a tuning parameter that the chosen operation does not accept is
     rejected rather than silently ignored.
@@ -240,7 +257,8 @@ def repair_geometry(
         MCP request context (injected automatically).
     operation : str
         Which repair to apply: ``"all"``, ``"short_edges"``, ``"extra_edges"``,
-        ``"split_edges"``, ``"simplify"``, or ``"stitch_faces"``.
+        ``"split_edges"``, ``"simplify"``, ``"stitch_faces"``,
+        ``"missing_faces"``, or ``"small_faces"``.
     body_names : list of str, optional
         Names of the bodies to repair. Use ``list_entities`` to discover names.
     named_selection : str, optional
@@ -251,7 +269,8 @@ def repair_geometry(
     length : float, optional
         Maximum edge length, in metres, for ``"short_edges"`` and ``"split_edges"``.
     angle : float, optional
-        Maximum angle between edges, in degrees, for ``"split_edges"``.
+        Maximum angle between edges, in degrees, for ``"split_edges"``; minimum
+        angle between faces, in degrees, for ``"missing_faces"``.
     max_distance : float, optional
         Maximum gap between faces to stitch, in metres, for ``"stitch_faces"``.
     allow_multiple_bodies : bool, optional
@@ -260,10 +279,17 @@ def repair_geometry(
         Whether ``"stitch_faces"`` stitches only within each component.
     check_for_coincidence : bool, optional
         Whether ``"stitch_faces"`` also searches for coincident surfaces.
+    distance : float, optional
+        Minimum distance, in metres, between faces for ``"missing_faces"``.
+    area : float, optional
+        Maximum face area, in square metres, for ``"small_faces"``.
+    width : float, optional
+        Maximum face width, in metres, for ``"small_faces"``.
     comprehensive_result : bool, optional
         Fix each problem area individually. Expensive: it costs one backend
         round trip per problem area. Leave off unless the user asks for it.
-        Not supported by ``operation="all"``.
+        Not supported by ``operation="all"``, ``"missing_faces"``, or
+        ``"small_faces"``; the latter two always fix each detected region.
 
     Returns
     -------
@@ -287,6 +313,9 @@ def repair_geometry(
         "length": length,
         "angle": angle,
         "max_distance": max_distance,
+        "distance": distance,
+        "area": area,
+        "width": width,
         "allow_multiple_bodies": allow_multiple_bodies,
         "maintain_components": maintain_components,
         "check_for_coincidence": check_for_coincidence,
@@ -294,7 +323,7 @@ def repair_geometry(
     rejected = [
         name for name, value in supplied.items() if value is not None and name not in accepted
     ]
-    if comprehensive_result and operation == "all":
+    if comprehensive_result and operation in {"all", *_PROBLEM_AREA_OPERATIONS}:
         rejected.append("comprehensive_result")
     if rejected:
         allowed = ", ".join(accepted) or "none"
@@ -304,7 +333,7 @@ def repair_geometry(
         )
 
     kwargs = {name: supplied[name] for name in accepted if supplied[name] is not None}
-    if operation != "all":
+    if operation != "all" and operation not in _PROBLEM_AREA_OPERATIONS:
         kwargs["comprehensive_result"] = comprehensive_result
 
     call_kwargs = dict(kwargs)
@@ -323,7 +352,25 @@ def repair_geometry(
             return error
 
         method = getattr(app_context.product_instance.repair_tools, method_name)
-        message = method(bodies, **call_kwargs)
+        if operation in _PROBLEM_AREA_OPERATIONS:
+            problem_areas = method(bodies, **call_kwargs)
+            messages = [problem_area.fix() for problem_area in problem_areas]
+            message = SimpleNamespace(
+                success=all(result.success for result in messages),
+                found=len(problem_areas),
+                repaired=sum(result.success for result in messages),
+                created_bodies=list(
+                    dict.fromkeys(body for result in messages for body in result.created_bodies)
+                ),
+                modified_bodies=list(
+                    dict.fromkeys(body for result in messages for body in result.modified_bodies)
+                ),
+                deleted_bodies=list(
+                    dict.fromkeys(body for result in messages for body in result.deleted_bodies)
+                ),
+            )
+        else:
+            message = method(bodies, **call_kwargs)
 
         kwargs_str = "".join(
             f", {name}=Angle({value!r}, UNITS.degree)" if name == "angle" else f", {name}={value!r}"
@@ -332,9 +379,14 @@ def repair_geometry(
         if "angle" in kwargs:
             app_context.command_history.append("from ansys.geometry.core.misc import UNITS, Angle")
         app_context.command_history.append(_bodies_transcript(bodies))
-        app_context.command_history.append(
-            f"instance.repair_tools.{method_name}(bodies{kwargs_str})"
-        )
+        method_call = f"instance.repair_tools.{method_name}(bodies{kwargs_str})"
+        if operation in _PROBLEM_AREA_OPERATIONS:
+            app_context.command_history.append(f"problem_areas = {method_call}")
+            app_context.command_history.append(
+                "for problem_area in problem_areas:\n    problem_area.fix()"
+            )
+        else:
+            app_context.command_history.append(method_call)
         logger.info(f"repair_geometry: operation={operation!r}, bodies={len(bodies)}")
 
         return _summarize(operation, message, len(bodies))

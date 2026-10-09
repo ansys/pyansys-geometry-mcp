@@ -311,9 +311,12 @@ def list_entities(
 def create_selection_builder(ctx: Context) -> str:
     """Create an empty selection builder in the product backend.
 
-    The SelectionBuilder is used to build complex selections of geometry entities
-    (bodies, faces, edges) via query, filter, order, group, and extend operations.
-    Selections can also be combined, subtracted, or intersected.
+    Use a selection builder when a selection request needs multiple query or refinement
+    steps. Start with ``select_entities``, refine with ``filter_entities`` or add related
+    entities with ``extend_selection``, and use ``order_entities`` or ``group_entities``
+    when ranking or grouping is useful. Save the final set with ``create_named_selection``.
+    If the requested entities are already known by name or ID and only need a label,
+    ``create_named_selection`` can be called directly without a builder.
 
     Call this only to start a brand-new selection. If a selection builder already
     exists from earlier in this conversation, reuse its handle in the other
@@ -384,10 +387,12 @@ def select_entities(
 ) -> list[str] | str:
     """Query the design for entities matching a property and store them in a selection builder.
 
-    Use this tool whenever you need to find bodies, faces, or edges that match a
-    specific property. Pass one ``criteria`` value together with the corresponding
-    extra argument(s). The result replaces whatever the selection builder held for
-    that entity type.
+    Query the design for the starting set of bodies, faces, or edges in a selection
+    workflow. The result replaces the builder's current selection for that entity type.
+    Follow with ``filter_entities`` to narrow the set, ``extend_selection`` to add
+    related entities, or ``create_named_selection`` to save the final set. Pass one
+    ``criteria`` value with its corresponding argument(s); available criteria depend
+    on ``entity_type``.
 
     Criteria by ``entity_type``:
 
@@ -437,8 +442,8 @@ def select_entities(
             Edges whose length falls in [``min_value``, ``max_value``] (m).
             Requires ``min_value``.
         ``"x_location"``, ``"y_location"``, ``"z_location"``
-            Entities whose location falls in [``min_value``, ``max_value``] (m).
-            Requires at least one of ``min_value`` or ``max_value``.
+            Entities whose centroid coordinate on the specified axis falls in
+            [``min_value``, ``max_value``] (m). Requires at least one of ``min_value`` or ``max_value``.
         ``"color"``
             Bodies or faces with a specific display color. Requires ``color``.
     name : str, optional
@@ -471,7 +476,7 @@ def select_entities(
     Edges longer than 0.01 m:
         ``select_entities(entity_type="edge", criteria="length", min_value=0.01)``
 
-    Bodies at Z > 0.05 m:
+    Bodies whose centroid is at Z > 0.05 m:
         ``select_entities(entity_type="body", criteria="z_location", min_value=0.05)``
 
     """
@@ -587,7 +592,10 @@ def filter_entities(
     """Narrow the entities already held in a selection builder to those matching a condition.
 
     Unlike ``select_entities``, which queries the whole design, this tool only keeps
-    a subset of the current selection. Populate the selection first, then filter it.
+    a subset of the current selection; it does not search the design for new entities.
+    Populate the builder with ``select_entities`` or another selection operation first.
+    Use ``extend_selection`` when the request is to add related entities, and
+    ``create_named_selection`` to save the resulting set.
 
     Criteria by ``entity_type``:
 
@@ -817,6 +825,10 @@ def order_entities(
 ) -> list[str] | str:
     """Order the entities in a selection builder by a numeric property (ascending).
 
+    This ranks the entities already in the builder; it does not discover, add, or
+    remove entities. Use ``filter_entities`` to narrow the set, ``extend_selection``
+    to add related entities, or ``group_entities`` to partition it by a shared property.
+
     Criteria by ``entity_type``:
 
     - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
@@ -920,6 +932,9 @@ def group_entities(
     """Group the entities in a selection builder by a shared property.
 
     Each returned group contains entities that are equal in the chosen property.
+    Grouping applies only to entities already in the builder; it does not search the
+    design for additional matches. Use ``filter_entities`` to narrow the selection or
+    ``extend_selection`` to add related entities.
 
     Criteria by ``entity_type``:
 
@@ -1022,6 +1037,9 @@ def extend_selection(
 
     The current selection is kept and matching entities from the specified scope
     are added to it.
+    Use this when a request asks to include entities related to an existing selection.
+    Use ``filter_entities`` instead when it asks to keep only matching entities, and
+    ``create_named_selection`` when it asks to save the final selection under a name.
 
     Criteria by ``entity_type``:
 
@@ -1134,8 +1152,11 @@ def create_named_selection(
     """Create a named selection containing geometry entities.
 
     A named selection is a labelled group of entities that can later be
-    referenced by name (e.g. for meshing or boundary conditions).
-    At least one of ``selection_handle`` or an entity list must be provided.
+    referenced by name (e.g. for meshing or boundary conditions). Use this tool
+    to save the final result of a selection workflow, or call it directly when the
+    requested entities are already known by name or ID. It stores the supplied
+    entities; it does not discover or refine them. At least one of
+    ``selection_handle`` or an entity list must be provided.
 
     Typical workflows:
 
