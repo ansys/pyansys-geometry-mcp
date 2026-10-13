@@ -269,7 +269,7 @@ def repair_geometry(
     length : float, optional
         Maximum edge length, in metres, for ``"short_edges"`` and ``"split_edges"``.
     angle : float, optional
-        Maximum angle between edges, in degrees, for ``"split_edges"``; minimum
+        Minimum angle between edges, in degrees, for ``"split_edges"``; minimum
         angle between faces, in degrees, for ``"missing_faces"``.
     max_distance : float, optional
         Maximum gap between faces to stitch, in metres, for ``"stitch_faces"``.
