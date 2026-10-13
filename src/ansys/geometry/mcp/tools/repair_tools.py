@@ -358,7 +358,7 @@ def repair_geometry(
             message = SimpleNamespace(
                 success=all(result.success for result in messages),
                 found=len(problem_areas),
-                repaired=sum(result.success for result in messages),
+                repaired=sum(result.repaired for result in messages),
                 created_bodies=list(
                     dict.fromkeys(body for result in messages for body in result.created_bodies)
                 ),
