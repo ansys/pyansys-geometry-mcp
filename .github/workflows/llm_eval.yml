@@ -83,6 +83,34 @@ jobs:
             --llm-eval-repeats="${REPEATS}" \
             --llm-eval-threshold="${THRESHOLD}"
 
+      - name: Collect failed test names
+        id: collect-failed-test-names
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          report = Path("tests/logs/llm_eval_junit.xml")
+          failed_tests = []
+          if report.exists():
+              for testcase in ET.parse(report).iter("testcase"):
+                  if testcase.find("failure") is not None or testcase.find("error") is not None:
+                      classname = testcase.get("classname", "")
+                      name = testcase.get("name", "unknown test")
+                      failed_tests.append(f"{classname}::{name}" if classname else name)
+
+          message = (
+              "Failed tests:\n" + "\n".join(f"- {name}" for name in failed_tests)
+              if failed_tests
+              else "No failing test names were captured."
+          )
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"message={json.dumps(message)}\n")
+          PY
+
       - name: Upload evaluation report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -117,7 +145,8 @@ jobs:
                     "body": [
                       {
                         "type": "TextBlock",
-                        "text": "LLM evaluation completed with failures.",
+                        "text": ${{ steps.collect-failed-test-names.outputs.message
+            }},
                         "wrap": true
                       },
                       {
