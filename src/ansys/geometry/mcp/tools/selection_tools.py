@@ -443,7 +443,8 @@ def select_entities(
             Requires ``min_value``.
         ``"x_location"``, ``"y_location"``, ``"z_location"``
             Entities whose centroid coordinate on the specified axis falls in
-            [``min_value``, ``max_value``] (m). Requires at least one of ``min_value`` or ``max_value``.
+            [``min_value``, ``max_value``] (m). Requires at least one of
+            ``min_value`` or ``max_value``.
         ``"color"``
             Bodies or faces with a specific display color. Requires ``color``.
     name : str, optional
@@ -531,7 +532,10 @@ def select_entities(
                 call = f"{method_name}(min={min_value}, max={max_value})"
             else:
                 matching = method(_DEFAULT_RANGE_TYPE, min=min_value, max=max_value)
-                call = f"{method_name}(RangeType.RANGETYPE_INTERSECT, min={min_value}, max={max_value})"
+                call = (
+                    f"{method_name}(RangeType.RANGETYPE_INTERSECT, "
+                    f"min={min_value}, max={max_value})"
+                )
         elif criteria == "color":
             if not color:
                 return "Color must be provided for 'color' criterion."
@@ -794,7 +798,8 @@ def filter_entities(
             f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = matching.items"
         )
         logger.info(
-            f"Filtered to {len(matching.items)} {entity_type} entities using criterion '{criteria}'."
+            f"Filtered to {len(matching.items)} {entity_type} entities "
+            f"using criterion '{criteria}'."
         )
         return _identifiers(entity_type, matching)
     except Exception as e:
@@ -1125,7 +1130,8 @@ def extend_selection(
             f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = extended.items"
         )
         logger.info(
-            f"Extended selection to {len(extended.items)} {entity_type} entities using '{criteria}'."
+            f"Extended selection to {len(extended.items)} {entity_type} entities "
+            f"using '{criteria}'."
         )
         return _identifiers(entity_type, extended)
     except Exception as e:
@@ -1283,7 +1289,10 @@ def create_named_selection(
             for comp_name in component_names:
                 comp = find_component(design, comp_name)
                 if comp is None:
-                    return f"Component '{comp_name}' not found. Use list_entities to see available components."
+                    return (
+                        f"Component '{comp_name}' not found. "
+                        "Use list_entities to see available components."
+                    )
                 components.append(comp)
             kwargs["components"] = components
 
@@ -1367,13 +1376,17 @@ def create_named_selection(
         if datum_plane_ids:
             cmd_parts.append(f"datum_planes=get_datum_planes_from_ids(design, {datum_plane_ids!r})")
         if coordinate_system_ids:
-            cmd_parts.append(
-                f"coordinate_systems=[{', '.join(f'design.search_coordinate_system({c!r})' for c in coordinate_system_ids)}]"
+            coordinate_system_commands = ", ".join(
+                f"design.search_coordinate_system({coordinate_system_id!r})"
+                for coordinate_system_id in coordinate_system_ids
             )
+            cmd_parts.append(f"coordinate_systems=[{coordinate_system_commands}]")
         if datum_point_ids:
-            cmd_parts.append(
-                f"datum_points=[{', '.join(f'design.search_datum_point({d!r})' for d in datum_point_ids)}]"
+            datum_point_commands = ", ".join(
+                f"design.search_datum_point({datum_point_id!r})"
+                for datum_point_id in datum_point_ids
             )
+            cmd_parts.append(f"datum_points=[{datum_point_commands}]")
         kwargs_str = ", ".join(cmd_parts)
         app_context.command_history.append(f"design.create_named_selection({name!r}, {kwargs_str})")
 
