@@ -49,6 +49,10 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     connect_to_existing_service : bool
         When ``True``, connect to a running geometry service instead of
         launching a new one.
+    log_level : str
+        Logging level for the MCP server.
+    log_file : Optional[str]
+        Optional path to a file that receives server logs.
     selection_registry : dict[str, SelectionBuilder]
         Registry mapping selection IDs to their corresponding selection builders.
 
@@ -68,4 +72,6 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     uds_dir: Optional[str] = None
     uds_id: Optional[str] = None
     connect_to_existing_service: bool = False
+    log_level: str = "INFO"
+    log_file: Optional[str] = None
     selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)

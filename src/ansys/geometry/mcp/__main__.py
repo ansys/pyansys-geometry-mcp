@@ -18,8 +18,6 @@
 
 import sys
 
-from ansys.common.mcp.logging_config import setup_logging
-
 from ansys.geometry.mcp import app
 
 # Import tools module to register all @app.tool() decorators with the server.
@@ -28,7 +26,6 @@ import ansys.geometry.mcp.tools  # noqa: F401
 
 def main():
     """Run the PyAnsys Geometry MCP server."""
-    setup_logging(level="INFO")
     try:
         app.run_cli()
     except KeyboardInterrupt:
