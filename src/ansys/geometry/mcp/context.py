@@ -72,6 +72,6 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     uds_dir: Optional[str] = None
     uds_id: Optional[str] = None
     connect_to_existing_service: bool = False
+    selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)
     log_level: str = "INFO"
     log_file: Optional[str] = None
-    selection_registry: dict[str, SelectionBuilder] = field(default_factory=dict)
