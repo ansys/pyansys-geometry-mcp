@@ -34,7 +34,10 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
     """
 
     context: PyAnsysGeometryContext
-    """The application context for the MCP server, containing the product instance and related information."""
+    """The application context for the MCP server.
+
+    Contains the product instance and related information.
+    """
 
     def __init__(self, name: str = "pyansys-geometry-mcp", *args, **kwargs):
         """Initialize the PyAnsys Geometry MCP server."""

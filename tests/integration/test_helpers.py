@@ -22,7 +22,7 @@ from ansys.geometry.mcp.misc.helpers import connect_to_modeler_in_persistent_pyt
 
 
 def test_no_python_session(ctx, monkeypatch):
-    """Test connecting to the Modeler instance in the persistent Python session when no Python session is available."""
+    """Test connecting to the Modeler instance when no Python session is available."""
     # The app context is session scoped, so monkeypatch restores it for the next test.
     monkeypatch.setattr(ctx.request_context.lifespan_context, "python_session", None)
     result = connect_to_modeler_in_persistent_python(ctx)
@@ -32,7 +32,7 @@ def test_no_python_session(ctx, monkeypatch):
 
 
 def test_already_connected_python_session(ctx, monkeypatch):
-    """Test connecting to the Modeler instance in the persistent Python session when already connected."""
+    """Test connecting to the Modeler instance when the persistent session is already connected."""
     session = MagicMock()
     session.metadata = {"instance": MagicMock(host="localhost", port=50051)}
 
@@ -42,7 +42,7 @@ def test_already_connected_python_session(ctx, monkeypatch):
 
 
 def test_no_modeler_in_lifespan_context(ctx, monkeypatch):
-    """Test connecting to the Modeler instance in the persistent Python session when no Modeler instance is available in the lifespan context."""
+    """Test connecting the persistent Python session when no Modeler is in the lifespan context."""
     session = MagicMock()
     session.metadata = {}
 

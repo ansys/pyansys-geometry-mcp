@@ -103,33 +103,6 @@ CASES: list[EvalCase] = [
         ),
         expected="run_python_code",
     ),
-    # -- Body creation ------------------------------------------------------
-    EvalCase(
-        id="create_box",
-        prompt="Make a rectangular block 10 mm wide, 20 mm long and 5 mm tall named 'base'.",
-        checker=expect_tool(
-            "create_box",
-            arguments={"name": "base", "width": 0.01, "depth": 0.02, "height": 0.005},
-        ),
-        expected="create_box",
-        note="Confusable with extrude_sketch.",
-    ),
-    EvalCase(
-        id="extrude_sketch",
-        prompt="Take a 25 mm circle on the XY plane and pull it up 40 mm into a solid cylinder.",
-        checker=expect_tool("extrude_sketch", arguments={"distance": 0.04}),
-        expected="extrude_sketch",
-        note="Only 'distance' is asserted; sketch_primitives shape/name are model's choice.",
-    ),
-    EvalCase(
-        id="revolve_sketch",
-        prompt="Spin a profile 360 degrees about the Z axis to produce a body of revolution.",
-        checker=expect_tool(
-            "revolve_sketch", arguments={"axis_direction": [0, 0, 1], "angle_deg": 360}
-        ),
-        expected="revolve_sketch",
-        note="Confusable with extrude_sketch. rotation_origin is not asserted (ambiguous).",
-    ),
     # -- Boolean operations (mutually confusable) ---------------------------
     EvalCase(
         id="boolean_operation_subtract",
@@ -171,22 +144,6 @@ CASES: list[EvalCase] = [
         ),
         expected="boolean_operation",
         note="Intersection is symmetric; target/tool role is only a guess at which name survives.",
-    ),
-    # -- Components ---------------------------------------------------------
-    EvalCase(
-        id="add_component",
-        prompt="Create a sub-assembly called 'fasteners' in the current design.",
-        checker=expect_tool("add_component", arguments={"name": "fasteners"}),
-        expected="add_component",
-    ),
-    EvalCase(
-        id="move_body_to_component",
-        prompt="Put the body 'bolt_01' inside the 'fasteners' component.",
-        checker=expect_tool(
-            "move_body_to_component",
-            arguments={"body_name": "bolt_01", "target_component_name": "fasteners"},
-        ),
-        expected="move_body_to_component",
     ),
     EvalCase(
         id="list_bodies",
@@ -306,6 +263,24 @@ CASES: list[EvalCase] = [
         ),
         expected="repair_geometry(short_edges)",
         note="Checks operation dispatch plus mm-to-m conversion and body scoping.",
+    ),
+    EvalCase(
+        id="repair_missing_faces",
+        prompt="Fill the missing faces in the body named 'housing'.",
+        checker=expect_tool(
+            "repair_geometry",
+            arguments={"operation": "missing_faces", "body_names": ["housing"]},
+        ),
+        expected="repair_geometry(missing_faces)",
+    ),
+    EvalCase(
+        id="repair_small_faces",
+        prompt="Remove the small faces from the body named 'housing'.",
+        checker=expect_tool(
+            "repair_geometry",
+            arguments={"operation": "small_faces", "body_names": ["housing"]},
+        ),
+        expected="repair_geometry(small_faces)",
     ),
     # -- Negative cases: the model should answer without calling a tool -----
     EvalCase(

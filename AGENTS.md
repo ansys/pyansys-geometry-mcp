@@ -105,13 +105,17 @@ boolean can consume only some of its tools, a fillet can skip edges it cannot re
 and an import can drop entities it has no representation for. Counts returned by
 `ansys-geometry-core` are generally per-call results, not totals for the design — the
 `found`/`repaired` fields on repair tools are batch counts, not problem-area totals.
-Do not treat a partial result as a failed operation, and do not retry, escalate, or
-start diagnosing on that basis alone.
+Do not treat a partial result as a failed operation or as an automatic reason to
+repeat the same tool, escalate, or start diagnosing more broadly.
 
-Make one attempt, then report what was applied (operation, parameters, entities in
-scope) and what the call itself returned. Let the user decide whether to iterate,
-change parameters, or narrow the scope. Investigate further only when the user asks,
-or when the result is self-contradictory in a way partial success does not explain —
+Treat each requested geometry task as one bounded attempt, not necessarily one tool
+call. A short sequence of directly related tools is appropriate when needed to carry
+out the requested operation or its natural follow-up. Keep the sequence within the
+requested scope; do not rerun a step without a concrete reason, broaden the scope, or
+keep trying alternate parameters solely because the kernel reports partial success.
+Report each operation, its parameters and entities in scope, and the result returned.
+Stop after the bounded sequence and let the user decide whether to continue. Go beyond
+it only when the user asks or when a self-contradictory result needs clarification —
 for example, a re-scan showing *more* problems than before, a body count that moves
 the wrong way, or an error raised by the call itself.
 

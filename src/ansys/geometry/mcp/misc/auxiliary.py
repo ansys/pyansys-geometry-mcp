@@ -240,12 +240,16 @@ def build_sketch(
         if prim_type == "circle":
             sketch.circle(center=center, radius=prim["radius"])
             accumulated_commands.append(
-                f"sketch.circle(center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), radius={prim['radius']})"
+                "sketch.circle(center=Point2D("
+                f"{[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), "
+                f"radius={prim['radius']})"
             )
         elif prim_type == "box":
             sketch.box(center=center, width=prim["width"], height=prim["height"])
             accumulated_commands.append(
-                f"sketch.box(center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), width={prim['width']}, height={prim['height']})"
+                "sketch.box(center=Point2D("
+                f"{[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), "
+                f"width={prim['width']}, height={prim['height']})"
             )
         elif prim_type == "polygon":
             # inner_radius is the apothem (distance from centre to midpoint of a side)
@@ -255,7 +259,9 @@ def build_sketch(
                 sides=int(prim["sides"]),
             )
             accumulated_commands.append(
-                f"sketch.polygon(center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), inner_radius={prim['inner_radius']}, sides={int(prim['sides'])})"
+                "sketch.polygon(center=Point2D("
+                f"{[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), "
+                f"inner_radius={prim['inner_radius']}, sides={int(prim['sides'])})"
             )
         elif prim_type == "segment":
             sketch.segment(
@@ -263,7 +269,8 @@ def build_sketch(
                 end=Point2D([prim["end_x"], prim["end_y"]]),
             )
             accumulated_commands.append(
-                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}]))"
+                f"sketch.segment(start=Point2D([{prim['start_x']}, {prim['start_y']}]), "
+                f"end=Point2D([{prim['end_x']}, {prim['end_y']}]))"
             )
         elif prim_type == "arc":
             # arc requires start, end, and center points
@@ -274,7 +281,10 @@ def build_sketch(
                 clockwise=prim.get("clockwise", False),
             )
             accumulated_commands.append(
-                f"sketch.arc(start=Point2D([{prim['start_x']}, {prim['start_y']}]), end=Point2D([{prim['end_x']}, {prim['end_y']}]), center=Point2D({[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), clockwise={prim.get('clockwise', False)})"
+                f"sketch.arc(start=Point2D([{prim['start_x']}, {prim['start_y']}]), "
+                f"end=Point2D([{prim['end_x']}, {prim['end_y']}]), center=Point2D("
+                f"{[prim.get('center_x', 0.0), prim.get('center_y', 0.0)]}), "
+                f"clockwise={prim.get('clockwise', False)})"
             )
         else:
             raise ValueError(
