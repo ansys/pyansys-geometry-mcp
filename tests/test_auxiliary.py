@@ -25,7 +25,10 @@ from ansys.geometry.mcp.misc.auxiliary import build_sketch, resolve_bodies
 
 
 def test_build_sketch_primitives():
-    """Test all build_sketch branches: default plane, custom plane, every primitive type, and invalid type."""
+    """Test all build_sketch branches.
+
+    Cover default and custom planes, every primitive type, and invalid types.
+    """
     sketch, _ = build_sketch(
         [
             {"type": "circle", "center_x": 0.0, "center_y": 0.0, "radius": 1.0},

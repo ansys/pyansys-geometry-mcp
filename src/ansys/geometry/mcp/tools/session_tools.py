@@ -122,7 +122,9 @@ def get_product_status(ctx: Context) -> str:
 async def run_python_code(
     ctx: Context, code: str, timeout: int = 300, no_output_timeout: int = 300
 ) -> str:
-    """Perform ANY geometry/CAD operation that has no dedicated MCP tool, by running PyAnsys Geometry API code.
+    """Perform ANY geometry/CAD operation that has no dedicated MCP tool.
+
+    Run PyAnsys Geometry API code to perform the operation.
 
     This is the general-purpose fallback tool. When the user asks for a modeling,
     query, or modification action (fillet, chamfer, shell, measure, pattern, ...) and
@@ -468,8 +470,8 @@ def run_script_file(
     temporary script file just to run a few statements; prefer ``run_python_code``.
 
     Script language: the file must be written against the Discovery/SpaceClaim scripting
-    API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``, ``instance``,
-    ``design``) are NOT available inside the script, and script variables do not leak
+    API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``,
+    ``instance``, ``design``) are NOT available inside the script, and script variables do not leak
     into the ``run_python_code`` session (or vice versa).
 
     Passing arguments: ``args`` values must all be strings. The script receives them as a

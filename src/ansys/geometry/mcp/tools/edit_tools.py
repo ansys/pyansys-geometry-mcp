@@ -100,7 +100,10 @@ def boolean_operation(
             )
         tool = find_body(design, tool_body_name)
         if tool is None:
-            return f"Tool body '{tool_body_name}' not found. Use list_entities to see available bodies."
+            return (
+                f"Tool body '{tool_body_name}' not found. "
+                "Use list_entities to see available bodies."
+            )
         operation_methods = {
             "subtract": target.subtract,
             "unite": target.unite,
@@ -122,4 +125,7 @@ def boolean_operation(
         )
     except Exception as e:
         logger.error(f"boolean_operation failed: {e}")
-        return f"Error performing boolean {operation} on '{target_body_name}' with '{tool_body_name}': {e}"
+        return (
+            f"Error performing boolean {operation} on '{target_body_name}' "
+            f"with '{tool_body_name}': {e}"
+        )

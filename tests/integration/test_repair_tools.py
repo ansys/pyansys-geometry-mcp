@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the repair tools."""
+"""Integration tests for the repair tools."""
+
+import pytest
 
 from ansys.geometry.mcp.tools import (
     create_design,
@@ -57,3 +59,26 @@ def test_inspect_and_repair_round_trip(ctx):
     assert "Repair 'extra_edges' ran on 1 bodies" in result
 
     assert "Inspected 1 bodies" in inspect_geometry(ctx, named_selection="repair_group")
+
+
+@pytest.mark.parametrize(
+    ("operation", "parameters"),
+    [
+        ("missing_faces", {"distance": 0.002}),
+        ("small_faces", {"area": 0.0001, "width": 0.01}),
+    ],
+)
+def test_repair_geometry_checks_face_issues(ctx, operation, parameters):
+    """Run face checks against a clean solid using the live backend."""
+    create_design(ctx, f"test_repair_{operation}_001")
+    create_box(ctx, name=f"{operation}_body", width=1.0, depth=1.0, height=1.0)
+
+    result = repair_geometry(
+        ctx,
+        operation=operation,
+        body_names=[f"{operation}_body"],
+        **parameters,
+    )
+
+    assert f"Repair '{operation}' ran on 1 bodies" in result
+    assert "Problem areas found: 0, repaired: 0" in result

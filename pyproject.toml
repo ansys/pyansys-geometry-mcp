@@ -111,6 +111,7 @@ format.docstring-code-line-length = "dynamic"
 format.docstring-code-format = true
 lint.select = [
   "D",   # pydocstyle
+  "E",   # pycodestyle
   "I",   # isort
   "PTH", # flake8-use-pathlib
   "TD",  # flake8-todos
