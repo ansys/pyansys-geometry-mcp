@@ -20,6 +20,13 @@ Use PyAnsys Geometry-MCP to access Model Context Protocol (MCP) tools in the PyA
 
         Learn how to use the tools in your workflows.
 
+    .. grid-item-card:: API reference :material-regular:`bookmark`
+        :padding: 2 2 2 2
+        :link: api/index
+        :link-type: doc
+
+        Access complete reference documentation for all tools.
+
     .. grid-item-card:: Examples :material-regular:`code`
         :padding: 2 2 2 2
         :link: examples

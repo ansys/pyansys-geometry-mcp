@@ -87,4 +87,4 @@ Verification
 
 After configuration, start a chat in your client and ask it to call one of
 the available tools. If the product backend is still starting, wait a few seconds
-and then ask the client to call the tool again.
+and then ask your client to call the tool again.

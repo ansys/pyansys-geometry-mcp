@@ -29,8 +29,8 @@ PyAnsys Geometry-MCP
 Overview
 --------
 
-Use this Python package to make PyAnsys Geometry-MCP tools available to AI
-clients through the Model Context Protocol (MCP).
+Use this Python package to run a Model Context Protocol (MCP) server that exposes
+PyAnsys Geometry tools to your AI clients.
 
 **Warning: arbitrary code execution**
 
@@ -43,17 +43,19 @@ clients and content sources you trust. For details, see the `SECURITY.md
 Documentation and support
 -------------------------
 
-See the latest stable release documentation in the
+For the latest stable release, read the
 `PyAnsys Geometry-MCP documentation <https://geometry-mcp.docs.pyansys.com/version/stable/index.html>`_.
 
 Browse these sections:
 
-- `Getting started <https://geometry-mcp.docs.pyansys.com/version/stable/getting_started/index.html>`_: Install the
-  package in user mode.
-- `User guide <https://geometry-mcp.docs.pyansys.com/version/stable/user_guide/index.html>`_: Learn key concepts for
-  using the tools in your workflows.
-- `API reference <https://geometry-mcp.docs.pyansys.com/version/stable/api/index.html>`_: Explore the Python API.
-- `Examples <https://geometry-mcp.docs.pyansys.com/version/stable/examples.html>`_: See example workflows.
+- `Getting started <https://geometry-mcp.docs.pyansys.com/version/stable/getting_started/index.html>`_: Install
+  PyAnsys Geometry-MCP in user mode.
+- `User guide <https://geometry-mcp.docs.pyansys.com/version/stable/user_guide/index.html>`_: Learn how to use the
+  tools in your workflows.
+- `API reference <https://geometry-mcp.docs.pyansys.com/version/stable/api/index.html>`_: Access complete reference
+  documentation for all tools.
+- `Examples <https://geometry-mcp.docs.pyansys.com/version/stable/examples.html>`_: Explore examples showing
+  how to use PyAnsys Geometry-MCP and implement a custom tool.
 - `Contribute <https://geometry-mcp.docs.pyansys.com/version/stable/contributing.html>`_: Learn how to contribute to
   the codebase or documentation.
 

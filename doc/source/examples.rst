@@ -3,7 +3,7 @@
 Examples
 ########
 
-Learn how to use PyAnsys Geometry-MCP and implement a custom tool.
+Explore examples showing how to use PyAnsys Geometry-MCP and implement a custom tool.
 
 .. grid:: 1 2 2 2
 

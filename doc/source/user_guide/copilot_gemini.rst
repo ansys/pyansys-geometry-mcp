@@ -6,7 +6,7 @@ You can connect PyAnsys Geometry-MCP to GitHub Copilot, Gemini, or both. You mus
 Start the server
 ----------------
 
-Each client uses this command to start its own MCP server:
+Start the MCP server with this command:
 
 .. code-block:: text
 
@@ -33,7 +33,7 @@ Add this configuration to your workspace MCP configuration file (``.vscode/mcp.j
 Gemini
 ------
 
-Add this configuration to the ``.gemini/settings.json`` file:
+Add this configuration to ``.gemini/settings.json``:
 
 .. code-block:: json
 
@@ -50,7 +50,7 @@ Add this configuration to the ``.gemini/settings.json`` file:
 Use tools in chat
 -----------------
 
-After you connect the MCP server, ask the assistant to call one of its tools.
+After you connect to the MCP server, ask your assistant to call one of its tools.
 
 .. TODO: Add example prompts specific to your product tools. For example:
 ..
@@ -66,7 +66,7 @@ The MCP server does not respond
 - Confirm that you have met all product prerequisites, including license
   and service requirements.
 - Confirm that you installed PyAnsys Geometry (``ansys-geometry-core``)
-  in your virtual vironment.
+  in your virtual environment.
 - Confirm that the Python executable in your MCP configuration belongs to the
   correct virtual environment.
 
