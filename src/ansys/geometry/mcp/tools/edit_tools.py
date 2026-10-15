@@ -14,22 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP edit tools for PyAnsys Geometry-MCP server.
+"""MCP edit tools for PyAnsys Geometry-MCP.
 
-Tools that modify bodies that already exist: boolean operations and other
+Tools that modify bodies that already exist: Boolean operations and other
 in-place edits.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
-The ``ctx`` parameter provides access to the application context (and thus
+The ``ctx`` parameter provides access to the app context (and thus
 to the live product instance and command history).
 
 How to add a tool
 -----------------
 1. Define a Python function with type-annotated parameters.
-2. Add a NumPy-style docstring — the summary line becomes the tool description
+2. Add a NumPy-style docstring. The summary line becomes the tool description
    visible to the AI assistant.
 3. Decorate it with ``@app.tool()``.
-4. Access the product instance via::
+4. Access the product instance::
 
        app_context = get_geometry_ctx(ctx)
        instance = app_context.product_instance
@@ -59,12 +59,13 @@ def boolean_operation(
     target_body_name: str,
     tool_body_name: str,
 ) -> str:
-    """Perform a boolean subtract, union, or intersection on two bodies.
+    """Perform a Boolean subtract, union, or intersection on two bodies.
 
-    The target body survives the operation and the tool body is consumed. For
-    ``subtract``, the tool body's volume is removed from the target. For ``unite``,
-    the tool is merged into the target. For ``intersect``, the target is reduced to
-    the volume common to both bodies.
+    The target body survives the operation and the tool body is consumed.
+    
+    - For ``subtract``, the tool body's volume is removed from the target.
+    - For ``unite``, the tool is merged into the target.
+    - For ``intersect``, the target is reduced to the volume common to both bodies.
 
     Use ``list_entities`` first to confirm exact body names.
 
@@ -88,7 +89,7 @@ def boolean_operation(
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot perform boolean operation."
+        return "Product backend is not connected. Cannot perform Boolean operation."
 
     try:
         design = app_context.product_instance.get_active_design()
@@ -116,7 +117,7 @@ def boolean_operation(
         app_context.command_history.append(f"target.{operation}(tool)")
 
         logger.info(
-            f"boolean_operation: operation={operation!r}, target={target_body_name!r}, "
+            f"Boolean_operation: operation={operation!r}, target={target_body_name!r}, "
             f"tool={tool_body_name!r}"
         )
         return (
@@ -124,8 +125,8 @@ def boolean_operation(
             f"'{tool_body_name}' has been consumed."
         )
     except Exception as e:
-        logger.error(f"boolean_operation failed: {e}")
+        logger.error(f"Boolean_operation failed: {e}")
         return (
-            f"Error performing boolean {operation} on '{target_body_name}' "
+            f"Error performing Boolean {operation} on '{target_body_name}' "
             f"with '{tool_body_name}': {e}"
         )

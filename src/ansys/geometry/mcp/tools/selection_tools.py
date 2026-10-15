@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Selection MCP tools for PyAnsys Geometry-MCP server.
+"""Selection MCP tools for PyAnsys Geometry-MCP.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
 The ``ctx`` parameter provides access to the application context (and thus
@@ -23,16 +23,16 @@ to the live product instance and command history).
 The query/filter/order/group/extend tools all take an ``entity_type`` of
 ``"body"``, ``"face"``, or ``"edge"`` and dispatch to the matching typed
 selection on the selection builder. Not every criterion applies to every
-entity type; the tools report the supported criteria when given a bad
+entity type. The tools report the supported criteria when given a bad
 combination.
 
 How to add a tool
 -----------------
 1. Define a Python function with type-annotated parameters.
-2. Add a NumPy-style docstring — the summary line becomes the tool description
+2. Add a NumPy-style docstring. The summary line becomes the tool description
    visible to the AI assistant.
 3. Decorate it with ``@app.tool()``.
-4. Access the product instance via::
+4. Access the product instance::
 
        app_context = ctx.fastmcp._lifespan_result
        instance = app_context.product_instance
@@ -229,15 +229,15 @@ def list_entities(
 ) -> str:
     """List the entities of a given type in the active design.
 
-    This is the discovery tool: use it to find the exact body names, component
+    This is the discovery tool. Uuse it to find the exact body names, component
     names, face IDs, and edge IDs that every other tool expects as input.
 
-    Behaviour per ``entity_type``:
+    Behavior per ``entity_type``:
 
-    - ``"body"``: body names prefixed with their component path, e.g.
+    - ``"body"``: Body names prefixed with their component path, such as
       ``MainComponent/Cylinder``. Pass ``component_name`` to restrict the
       listing to one component and its children.
-    - ``"component"``: the component hierarchy as an indented tree.
+    - ``"component"``: Component hierarchy as an indented tree.
     - ``"face"``: ``id=<face id>  surface_type=<type>`` for every face of
       ``body_name``. Use it whenever a face ID is needed, or to answer
       questions about how many faces a body has or which faces are planes,
@@ -252,13 +252,13 @@ def list_entities(
     ctx : Context
         MCP request context (injected automatically).
     entity_type : str
-        One of ``"body"``, ``"component"``, ``"face"``, ``"edge"``.
-    body_name : str, optional
+        Kind of entity to select. Options are ``"body"``, ``"component"``, ``"face"``, and ``"edge"``.
+    body_name : str, default: None
         Body to inspect. Required for ``"face"`` and ``"edge"``, ignored
         otherwise. List the bodies first to discover valid names.
-    component_name : str, optional
+    component_name : str, default: None
         Restrict a ``"body"`` listing to this component and its children.
-        Ignored for the other entity types.
+        This parameter is ignored for the other entity types.
 
     Returns
     -------
@@ -413,7 +413,7 @@ def select_entities(
         from the most recent ``create_selection_builder`` call in this
         conversation rather than creating a new one.
     entity_type : str
-        Kind of entity to select: ``"body"``, ``"face"``, or ``"edge"``.
+        Kind of entity to select. Options are ``"body"``, ``"face"``, and ``"edge"``.
     criteria : str
         Selection rule to apply:
 
@@ -447,17 +447,17 @@ def select_entities(
             ``min_value`` or ``max_value``.
         ``"color"``
             Bodies or faces with a specific display color. Requires ``color``.
-    name : str, optional
+    name : str, default: None
         Body name for the ``"name"`` criterion.
-    named_selection : str, optional
+    named_selection : str, default: None
         Named selection label for the ``"named_selection"`` criterion.
-    min_value : float, optional
+    min_value : float, default: None
         Lower bound (inclusive) for range-based criteria.
-    max_value : float, optional
+    max_value : float, default: None
         Upper bound (inclusive) for range-based criteria.
         Pass ``None`` to leave the upper bound open.
-    color : str, optional
-        Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
+    color : str, default: None
+        Hex color string for the ``"color"`` criterion, such as ``"#FF0000"``.
 
     Returns
     -------
@@ -619,7 +619,7 @@ def filter_entities(
         from the most recent ``create_selection_builder`` call in this
         conversation rather than creating a new one.
     entity_type : str
-        Kind of entity to filter: ``"body"``, ``"face"``, or ``"edge"``.
+        Kind of entity to filter. Options are ``"body"``, ``"face"``, and ``"edge"``.
     criteria : str
         Filter rule to apply:
 
@@ -647,22 +647,22 @@ def filter_entities(
             Keep edges of the given ``curve_type``. Edges only.
         ``"is_surface"`` / ``"is_solid"``
             Keep only surface or only solid bodies. Bodies only.
-    name : str, optional
+    name : str, default: None
         Body name for the ``"name"`` criterion.
-    find_max : bool, optional
+    find_max : bool, default: False
         Keep only the entity with the maximum value of the criterion.
-    find_min : bool, optional
+    find_min : bool, default: False
         Keep only the entity with the minimum value of the criterion.
-    min_value : float, optional
+    min_value : float, default: None
         Lower bound (inclusive) for range-based criteria.
-    max_value : float, optional
+    max_value : float, default: None
         Upper bound (inclusive) for range-based criteria.
-    surface_type : str, optional
+    surface_type : str, default: None
         Surface type for the ``"number_surfaces"`` and ``"containing_surface_type"`` criteria.
-    curve_type : str, optional
+    curve_type : str, default: None
         Curve type for the ``"number_curves"``, ``"containing_curve_type"``, and
         ``"curve_type"`` criteria.
-    color : str, optional
+    color : str, default: None
         Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
 
     Returns
@@ -851,10 +851,10 @@ def order_entities(
         from the most recent ``create_selection_builder`` call in this
         conversation rather than creating a new one.
     entity_type : str
-        Kind of entity to order: ``"body"``, ``"face"``, or ``"edge"``.
+        Kind of entity to order. Options are ``"body"``, ``"face"``, and ``"edge"``.
     criteria : str
         Property to sort by, smallest first.
-    curve_type : str, optional
+    curve_type : str, default: None
         Curve type for the face ``"number_curves"`` criterion.
 
     Returns
@@ -958,7 +958,7 @@ def group_entities(
         from the most recent ``create_selection_builder`` call in this
         conversation rather than creating a new one.
     entity_type : str
-        Kind of entity to group: ``"body"``, ``"face"``, or ``"edge"``.
+        Kind of entity to group. Options are ``"body"``, ``"face"``, and ``"edge"``.
     criteria : str
         Property to group by.
 
@@ -1063,7 +1063,7 @@ def extend_selection(
         from the most recent ``create_selection_builder`` call in this
         conversation rather than creating a new one.
     entity_type : str
-        Kind of entity to extend: ``"body"``, ``"face"``, or ``"edge"``.
+        Kind of entity to extend. Options are ``"body"``, ``"face"``, and ``"edge"``.
     criteria : str
         Rule used to find additional entities. Property criteria such as
         ``"volume"`` or ``"color"`` add entities sharing that property with any
@@ -1074,7 +1074,7 @@ def extend_selection(
         with a near-zero ``distance`` (e.g. ``0.0``) rather than omitting it.
     scope : str, default: ``"all"``
         Which entities to search when extending: ``"all"``, ``"visible"``, ``"body"``.
-    distance : float, optional
+    distance : float, default: None
         Maximum proximity distance in metres for the ``"nearby"`` criterion.
 
     Returns
@@ -1173,7 +1173,7 @@ def create_named_selection(
       ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
       ``extend_selection``, then pass that builder's ``selection_handle`` here to
       save its currently selected bodies, faces, and edges as a named selection
-      (e.g. "save the bodies/faces I selected as ...").
+      (for example, "save the bodies/faces I selected as ...").
 
     Parameters
     ----------
@@ -1181,30 +1181,30 @@ def create_named_selection(
         MCP request context (injected automatically).
     name : str
         Label for the named selection.
-    selection_handle : str, optional
+    selection_handle : str, default: None
         Handle of a selection builder (from ``create_selection_builder``) whose
         currently selected bodies, faces, and edges should be included. Use this
         when the user refers to entities already picked/selected rather than
         naming them explicitly.
-    body_names : list of str, optional
+    body_names : list of str, default: None
         Body names to include. Use ``list_entities`` to discover names.
-    face_ids : list of str, optional
+    face_ids : list of str, default: None
         Face IDs to include. Use ``list_entities`` to discover face IDs of a body.
-    edge_ids : list of str, optional
+    edge_ids : list of str, default: None
         Edge IDs to include. Use ``list_entities`` to discover edge IDs of a body.
-    beam_ids : list of str, optional
+    beam_ids : list of str, default: None
         Beam IDs to include.
-    design_point_ids : list of str, optional
+    design_point_ids : list of str, default: None
         Design point IDs to include.
-    component_names : list of str, optional
+    component_names : list of str, default: None
         Component names to include. Use ``list_entities`` to discover names.
-    vertex_ids : list of str, optional
+    vertex_ids : list of str, default: None
         Vertex IDs to include (from ``body.vertices``).
-    datum_plane_ids : list of str, optional
+    datum_plane_ids : list of str, default: None
         Datum plane IDs to include.
-    coordinate_system_ids : list of str, optional
+    coordinate_system_ids : list of str, default: None
         Coordinate system IDs to include.
-    datum_point_ids : list of str, optional
+    datum_point_ids : list of str, default: None
         Datum point IDs to include.
 
     Returns

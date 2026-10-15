@@ -60,7 +60,7 @@ def connect_to_modeler_in_persistent_python(
         if session.metadata.get("instance", None) is not None:
             instance = session.metadata["instance"]
             return (
-                f"Already connected to persistent PyAnsys Geometry session with Modeler at "
+                f"Already connected to persistent PyAnsys Geometry-MCP session with Modeler at "
                 f"{instance.client.host}:{instance.client.port}."
             )
 
@@ -83,7 +83,7 @@ def connect_to_modeler_in_persistent_python(
         session.metadata["instance"] = modeler_instance
 
         logger.info(
-            "Connected to persistent PyAnsys Geometry session successfully at"
+            "Connected to persistent PyAnsys Geometry-MCP session successfully at"
             f" {modeler_instance.client.host}:{modeler_instance.client.port}!"
         )
 
@@ -91,7 +91,7 @@ def connect_to_modeler_in_persistent_python(
 
     except Exception as e:
         error_msg = (
-            f"Failed to connect to Modeler in the persistent PyAnsys Geometry session: {str(e)}"
+            f"Failed to connect to Modeler in the persistent PyAnsys Geometry-MCP session: {str(e)}"
         )
         logger.error(error_msg)
 
@@ -122,6 +122,6 @@ def refresh_design_in_persistent_python(ctx: Context) -> None:
     result = session.execute("design = instance.read_existing_design()")
     if isinstance(result, dict) and not result.get("success"):
         logger.warning(
-            "Failed to refresh 'design' in the persistent PyAnsys Geometry session: "
+            "Failed to refresh 'design' in the persistent PyAnsys Geometry-MCP session: "
             f"{result.get('error')}"
         )

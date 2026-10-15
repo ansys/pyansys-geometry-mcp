@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Entry point for running the PyAnsys Geometry-MCP server."""
+"""Entry point for running PyAnsys Geometry-MCP."""
 
 import sys
 

@@ -29,26 +29,26 @@ logger = get_logger(__name__)
 class PyAnsysGeometryMCP(PyAnsysBaseMCP):
     """MCP server for PyAnsys Geometry-MCP.
 
-    This server enables AI assistants to interact with
-    ``ansys-geometry-core`` for simulation and analysis workflows.
+    This server enables AI assistants to interact with PyAnsys Geometry
+    (``ansys-geometry-core``) for simulation and analysis workflows.
     """
 
     context: PyAnsysGeometryContext
-    """The application context for the MCP server.
+    """App context for the MCP server.
 
     Contains the product instance and related information.
     """
 
     def __init__(self, name: str = "pyansys-geometry-mcp", *args, **kwargs):
-        """Initialize the PyAnsys Geometry-MCP server."""
+        """Initialize PyAnsys Geometry-MCP."""
         super().__init__(name=name, *args, **kwargs)
 
     def create_context(self) -> PyAnsysGeometryContext:
         """Create (or return the pre-existing) product-specific context.
 
-        If the context has already been initialised — for example because
+        If the context has already been initialised, for example because
         CLI arguments were written to ``app.context`` before ``app.run()``
-        was called — this method returns it unchanged so that caller-set
+        was called, this method returns it unchanged so that caller-set
         configuration is preserved.
 
         Returns

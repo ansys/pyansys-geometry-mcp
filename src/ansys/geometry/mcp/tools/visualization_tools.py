@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP visualization tools for PyAnsys Geometry-MCP server.
+"""MCP visualization tools for PyAnsys Geometry-MCP.
 
 Tools that render the active design or read the resulting images.
 
@@ -25,10 +25,10 @@ to the live product instance and command history).
 How to add a tool
 -----------------
 1. Define a Python function with type-annotated parameters.
-2. Add a NumPy-style docstring — the summary line becomes the tool description
+2. Add a NumPy-style docstring. The summary line becomes the tool description.
    visible to the AI assistant.
 3. Decorate it with ``@app.tool()``.
-4. Access the product instance via::
+4. Access the product instance::
 
        app_context = get_geometry_ctx(ctx)
        instance = app_context.product_instance
@@ -89,8 +89,8 @@ def get_screenshot(ctx: Context, path: str | None = None) -> str:
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    path : str, optional
-        Path to save the 3D scene screenshot. If not provided, a default path is used.
+    path : str, default: None
+        Path to save the 3D scene screenshot. If no path is provided, a default path is used.
 
     Returns
     -------
