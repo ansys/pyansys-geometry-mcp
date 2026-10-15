@@ -299,7 +299,7 @@ def file_io(
     ``pmdb``, ``step``, ``iges``, ``x_t``, ``xmt_txt``, ``stride``, and reader formats
     such as ``CATIA``, ``Creo``, ``NX``, ``JT``, ``SOLIDWORKS``, ``Solid Edge``,
     ``Inventor``, ``Rhino``, and ``AutoCAD``.
-    
+
     Use ``operation="export"`` to save the active design in ``fmd``, ``step``,
     ``iges``, ``scdocx``, ``disco``, ``parasolid_text``, or ``parasolid_bin``
     format.
