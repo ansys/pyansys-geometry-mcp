@@ -52,10 +52,18 @@ Use tools in chat
 
 After you connect to the MCP server, ask your assistant to call one of its tools.
 
-.. TODO: Add example prompts specific to your product tools. For example:
-..
-.. - "Run <tool_name> with parameter X."
-.. - "Get the current state of the model."
+Example prompts
+---------------
+
+Try prompts such as:
+
+- "What bodies are in the active design?" to use ``list_entities``.
+- "Inspect the active design for geometry issues." to use ``inspect_geometry``.
+- "Create a named selection containing the bodies named Housing and Cover."
+  to use ``create_named_selection``.
+- "Create a 10 mm fillet on the edges of the Housing body." If no dedicated
+  tool supports the requested operation, use ``run_python_code`` with the
+  PyAnsys Geometry API.
 
 Troubleshooting
 ---------------
