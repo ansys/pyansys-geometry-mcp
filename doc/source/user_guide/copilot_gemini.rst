@@ -73,6 +73,6 @@ The MCP server does not respond
 The tool returns a startup or connection error
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Review the server logs to confirm that the Ansys Geometry backend backend
+- Review the server logs to confirm that the Ansys Geometry backend
   started successfully.
 - Restart the MCP client session to relaunch the server.
