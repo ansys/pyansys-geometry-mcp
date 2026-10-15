@@ -295,11 +295,14 @@ def file_io(
     """Import a geometry file or export the active design.
 
     Use ``operation="import"`` to open a geometry file as a new design or insert it
-    into the active design. Supported extensions include ``scdocx``, ``dsco``, ``pmdb``,
-    ``step``, ``iges``, ``x_t``, ``xmt_txt``, ``stride``, and reader formats such as ``CATIA``,
-    ``Creo``, ``NX``, ``JT``, ``SOLIDWORKS``, ``Solid Edge``, ``Inventor``, ``Rhino``, and ``AutoCAD``.
-    Use ``operation="export"`` to save the active design in ``fmd``, ``step``, ``iges``,
-    ``scdocx``, ``disco``, ``parasolid_text``, or ``parasolid_bin`` format.
+    into the active design. Supported extensions include ``scdocx``, ``dsco``,
+    ``pmdb``, ``step``, ``iges``, ``x_t``, ``xmt_txt``, ``stride``, and reader formats
+    such as ``CATIA``, ``Creo``, ``NX``, ``JT``, ``SOLIDWORKS``, ``Solid Edge``,
+    ``Inventor``, ``Rhino``, and ``AutoCAD``.
+    
+    Use ``operation="export"`` to save the active design in ``fmd``, ``step``,
+    ``iges``, ``scdocx``, ``disco``, ``parasolid_text``, or ``parasolid_bin``
+    format.
 
     Parameters
     ----------
@@ -312,14 +315,16 @@ def file_io(
         give the path of the assembly file. Referenced files in the same folder are
         included automatically. This parameter is required for import.
     file_format : str, default: None
-        Export format. Options are: ``fmd``, ``step``, ``iges``, ``scdocx``, ``disco``, ``parasolid_text``,
-        and ``parasolid_bin``. This parameter is required for export.
+        Export format. Options are ``"fmd"``, ``"step"``, ``"iges"``, ``"scdocx"``,
+        ``"disco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter
+        is required for export.
     folder : str, default: None
         Export destination. If omitted, the file is saved in the current working directory.
     mode : str, default: ``"open"``
-        How to import the file. When ``"open"`` is used, the active design is closed and the file is opened as a new design.
-        Use ``"insert"`` to add the file into the current active design as file as a new design. Use ``"insert"`` to add
-        the file into the current active design as a new component.
+        How to import the file. When ``"open"`` is used, the active design is closed
+        and the file is opened as a new design.
+        Use ``"insert"`` to add the file into the current active design as a new design.
+        Use ``"insert"`` to add the file into the current active design as a new component.
     import_names : bool, default: False
         Whether to import the names of bodies and curves.
     import_curves : bool, default: False

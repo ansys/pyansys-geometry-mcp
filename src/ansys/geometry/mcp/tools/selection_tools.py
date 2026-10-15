@@ -252,7 +252,8 @@ def list_entities(
     ctx : Context
         MCP request context (injected automatically).
     entity_type : str
-        Kind of entity to select. Options are ``"body"``, ``"component"``, ``"face"``, and ``"edge"``.
+        Kind of entity to select. Options are ``"body"``, ``"component"``,
+        ``"face"``, and ``"edge"``.
     body_name : str, default: None
         Body to inspect. Required for ``"face"`` and ``"edge"``, ignored
         otherwise. List the bodies first to discover valid names.

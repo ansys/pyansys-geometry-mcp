@@ -60,7 +60,7 @@ def connect_to_modeler_in_persistent_python(
         if session.metadata.get("instance", None) is not None:
             instance = session.metadata["instance"]
             return (
-                f"Already connected to persistent PyAnsys Geometry-MCP session with Modeler at "
+                f"Already connected to persistent PyAnsys Geometry session with Modeler at "
                 f"{instance.client.host}:{instance.client.port}."
             )
 

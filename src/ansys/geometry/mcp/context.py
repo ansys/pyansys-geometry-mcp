@@ -47,13 +47,15 @@ class PyAnsysGeometryContext(PyAnsysBaseAppContext):
     uds_id : str, default: None
         Optional identifier for the Unix domain socket filename.
     connect_to_existing_service : bool, default: False
-        Whether to connect to a running geometry service. When ``False``, a new geometry service is launched.
+        Whether to connect to a running geometry service. When ``False``, a new
+        geometry service is launched.
     log_level : str, default: ``"INFO"``
         Logging level for the MCP server.
     log_file : str, default: None
         Optional path to a file that receives server logs.
     selection_registry : dict[str, SelectionBuilder], default: None
-        Registry mapping selection IDs to their corresponding selection builders. If no registry is provided, an empty dictionary is used.
+        Registry mapping selection IDs to their corresponding selection builders.
+        If no registry is provided, an empty dictionary is used.
 
     Examples
     --------
