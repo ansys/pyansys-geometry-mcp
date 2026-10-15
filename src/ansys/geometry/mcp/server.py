@@ -93,14 +93,12 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             choices=[
                 "docker",
                 "core_service",
-                "geometry_service",
                 "discovery",
             ],
             help=(
                 "Launch mode for the geometry service (default: auto-detect). "
                 "'docker' (local Docker), "
                 "'core_service' (local Ansys Geometry Core Service), "
-                "'geometry_service' (local Ansys Geometry Service), "
                 "'discovery' (local Ansys Discovery)."
             ),
         )
