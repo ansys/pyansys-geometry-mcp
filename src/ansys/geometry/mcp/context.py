@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Context for PyAnsys Geometry MCP server."""
+"""Context for PyAnsys Geometry-MCP server."""
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -26,7 +26,7 @@ from ansys.geometry.core.selection_builder.selection_builder import SelectionBui
 
 @dataclass
 class PyAnsysGeometryContext(PyAnsysBaseAppContext):
-    """Application context for PyAnsys Geometry MCP server.
+    """Application context for PyAnsys Geometry-MCP server.
 
     Attributes
     ----------

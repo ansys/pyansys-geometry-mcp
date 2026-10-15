@@ -1,7 +1,10 @@
 .. _ref_video_demos:
 
-Video demos
-===========
+Watch usage videos
+==================
 
-Video demos to be added to this section in the future.
-These videos shall demonstrate various usages of the PyAnsys Geometry MCP tools through video tutorials.
+These videos show how to use PyAnsys Geometry-MCP tools.
+
+.. note::
+
+    Videos are to be added soon.

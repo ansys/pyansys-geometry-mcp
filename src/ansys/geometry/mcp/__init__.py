@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""PyAnsys Geometry MCP package."""
+"""PyAnsys Geometry-MCP package."""
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 from ansys.geometry.mcp.server import PyAnsysGeometryMCP, app

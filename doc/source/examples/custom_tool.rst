@@ -1,20 +1,22 @@
 .. _ref_implementing_custom_tools:
 
-Implementing custom tools
-=========================
+Implement a custom tool
+=======================
 
-Learn how to implement a custom MCP tool for PyAnsys Geometry MCP.
+Learn how to implement a custom tool for PyAnsys Geometry-MCP.
 
 Tool overview
 -------------
 
-A tool is a function that performs a specific task using the PyAnsys Geometry library.
-They are discovered by MCP clients when the MCP server is started, and can be invoked by the clients to perform their specific tasks.
+A tool is a function that performs a specific task using PyAnsys Geometry.
+They are discovered by MCP clients when the MCP server is started and can be
+invoked by the clients to perform their specific tasks.
+
 Tools do the following:
 
-- Take structured input parameters
-- Perform some operations
-- Return structured output results
+- Take structured input parameters.
+- Perform some operations.
+- Return structured output results.
 
 Tool anatomy
 ------------
@@ -67,9 +69,9 @@ Here is an example tool structure:
 Key components
 ~~~~~~~~~~~~~~
 
-- Detailed documentation string describing what the tool does, when to use it, and the input/output parameters.
-- Context object providing the MCP request context and access to the modeler instance.
-- Input parameters defining the data required for the tool to perform its operation.
-- Graceful handling of errors and useful logging.
-- Addition of commands called to the command history.
-- Return value containing the result or error message after the tool execution.
+- Detailed documentation string describing what the tool does, when to use it, and the input/output parameters
+- Context object providing the MCP request context and access to the modeler instance
+- Input parameters defining the data required for the tool to perform its operation
+- Graceful handling of errors and useful logging
+- Addition of commands called to the command history
+- Return value containing the result or error message after the tool execution

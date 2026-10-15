@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Miscellaneous PyAnsys Geometry MCP helpers package."""
+"""Miscellaneous PyAnsys Geometry-MCP helpers package."""
 
 from ansys.geometry.mcp.misc.auxiliary import (  # noqa: F401
     build_sketch,

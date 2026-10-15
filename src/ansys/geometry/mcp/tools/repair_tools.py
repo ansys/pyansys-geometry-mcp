@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP repair tools for PyAnsys Geometry MCP server.
+"""MCP repair tools for PyAnsys Geometry-MCP server.
 
 Tools that survey and clean up imported or otherwise defective geometry:
 ``inspect_geometry`` reports issues without touching the model, and

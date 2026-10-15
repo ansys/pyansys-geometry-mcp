@@ -1,14 +1,13 @@
-Currently supported API's
-=========================
+Supported APIs
+==============
 
-This page lists the MCP tools currently registered by the server in
-``ansys.geometry.mcp.tools``.
+Use this page to find the MCP tools registered in ``ansys.geometry.mcp.tools``.
 
 .. TODO: Replace this section with your actual tool list.
    Use the format below for each tool.
 
-Tool list
----------
+Tools
+-----
 
 .. TODO: Document each tool using the signature format below.
 
@@ -27,7 +26,6 @@ Usage patterns
 Startup behavior
 ^^^^^^^^^^^^^^^^
 
-When the MCP server starts, it launches the product backend. During
-this startup phase, tools may return a message indicating the product
-is still connecting. If this happens, retry the tool call after a short
-wait.
+When you start PyAnsys Geometry-MCP, it launches the product backend. A
+tool might report that the backend is still connecting. If it does, wait
+briefly, then call the tool again.

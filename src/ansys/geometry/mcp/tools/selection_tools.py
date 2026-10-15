@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Selection MCP tools for PyAnsys Geometry MCP server.
+"""Selection MCP tools for PyAnsys Geometry-MCP server.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
 The ``ctx`` parameter provides access to the application context (and thus

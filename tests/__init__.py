@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for PyAnsys Geometry MCP.
+"""Tests for PyAnsys Geometry-MCP.
 
 TODO: Add tests for your MCP tools here.
 """

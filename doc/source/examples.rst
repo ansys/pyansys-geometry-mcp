@@ -3,23 +3,23 @@
 Examples
 ########
 
-These examples demonstrate the behavior and usage of PyAnsys Geometry MCP.
+Learn how to use PyAnsys Geometry-MCP and implement a custom tool.
 
 .. grid:: 1 2 2 2
 
-    .. grid-item-card:: Usage examples: Videos
+    .. grid-item-card:: Watch usage videos
         :padding: 2 2 2 2
         :link: examples/video_demos
         :link-type: doc
 
-        Watch video demonstrations of PyAnsys Geometry MCP usage.
+        Learn how to use PyAnsys Geometry-MCP by watching video demonstrations.
 
     .. grid-item-card:: Implement a custom tool
         :padding: 2 2 2 2
         :link: examples/custom_tool
         :link-type: doc
 
-        Learn how to implement a custom tool in PyAnsys Geometry MCP.
+        Learn how to implement a custom tool in PyAnsys Geometry-MCP.
 
 .. toctree::
     :hidden:

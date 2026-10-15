@@ -1,4 +1,4 @@
-PyAnsys Geometry MCP
+PyAnsys Geometry-MCP
 ====================
 |pyansys| |python| |pypi| |Apache| |GH-CI| |pre-commit|
 
@@ -29,52 +29,52 @@ PyAnsys Geometry MCP
 Overview
 --------
 
-PyAnsys Geometry MCP is a Python package that provides MCP tools for working with
-PyAnsys Geometry MCP and AI.
+Use this Python package to make PyAnsys Geometry-MCP tools available to AI
+clients through the Model Context Protocol (MCP).
 
-.. warning::
+**Warning: arbitrary code execution**
 
-    This server includes tools (``run_python_code``, ``run_script_file``) that execute
-    arbitrary code as the user running the server. Only connect it to AI clients and
-    content sources you trust. See `SECURITY.md
-    <https://github.com/ansys/pyansys-geometry-mcp/blob/main/SECURITY.md>`_ for details.
+The ``run_python_code`` and ``run_script_file`` tools execute arbitrary code with
+the permissions of the account running the server. Connect the server only to AI
+clients and content sources you trust. For details, see the `SECURITY.md
+<https://github.com/ansys/pyansys-geometry-mcp/blob/main/SECURITY.md>`_ file.
 
 
-Documentation and issues
-------------------------
+Documentation and support
+-------------------------
 
-Documentation for the latest stable release of PyAnsys Geometry MCP is hosted at
-`PyAnsys Geometry MCP documentation <https://geometry-mcp.docs.pyansys.com/version/stable/index.html>`_.
+See the latest stable release documentation in the
+`PyAnsys Geometry-MCP documentation <https://geometry-mcp.docs.pyansys.com/version/stable/index.html>`_.
 
-The documentation has these sections:
+Browse these sections:
 
-- `Getting started <https://geometry-mcp.docs.pyansys.com/version/stable/getting_started/index.html>`_: Learn
-    how to install PyAnsys Geometry MCP in user mode.
-- `User guide <https://geometry-mcp.docs.pyansys.com/version/stable/user_guide/index.html>`_: Understand key
-    concepts for implementing the tools in your workflows.
-- `Contribute <https://geometry-mcp.docs.pyansys.com/version/stable/contributing.html>`_: Learn how to
-    contribute to the PyAnsys Geometry MCP codebase or documentation.
+- `Getting started <https://geometry-mcp.docs.pyansys.com/version/stable/getting_started/index.html>`_: Install the
+  package in user mode.
+- `User guide <https://geometry-mcp.docs.pyansys.com/version/stable/user_guide/index.html>`_: Learn key concepts for
+  using the tools in your workflows.
+- `API reference <https://geometry-mcp.docs.pyansys.com/version/stable/api/index.html>`_: Explore the Python API.
+- `Examples <https://geometry-mcp.docs.pyansys.com/version/stable/examples.html>`_: See example workflows.
+- `Contribute <https://geometry-mcp.docs.pyansys.com/version/stable/contributing.html>`_: Learn how to contribute to
+  the codebase or documentation.
 
-In the upper right corner of the documentation's title bar, there is an option
-for switching from viewing the documentation for the latest stable release
-to viewing the documentation for the development version or previously
-released versions.
+Use the version selector in the upper-right corner of the documentation page
+to switch from viewing the documentation for the latest stable release to viewing
+the documentation for the development version or previously released versions.
 
-On the PyAnsys Geometry MCP `Issues <https://github.com/ansys/pyansys-geometry-mcp/issues>`_
-page, you can create issues to report bugs and request new features. On the
-`PyAnsys Geometry MCP Discussions <https://github.com/ansys/pyansys-geometry-mcp/discussions>`_
-page or the `Discussions <https://discuss.ansys.com/>`_ page on the Ansys Developer portal,
-you can post questions, share ideas, and get community feedback.
+Report bugs or request features on the project's GitHub `Issues
+<https://github.com/ansys/pyansys-geometry-mcp/issues>`_ page. For questions,
+ideas, or community feedback, use GitHub `Discussions
+<https://github.com/ansys/pyansys-geometry-mcp/discussions>`_ or the Ansys
+Developer portal's `Discussions <https://discuss.ansys.com/>`_ page.
 
-If you have general questions about the PyAnsys ecosystem, email
-`pyansys.core@ansys.com <pyansys.core@ansys.com>`_. If your
-question is specific to PyAnsys Geometry MCP, ask your
-question in an issue as described in the previous paragraph.
+For general questions about the PyAnsys ecosystem, email
+`pyansys.core@ansys.com <pyansys.core@ansys.com>`_. For questions about
+PyAnsys Geometry-MCP, use one of the discussion pages above.
 
 License
 -------
 
-PyAnsys Geometry MCP is licensed under the
+The project uses the
 `Apache License 2.0 <https://github.com/ansys/pyansys-geometry-mcp/blob/main/LICENSE>`_.
 
-PyAnsys Geometry MCP makes no commercial claim over Ansys whatsoever.
+PyAnsys Geometry-MCP makes no commercial claims about Ansys.

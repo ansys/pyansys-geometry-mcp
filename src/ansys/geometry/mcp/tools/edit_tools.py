@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP edit tools for PyAnsys Geometry MCP server.
+"""MCP edit tools for PyAnsys Geometry-MCP server.
 
 Tools that modify bodies that already exist: boolean operations and other
 in-place edits.

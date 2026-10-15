@@ -1,7 +1,7 @@
-PyAnsys Geometry MCP |version|
+PyAnsys Geometry-MCP |version|
 ==============================
 
-PyAnsys Geometry MCP provides MCP tools for the PyAnsys ecosystem.
+Use PyAnsys Geometry-MCP to access Model Context Protocol (MCP) tools in the PyAnsys ecosystem.
 
 
 .. grid:: 1 2 2 2
@@ -11,29 +11,28 @@ PyAnsys Geometry MCP provides MCP tools for the PyAnsys ecosystem.
         :link: getting_started/index
         :link-type: doc
 
-        Learn how to install PyAnsys Geometry MCP in user mode.
+        Install PyAnsys Geometry-MCP in user mode.
 
     .. grid-item-card:: User guide :material-regular:`menu_book`
         :padding: 2 2 2 2
         :link: user_guide/index
         :link-type: doc
 
-        Understand key concepts for implementing the tools
-        in your workflows.
+        Learn how to use the tools in your workflows.
 
     .. grid-item-card:: Examples :material-regular:`code`
         :padding: 2 2 2 2
         :link: examples
         :link-type: doc
 
-        Explore example workflows and use cases for PyAnsys Geometry MCP.
+        Explore examples that show how to use tools and implement a custom tool.
 
     .. grid-item-card:: Contribute :material-regular:`group`
         :padding: 2 2 2 2
         :link: contributing
         :link-type: doc
 
-        Learn how to contribute to the PyAnsys Geometry MCP codebase or documentation.
+        Learn how to contribute to the PyAnsys Geometry-MCP codebase or documentation.
 
 
 .. toctree::

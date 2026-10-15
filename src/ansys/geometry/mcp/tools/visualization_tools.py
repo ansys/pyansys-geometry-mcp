@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP visualization tools for PyAnsys Geometry MCP server.
+"""MCP visualization tools for PyAnsys Geometry-MCP server.
 
 Tools that render the active design or read the resulting images.
 
