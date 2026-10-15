@@ -19,7 +19,7 @@
 import argparse
 
 from ansys.common.mcp import PersistentPythonSession, PyAnsysBaseMCP
-from ansys.common.mcp.logging_config import get_logger
+from ansys.common.mcp.logging_config import get_logger, setup_logging
 
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 
@@ -61,8 +61,12 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         if getattr(self, "context", None) is not None:
             return self.context
 
-        setup_commands = ["selection_registry = {}"]
         cli_config = self._cli_config
+        setup_logging(
+            level=cli_config.get("log_level", "INFO"),
+            log_file=cli_config.get("log_file"),
+        )
+        setup_commands = ["selection_registry = {}"]
 
         return PyAnsysGeometryContext(
             python_session=PersistentPythonSession(
@@ -77,6 +81,8 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             uds_dir=cli_config.get("uds_dir"),
             uds_id=cli_config.get("uds_id"),
             connect_to_existing_service=cli_config.get("connect_to_existing_service", False),
+            log_level=cli_config.get("log_level", "INFO"),
+            log_file=cli_config.get("log_file"),
         )
 
     def _add_cli_arguments(self, parser: argparse.ArgumentParser) -> None:
@@ -147,6 +153,17 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
                 "service."
             ),
         )
+        parser.add_argument(
+            "--log-level",
+            default="INFO",
+            choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+            help="Log level for the geometry service (default: INFO).",
+        )
+        parser.add_argument(
+            "--log-file",
+            default=None,
+            help="Log file for the geometry service (default: None).",
+        )
 
     def _configure_from_cli(self, args: argparse.Namespace) -> None:
         """Stash the parsed geometry-service arguments for create_context to read."""
@@ -159,6 +176,8 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             "uds_dir": args.uds_dir,
             "uds_id": args.uds_id,
             "connect_to_existing_service": args.connect_to_existing_service,
+            "log_level": args.log_level,
+            "log_file": args.log_file,
         }
 
     def product_startup(self):
