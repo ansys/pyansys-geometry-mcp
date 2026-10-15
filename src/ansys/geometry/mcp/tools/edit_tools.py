@@ -62,7 +62,7 @@ def boolean_operation(
     """Perform a Boolean subtract, union, or intersection on two bodies.
 
     The target body survives the operation and the tool body is consumed.
-    
+
     - For ``subtract``, the tool body's volume is removed from the target.
     - For ``unite``, the tool is merged into the target.
     - For ``intersect``, the target is reduced to the volume common to both bodies.
