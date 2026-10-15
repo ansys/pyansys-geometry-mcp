@@ -26,3 +26,9 @@ Runtime requirements
 .. TODO: Add product-specific runtime requirements (such as Docker and license
    server) here.
 
+.. toctree::
+   :hidden:
+    :maxdepth: 2
+
+    supported_apis
+    copilot_gemini

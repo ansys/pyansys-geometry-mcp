@@ -63,8 +63,8 @@ the documentation for the development version or previously released versions.
 
 Report bugs or request features on the project's GitHub `Issues
 <https://github.com/ansys/pyansys-geometry-mcp/issues>`_ page. For questions,
-ideas, or community feedback, use GitHub `Discussions
-<https://github.com/ansys/pyansys-geometry-mcp/discussions>`_ or the Ansys
+ideas, or community feedback, use the project's GitHub `Discussions
+<https://github.com/ansys/pyansys-geometry-mcp/discussions>`_ page or the Ansys
 Developer portal's `Discussions <https://discuss.ansys.com/>`_ page.
 
 For general questions about the PyAnsys ecosystem, email
