@@ -46,6 +46,7 @@ def test_visualize_saves_image(ctx, tmp_path_factory: pytest.TempPathFactory):
 
     # Test without an explicit path
     app_context = MagicMock()
+    app_context.command_history = []
     design = app_context.product_instance.get_active_design.return_value
     mock_ctx = MagicMock()
     with (
@@ -56,12 +57,23 @@ def test_visualize_saves_image(ctx, tmp_path_factory: pytest.TempPathFactory):
         patch("ansys.geometry.mcp.tools.visualization_tools.time.time", return_value=123),
     ):
         result = visualize(mock_ctx, save=True)
+        design.plot.assert_called_once_with(
+            screenshot="design_3d_scene_123.png",
+            use_service_colors=False,
+        )
+        design.plot.reset_mock()
+        result_without_colors = visualize(mock_ctx, path="scene.png", use_service_colors=False)
 
     design.plot.assert_called_once_with(
-        screenshot="design_3d_scene_123.png",
-        use_service_colors=True,
+        screenshot="scene.png",
+        use_service_colors=False,
     )
     assert "3D scene image saved: design_3d_scene_123.png" == result
+    assert "3D scene image saved: scene.png" == result_without_colors
+    assert app_context.command_history == [
+        "design.plot(screenshot='design_3d_scene_123.png', use_service_colors=False)",
+        "design.plot(screenshot='scene.png', use_service_colors=False)",
+    ]
 
 
 def test_visualize_not_connected():

@@ -82,8 +82,16 @@ def read_image_in_base64(ctx: Context, image_path: str) -> dict[str, str]:
 
 
 @app.tool()
-def visualize(ctx: Context, path: str | None = None, save: bool = False) -> str:
+def visualize(
+    ctx: Context,
+    path: str | None = None,
+    save: bool = False,
+    use_service_colors: bool = False,
+) -> str:
     """Open a 3D view of the active design or save an image when requested.
+
+    Service colors are disabled by default. Enable them when the design's colors
+    convey essential information or the user requests a full-color plot.
 
     Parameters
     ----------
@@ -93,6 +101,9 @@ def visualize(ctx: Context, path: str | None = None, save: bool = False) -> str:
         Path to save the image. Providing a path saves the image there.
     save : bool, optional
         Save an image using a timestamped filename if no path is provided. Default False.
+    use_service_colors : bool, optional
+        Plot using service colors. Default False. Enable when colors are essential
+        or a full-color plot is requested.
 
     Returns
     -------
@@ -109,14 +120,16 @@ def visualize(ctx: Context, path: str | None = None, save: bool = False) -> str:
         design = app_context.product_instance.get_active_design()
         if path or save:
             screenshot_path = path or f"design_3d_scene_{int(time.time())}.png"
-            _ = design.plot(screenshot=screenshot_path, use_service_colors=True)  # noqa: F841
+            _ = design.plot(screenshot=screenshot_path, use_service_colors=use_service_colors)
             app_context.command_history.append(
-                f"design.plot(screenshot={screenshot_path!r}, use_service_colors=True)"
+                f"design.plot(screenshot={screenshot_path!r}, "
+                f"use_service_colors={use_service_colors})"
             )
             logger.info(f"visualize called, saved image to {screenshot_path}")
             return f"3D scene image saved: {screenshot_path}"
 
-        _ = design.plot(use_service_colors=True)  # noqa: F841
+        _ = design.plot(use_service_colors=use_service_colors)
+        app_context.command_history.append(f"design.plot(use_service_colors={use_service_colors})")
         logger.info("visualize called, opened 3D scene window")
         return "3D scene window opened."
     except Exception as e:
