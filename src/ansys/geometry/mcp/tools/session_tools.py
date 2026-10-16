@@ -486,7 +486,7 @@ def run_script_file(
     Side effects: the script may create or modify the active design on the backend. Those
     changes are not mirrored into this server's in-process design state or command
     history, so after a script that edits geometry, refresh your view with
-    ``get_design_info``, ``list_entities``, or ``get_screenshot`` before relying on
+    ``get_design_info``, ``list_entities``, or ``visualize`` before relying on
     previously reported names, IDs, or counts.
 
     Parameters
