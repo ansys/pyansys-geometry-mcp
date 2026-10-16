@@ -59,7 +59,12 @@ logger = get_logger(__name__)
 def get_session_script(ctx: Context) -> str:
     """Get recorded session commands as a reusable PyAnsys Geometry Python script.
 
-    The tool returns a formatted Python script containing the recorded backend connection setup and commands in execution order, not a command list or Markdown. To replay the script, install PyAnsys Geometry (``ansys-geometry-core``) and ensure access to the recorded backend and any referenced files. Replaying repeats the recorded geometry changes. The script includes only operations stored in command history. It excludes backend script-file operations
+    The tool returns a formatted Python script containing the recorded backend connection setup
+    and commands in execution order, not a command list or Markdown. To replay the script,
+    install PyAnsys Geometry (``ansys-geometry-core``) and ensure access to the recorded backend
+    and any referenced files. Replaying repeats the recorded geometry changes.
+    The script includes only operations stored in command history. It excludes
+    backend script-file operations
 
     Parameters
     ----------
@@ -468,30 +473,31 @@ def run_script_file(
     (``instance``, ``design``, ...) in a persistent session, while this tool runs a
     different language surface entirely. To load a CAD/geometry file (``.scdocx``,
     ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``.
-    Never write a temporary script file just to run a few statements. Choose ``run_python_code`` instead.
+    Never write a temporary script file just to run a few statements. Choose ``run_python_code``
+    instead.
 
     **Script language**
-    
+
     The file must be written against the Discovery/SpaceClaim scripting
     API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``,
     ``instance``, ``design``) are NOT available inside the script, and script variables do not leak
     into the ``run_python_code`` session (or vice versa).
 
     **Passing arguments**
-    
+
     ``args`` values must all be strings. The script receives them as a
     dictionary of strings named ``argsDict`` and is responsible for converting them, for
     example ``radius = MM(int(argsDict["radius"]))``. Pass ``{"radius": "1"}``, never
     ``{"radius": 1}``. Omit ``args`` when the script takes no arguments.
 
     **Returning values**
-    
+
     To get values back, the script must assign a dictionary named
     ``result``, for example ``result = {"numBodies": numBodies}``. A script that does not
     define ``result`` returns an empty dictionary even though it ran successfully.
 
     **Side effects**
-    
+
     The script might create or modify the active design on the backend. Those
     changes are not mirrored into this server's in-process design state or command
     history, so after a script that edits geometry, refresh your view with
@@ -514,7 +520,7 @@ def run_script_file(
     str | dict[str, str]
         On success, the script's ``result`` dictionary with string values (empty if the
         script defined no ``result``) is returned. On failure, a plain string message is returned.
-        
+
         Check the returned type. A ``str`` always means the script did not run, and the
         message should be reported to the user rather than retried unchanged.
 

@@ -463,9 +463,11 @@ def select_entities(
     Returns
     -------
     list of str | str
-        Body names or face/edge IDs for every match. If no entities match, an empty list is returned.
-        
-        If the selection handle is invalid, the criterion does not apply to the entity type, or required arguments are missing, a string error message is returned.
+        Body names or face/edge IDs for every match. If no entities match, an empty list
+        is returned.
+
+        If the selection handle is invalid, the criterion does not apply to the entity type,
+        or required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -671,8 +673,9 @@ def filter_entities(
     list of str | str
         Body names or face/edge IDs that survive the filter. If no entities survive
         the filter, an empty list is returned.
-        
-        If the selection handle is invalid, the criterion does not apply to the entity type, or required arguments are missing, a string error message is returned.
+
+        If the selection handle is invalid, the criterion does not apply to the entity type, or
+        required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -862,9 +865,11 @@ def order_entities(
     Returns
     -------
     list of str | str
-        Body names or face/edge IDs for every match. If no entities match, an empty list is returned.
+        Body names or face/edge IDs for every match. If no entities match, an empty list
+        is returned.
 
-        If the selection handle is invalid, the criterion does not apply to the entity type, or required arguments are missing, a string error message is returned.
+        If the selection handle is invalid, the criterion does not apply to the entity type, or
+        required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -968,7 +973,7 @@ def group_entities(
     -------
     list of list of str | str
         Each inner list holds the body names or face/edge IDs of one group.
-        
+
         If the selection handle is invalid or the criterion does not apply
         to the entity type, a string error message is returned.
 
@@ -1084,7 +1089,7 @@ def extend_selection(
     -------
     list of str | str
         Body names or face/edge IDs in the extended selection.
-        
+
         If the selection handle is invalid, the criterion does not apply to the entity type,
         or required arguments are missing, a string error message is returned.
 
