@@ -1,0 +1,18 @@
+{
+	"mcpServers": {
+		"pyansys-geometry-mcp": {
+			"type": "local",
+			"command": ".\\.venv\\Scripts\\pyansys-geometry-mcp.exe",
+			"args": [
+				"--transport-mode",
+				"insecure"
+			],
+			"tools": [
+				"*"
+			],
+			"env": {
+				"ANSRV_GEO_LICENSE_SERVER": "1055@host.docker.internal"
+			}
+		}
+	}
+}

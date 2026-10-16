@@ -82,67 +82,53 @@ def read_image_in_base64(ctx: Context, image_path: str) -> dict[str, str]:
 
 
 @app.tool()
-def get_screenshot(ctx: Context, path: str | None = None) -> str:
-    """Get a 3D scene screenshot of the current active design.
+def visualize(
+    ctx: Context,
+    path: str | None = None,
+    save: bool = False,
+    use_service_colors: bool = False,
+) -> str:
+    """Open a 3D view of the active design or save an image when requested.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
     path : str, default: None
-        Path to save the 3D scene screenshot. If no path is provided, a default path is used.
+        Path to save the image to. Providing a path saves the image there.
+    save : bool, default: False
+        Whether to save an image using a timestamped filename if no path is provided.
+    use_service_colors : bool, default: False
+        Whether to plot using service colors. Set to ``True`` when the design's colors
+        convey essential information or the user requests a full-color plot.
 
     Returns
     -------
     str
-        Path to the saved 3D scene screenshot, or an error message if the operation fails.
+        Result message, or an error message if the operation fails.
 
     """
     app_context = get_geometry_ctx(ctx)
 
     if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot get 3D scene."
-
-    # Path can be provided by user or default to current working directory
-    # with a timestamped filename
-    path = path or f"design_3d_scene_{int(time.time())}.png"
+        return "Product backend is not connected. Cannot visualize the design."
 
     try:
         design = app_context.product_instance.get_active_design()
-        _ = design.plot(screenshot=path, use_service_colors=True)  # noqa: F841
+        if path or save:
+            screenshot_path = path or f"design_3d_scene_{int(time.time())}.png"
+            _ = design.plot(screenshot=screenshot_path, use_service_colors=use_service_colors)
+            app_context.command_history.append(
+                f"design.plot(screenshot={screenshot_path!r}, "
+                f"use_service_colors={use_service_colors})"
+            )
+            logger.info(f"visualize called, saved image to {screenshot_path}")
+            return f"3D scene image saved: {screenshot_path}"
 
-        # Perform transcript
-        app_context.command_history.append(
-            f"design.plot(screenshot={path!r}, use_service_colors=True)"
-        )
-
-        logger.info(f"get_design_3d_scene called, saved to {path}")
-        return f"3D scene screenshot saved: {path}"
+        _ = design.plot(use_service_colors=use_service_colors)
+        app_context.command_history.append(f"design.plot(use_service_colors={use_service_colors})")
+        logger.info("visualize called, opened 3D scene window")
+        return "3D scene window opened."
     except Exception as e:
-        logger.error(f"get_design_3d_scene failed: {e}")
-        return f"Error getting 3D scene screenshot: {e}"
-
-
-@app.tool()
-def get_design_3d_scene(ctx: Context) -> None:
-    """Get a 3D scene window of the current active design.
-
-    Parameters
-    ----------
-    ctx : Context
-        MCP request context (injected automatically).
-
-    """
-    app_context = get_geometry_ctx(ctx)
-
-    if app_context.product_instance is None:
-        return "Product backend is not connected. Cannot get 3D scene."
-
-    try:
-        design = app_context.product_instance.get_active_design()
-        _ = design.plot(use_service_colors=True)  # noqa: F841
-
-        return f"3D scene window opened."
-    except Exception as e:
-        logger.error(f"get_design_3d_scene failed: {e}")
-        return f"Error getting 3D scene window: {e}"
+        logger.error(f"visualize failed: {e}")
+        return f"Error visualizing design: {e}"
