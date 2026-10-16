@@ -42,7 +42,6 @@ from ansys.geometry.mcp.tools.session_tools import (
     run_script_file,
 )
 from ansys.geometry.mcp.tools.visualization_tools import (
-    get_design_3d_scene,
-    get_screenshot,
     read_image_in_base64,
+    visualize,
 )
