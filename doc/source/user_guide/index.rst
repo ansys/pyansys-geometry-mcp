@@ -7,8 +7,8 @@ User guide
 Use this guide to:
 
 - Learn what PyAnsys Geometry-MCP does and review its run-time requirements.
-- Review the supported MCP tools.
-- Connect the server to GitHub Copilot or Gemini.
+- Review the supported APIs (MCP tools).
+- Connect the server to GitHub Copilot and Gemini.
 
 What PyAnsys Geometry-MCP does
 ------------------------------
@@ -23,10 +23,10 @@ Runtime requirements
 Meet these requirements:
 
 - Use Python 3.12 or later.
-- Install PyAnsys Geometry-MCP. The package installs ``ansys-geometry-core``
-  as a dependency.
+- Install PyAnsys Geometry-MCP. The package installs PyAnsys Geometry
+  (``ansys-geometry-core``) as a dependency.
 - Make an Ansys Geometry backend available. The supported launch modes are
-  Docker, Ansys Geometry Core Service, and Ansys Discovery. You can also
+  Docker, the Ansys Geometry Core Service, and Ansys Discovery. You can also
   configure the server to connect to an existing backend service. Backend
   installation, platform, and licensing requirements depend on the selected
   mode.

@@ -1,7 +1,7 @@
 Supported APIs
 ==============
 
-This page lists the MCP tools registered by PyAnsys Geometry-MCP.
+This page lists the APIs (MCP tools) registered by PyAnsys Geometry-MCP.
 
 Design and session
 ------------------
@@ -84,23 +84,23 @@ Visualization
 Recommended workflows
 ---------------------
 
-Diagnosing and repairing geometry
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Diagnose and repair geometry
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Use ``inspect_geometry`` when the problem is unknown. If you already know the
 problem, call ``repair_geometry`` directly. Both tools can be scoped to named
 bodies, a named selection, or a selection builder.
 
-Selecting entities
-^^^^^^^^^^^^^^^^^^^
+Select entities
+^^^^^^^^^^^^^^^
 
 Create a selection builder, add entities with ``select_entities``, and refine
 the result with ``filter_entities``. Use ``order_entities`` or
-``group_entities`` to organize results, and ``create_named_selection`` to save
+``group_entities`` to organize results. Use ``create_named_selection`` to save
 a reusable selection.
 
-Running other operations
-^^^^^^^^^^^^^^^^^^^^^^^^
+Run other operations
+^^^^^^^^^^^^^^^^^^^^
 
 Use a dedicated MCP tool when one matches the requested operation. Otherwise,
 use ``run_python_code`` for PyAnsys Geometry operations or ``run_script_file``

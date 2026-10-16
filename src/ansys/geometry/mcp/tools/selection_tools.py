@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Selection MCP tools for PyAnsys Geometry-MCP.
+"""MCP selection tools for PyAnsys Geometry-MCP.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
-The ``ctx`` parameter provides access to the application context (and thus
+The ``ctx`` parameter provides access to the app context (and thus
 to the live product instance and command history).
 
 The query/filter/order/group/extend tools all take an ``entity_type`` of
@@ -229,7 +229,7 @@ def list_entities(
 ) -> str:
     """List the entities of a given type in the active design.
 
-    This is the discovery tool. Uuse it to find the exact body names, component
+    This is the discovery tool. Use it to find the exact body names, component
     names, face IDs, and edge IDs that every other tool expects as input.
 
     Behavior per ``entity_type``:
@@ -255,8 +255,8 @@ def list_entities(
         Kind of entity to select. Options are ``"body"``, ``"component"``,
         ``"face"``, and ``"edge"``.
     body_name : str, default: None
-        Body to inspect. Required for ``"face"`` and ``"edge"``, ignored
-        otherwise. List the bodies first to discover valid names.
+        Body to inspect. Required for ``"face"`` and ``"edge"``. This parameter
+        is ignored otherwise. List the bodies first to discover valid names.
     component_name : str, default: None
         Restrict a ``"body"`` listing to this component and its children.
         This parameter is ignored for the other entity types.
@@ -316,12 +316,12 @@ def create_selection_builder(ctx: Context) -> str:
     steps. Start with ``select_entities``, refine with ``filter_entities`` or add related
     entities with ``extend_selection``, and use ``order_entities`` or ``group_entities``
     when ranking or grouping is useful. Save the final set with ``create_named_selection``.
-    If the requested entities are already known by name or ID and only need a label,
-    ``create_named_selection`` can be called directly without a builder.
+    If the requested entities are already known by name or ID and only need a label, call
+    ``create_named_selection`` directly without a builder.
 
-    Call this only to start a brand-new selection. If a selection builder already
+    Call this tool only to start a brand-new selection. If a selection builder already
     exists from earlier in this conversation, reuse its handle in the other
-    selection tools instead of calling this again.
+    selection tools instead of calling it again.
 
     Parameters
     ----------
@@ -392,7 +392,7 @@ def select_entities(
     workflow. The result replaces the builder's current selection for that entity type.
     Follow with ``filter_entities`` to narrow the set, ``extend_selection`` to add
     related entities, or ``create_named_selection`` to save the final set. Pass one
-    ``criteria`` value with its corresponding argument(s); available criteria depend
+    ``criteria`` value with its one or more corresponding arguments. Available criteria depend
     on ``entity_type``.
 
     Criteria by ``entity_type``:
@@ -419,9 +419,9 @@ def select_entities(
         Selection rule to apply:
 
         ``"all"``
-            Every entity of that type in the design. No extra arguments needed.
+            Every entity of that type in the design. No extra arguments are needed.
         ``"visible"``
-            All currently visible entities. No extra arguments needed.
+            All currently visible entities. No extra arguments are needed.
         ``"solid"``
             Solid (volumetric) bodies. Bodies only.
         ``"surface"``
@@ -463,9 +463,9 @@ def select_entities(
     Returns
     -------
     list of str | str
-        Body names, or face/edge IDs, for every match; an empty list if none match.
-        Returns a string error message if the selection handle is invalid, the
-        criterion does not apply to the entity type, or required arguments are missing.
+        Body names or face/edge IDs for every match. If no entities match, an empty list is returned.
+        
+        If the selection handle is invalid, the criterion does not apply to the entity type, or required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -597,9 +597,9 @@ def filter_entities(
     """Narrow the entities already held in a selection builder to those matching a condition.
 
     Unlike ``select_entities``, which queries the whole design, this tool only keeps
-    a subset of the current selection; it does not search the design for new entities.
+    a subset of the current selection. It does not search the design for new entities.
     Populate the builder with ``select_entities`` or another selection operation first.
-    Use ``extend_selection`` when the request is to add related entities, and
+    Use ``extend_selection`` when the request is to add related entities. Use
     ``create_named_selection`` to save the resulting set.
 
     Criteria by ``entity_type``:
@@ -626,10 +626,10 @@ def filter_entities(
 
         ``"volume"``, ``"surface_area"``, ``"area"``, ``"perimeter"``, ``"length"``
             Keep entities whose measurement falls in [``min_value``, ``max_value``],
-            or the single largest/smallest when ``find_max``/``find_min`` is True.
+            or the single largest/smallest when ``find_max``/``find_min`` is ``True``.
         ``"face_count"``, ``"edge_count"``, ``"loop_count"``
             Keep entities with a count in [``min_value``, ``max_value``], or the
-            largest/smallest when ``find_max``/``find_min`` is True.
+            largest/smallest when ``find_max``/``find_min`` is ``True``.
         ``"number_surfaces"``
             Keep bodies by how many surfaces of ``surface_type`` they contain.
             Requires ``surface_type``.
@@ -669,9 +669,10 @@ def filter_entities(
     Returns
     -------
     list of str | str
-        Body names, or face/edge IDs, that survive the filter; an empty list if none do.
-        Returns a string error message if the selection handle is invalid, the
-        criterion does not apply to the entity type, or required arguments are missing.
+        Body names or face/edge IDs that survive the filter. If no entities survive
+        the filter, an empty list is returned.
+        
+        If the selection handle is invalid, the criterion does not apply to the entity type, or required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -831,7 +832,7 @@ def order_entities(
 ) -> list[str] | str:
     """Order the entities in a selection builder by a numeric property (ascending).
 
-    This ranks the entities already in the builder; it does not discover, add, or
+    This ranks the entities already in the builder. It does not discover, add, or
     remove entities. Use ``filter_entities`` to narrow the set, ``extend_selection``
     to add related entities, or ``group_entities`` to partition it by a shared property.
 
@@ -861,9 +862,9 @@ def order_entities(
     Returns
     -------
     list of str | str
-        Body names, or face/edge IDs, in ascending order of the property.
-        Returns a string error message if the selection handle is invalid or the
-        criterion does not apply to the entity type.
+        Body names or face/edge IDs for every match. If no entities match, an empty list is returned.
+
+        If the selection handle is invalid, the criterion does not apply to the entity type, or required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -938,7 +939,7 @@ def group_entities(
     """Group the entities in a selection builder by a shared property.
 
     Each returned group contains entities that are equal in the chosen property.
-    Grouping applies only to entities already in the builder; it does not search the
+    Grouping applies only to entities already in the builder. It does not search the
     design for additional matches. Use ``filter_entities`` to narrow the selection or
     ``extend_selection`` to add related entities.
 
@@ -966,9 +967,10 @@ def group_entities(
     Returns
     -------
     list of list of str | str
-        Each inner list holds the body names, or face/edge IDs, of one group.
-        Returns a string error message if the selection handle is invalid or the
-        criterion does not apply to the entity type.
+        Each inner list holds the body names or face/edge IDs of one group.
+        
+        If the selection handle is invalid or the criterion does not apply
+        to the entity type, a string error message is returned.
 
     Examples
     --------
@@ -1081,9 +1083,10 @@ def extend_selection(
     Returns
     -------
     list of str | str
-        Body names, or face/edge IDs, in the extended selection.
-        Returns a string error message if the selection handle is invalid, the
-        criterion does not apply to the entity type, or required arguments are missing.
+        Body names or face/edge IDs in the extended selection.
+        
+        If the selection handle is invalid, the criterion does not apply to the entity type,
+        or required arguments are missing, a string error message is returned.
 
     Examples
     --------
@@ -1159,20 +1162,20 @@ def create_named_selection(
     """Create a named selection containing geometry entities.
 
     A named selection is a labelled group of entities that can later be
-    referenced by name (e.g. for meshing or boundary conditions). Use this tool
-    to save the final result of a selection workflow, or call it directly when the
+    referenced by name (for example, for meshing or boundary conditions). Use this tool
+    to save the final result of a selection workflow or call it directly when the
     requested entities are already known by name or ID. It stores the supplied
-    entities; it does not discover or refine them. At least one of
+    entities. It does not discover or refine them. At least one of
     ``selection_handle`` or an entity list must be provided.
 
     Typical workflows:
 
-    - ``list_entities`` with ``entity_type="body"`` to find body names, then
-      ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and
+    - Use ``list_entities`` with ``entity_type="body"`` to find body names. Then
+      use ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and
       edge IDs to pass here.
     - Build a selection with ``create_selection_builder`` followed by
       ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
-      ``extend_selection``, then pass that builder's ``selection_handle`` here to
+      ``extend_selection``. Then pass that builder's ``selection_handle`` here to
       save its currently selected bodies, faces, and edges as a named selection
       (for example, "save the bodies/faces I selected as ...").
 

@@ -54,8 +54,8 @@ Browse these sections:
   tools in your workflows.
 - `API reference <https://geometry-mcp.docs.pyansys.com/version/stable/api/index.html>`_: Access complete reference
   documentation for all tools.
-- `Examples <https://geometry-mcp.docs.pyansys.com/version/stable/examples/index.html>`_: Explore examples showing
-  how to use PyAnsys Geometry-MCP and implement a custom tool.
+- `Examples <https://geometry-mcp.docs.pyansys.com/version/stable/examples/index.html>`_: Explore an example showing
+  how to implement a custom tool.
 - `Contribute <https://geometry-mcp.docs.pyansys.com/version/stable/contributing.html>`_: Learn how to contribute to
   the codebase or documentation.
 

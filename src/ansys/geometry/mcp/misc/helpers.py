@@ -39,7 +39,7 @@ def connect_to_modeler_in_persistent_python(
     Parameters
     ----------
     ctx : Context
-        The MCP context containing server session and application context.
+        MCP context containing server session and app context.
 
     Returns
     -------
@@ -103,13 +103,13 @@ def refresh_design_in_persistent_python(ctx: Context) -> None:
 
     The persistent session runs in its own process with its own ``Modeler`` client,
     so the design it holds has to be re-read whenever the active design changes.
-    Does nothing when the session is not connected yet; the connection step
+    This function does nothing when the session is not connected yet. The connection step
     refreshes the design itself.
 
     Parameters
     ----------
     ctx : Context
-        The MCP context containing server session and application context.
+        MCP context containing server session and app context.
 
     """
     if ctx.request_context is None:

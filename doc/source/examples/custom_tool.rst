@@ -3,7 +3,7 @@
 Implement a custom tool
 =======================
 
-Learn how to implement a custom tool for PyAnsys Geometry-MCP.
+Learn how to implement a custom tool in PyAnsys Geometry-MCP.
 
 Tool overview
 -------------
@@ -36,9 +36,9 @@ Use this structure to implement your tool:
         ctx : Context
             MCP request context (injected automatically).
         param_1 : str
-            The first input parameter.
+            First input parameter.
         param_2 : int
-            The second input parameter.
+            Second input parameter.
 
         Returns
         -------

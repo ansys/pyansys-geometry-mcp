@@ -16,12 +16,13 @@
 
 """MCP repair tools for PyAnsys Geometry-MCP.
 
-Tools that survey and clean up imported or otherwise defective geometry:
-``inspect_geometry`` reports issues without touching the model, and
-``repair_geometry`` applies one repair operation to a scope of bodies.
+Tools that survey and clean up imported or otherwise defective geometry.
+
+- ``inspect_geometry`` reports issues without touching the model.
+- ``repair_geometry`` applies one repair operation to a scope of bodies.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
-The ``ctx`` parameter provides access to the application context (and thus
+The ``ctx`` parameter provides access to the app context (and thus
 to the live product instance and command history).
 
 Notes
@@ -111,15 +112,15 @@ def inspect_geometry(
 ) -> str:
     """Report geometry issues (defects) found in the design, without modifying it.
 
-    This is the read-only diagnosis step, for when the defect is not yet known.
-    Run it to find out what is wrong with imported or defective geometry. It
-    does not change the model, so it is always safe to call. It is also the way
+    This is the read-only diagnosis step for when the defect is not yet known.
+    Run it to find out what is wrong with an imported or defective geometry. Because it
+    does not change the model, it is always safe to call. It is also the way
     to confirm what a repair actually changed.
 
     If the user has already said what is wrong ("fix the short edges under
     0.5 mm"), skip this tool and call ``repair_geometry`` directly.
 
-    By default every body in the active design is inspected. Narrow the scope
+    By default, every body in the active design is inspected. Narrow the scope
     with exactly one of ``body_names``, ``named_selection``, or
     ``selection_handle``.
 
@@ -214,8 +215,8 @@ def repair_geometry(
         Run the backend's blanket repair, letting it inspect and fix everything
         it can across the scope. Use it when the user explicitly asks for an
         automatic whole-design repair. An undiagnosed problem should go to
-        ``inspect_geometry`` first. Accepts no tuning parameters, and supplying
-        one (including ``comprehensive_result``) is rejected.
+        ``inspect_geometry`` first. Accepts no tuning parameters. If one
+        is supplied, including ``comprehensive_result``, it is rejected.
     - ``"short_edges"``
         Remove edges shorter than ``length``. Accepts ``length``.
     - ``"extra_edges"``
@@ -269,10 +270,10 @@ def repair_geometry(
     length : float, default: None
         Maximum edge length in meters for ``"short_edges"`` and ``"split_edges"``.
     angle : float, default: None
-        Minimum angle between edges in degrees for ``"split_edges"``; minimum
-        angle between faces in degrees, for ``"missing_faces"``.
+        Minimum angle between edges in degrees for ``"split_edges"``. Minimum
+        angle between faces in degrees for ``"missing_faces"``.
     max_distance : float, default: None
-        Maximum gap between faces to stitch, in meters, for ``"stitch_faces"``.
+        Maximum gap between faces to stitch in meters for ``"stitch_faces"``.
     allow_multiple_bodies : bool, default: None
         Whether ``"stitch_faces"`` may leave more than one resulting body.
     maintain_components : bool, default: None
@@ -285,11 +286,12 @@ def repair_geometry(
         Maximum face area in square meters for ``"small_faces"``.
     width : float, default: None
         Maximum face width in meters for ``"small_faces"``.
-    comprehensive_result : bool, default: None
-        Fix each problem area individually. This is expensive. It costs one backend
-        round trip per problem area. Leave off unless the user asks for it.
-        Not supported by ``operation="all"``, ``"missing_faces"``, or
-        ``"small_faces"``. The latter two always fix each detected region.
+    comprehensive_result : bool, default: False
+        Whether to fix each problem area individually. This is expensive. It costs one
+        backend round trip per problem area. Leave it set to ``False`` unless the user
+        asks for it. This parameter is not supported by ``operation="all"``,
+        ``"missing_faces"``, or ``"small_faces"``. The latter two always fix each
+        detected region.
 
     Returns
     -------

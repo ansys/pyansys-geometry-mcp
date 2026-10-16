@@ -17,7 +17,7 @@
 """MCP session tools for PyAnsys Geometry-MCP.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
-The ``ctx`` parameter provides access to the application context (and thus
+The ``ctx`` parameter provides access to the app context (and thus
 to the live product instance and command history).
 
 How to add a tool
@@ -59,12 +59,7 @@ logger = get_logger(__name__)
 def get_session_script(ctx: Context) -> str:
     """Get recorded session commands as a reusable PyAnsys Geometry Python script.
 
-    Includes recorded backend connection setup and commands in execution order.
-    Returns Python source, not a list of commands or Markdown. Replay requires
-    ansys-geometry-core and access to the recorded backend and referenced files.
-    Replaying the script repeats its recorded geometry changes. Only operations
-    recorded in command history are included. Backend script-file operations are not
-    included.
+    The tool returns a formatted Python script containing the recorded backend connection setup and commands in execution order, not a command list or Markdown. To replay the script, install PyAnsys Geometry (``ansys-geometry-core``) and ensure access to the recorded backend and any referenced files. Replaying repeats the recorded geometry changes. The script includes only operations stored in command history. It excludes backend script-file operations
 
     Parameters
     ----------
@@ -123,7 +118,7 @@ def get_product_status(ctx: Context) -> str:
 async def run_python_code(
     ctx: Context, code: str, timeout: int = 300, no_output_timeout: int = 300
 ) -> str:
-    """Perform ANY geometry/CAD operation that has no dedicated MCP tool.
+    """Perform any geometry/CAD operation that has no dedicated MCP tool.
 
     Run PyAnsys Geometry API code to perform the operation.
 
@@ -153,10 +148,10 @@ async def run_python_code(
     code : str
         PyAnsys Geometry Python code to execute in the persistent session.
     timeout : int, default: 300
-        Maximum time in seconds the code may run before it is abandoned. Default 300.
+        Maximum time in seconds the code may run before it is abandoned.
     no_output_timeout : int, default: 300
         Maximum time in seconds the code may run without producing output before it
-        is abandoned. Default 300.
+        is abandoned.
 
     Returns
     -------
@@ -468,28 +463,36 @@ def run_script_file(
     already exists on disk (for example "run C:/scripts/make_flange.py", "execute my
     SpaceClaim script", or "replay this .scscript").
 
-    When NOT to use this tool: to execute Python code you are writing yourself, use
-    ``run_python_code`` instead -- that tool runs the PyAnsys Geometry API
+    When NOT to use this tool: to execute Python code you are writing yourself. Use
+    ``run_python_code`` instead. That tool runs the PyAnsys Geometry API
     (``instance``, ``design``, ...) in a persistent session, while this tool runs a
     different language surface entirely. To load a CAD/geometry file (``.scdocx``,
-    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``. Never write a
-    temporary script file just to run a few statements. Choose ``run_python_code`` instead.
+    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``.
+    Never write a temporary script file just to run a few statements. Choose ``run_python_code`` instead.
 
-    Script language: the file must be written against the Discovery/SpaceClaim scripting
+    **Script language**
+    
+    The file must be written against the Discovery/SpaceClaim scripting
     API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``,
     ``instance``, ``design``) are NOT available inside the script, and script variables do not leak
     into the ``run_python_code`` session (or vice versa).
 
-    Passing arguments: ``args`` values must all be strings. The script receives them as a
+    **Passing arguments**
+    
+    ``args`` values must all be strings. The script receives them as a
     dictionary of strings named ``argsDict`` and is responsible for converting them, for
     example ``radius = MM(int(argsDict["radius"]))``. Pass ``{"radius": "1"}``, never
     ``{"radius": 1}``. Omit ``args`` when the script takes no arguments.
 
-    Returning values: to get values back, the script must assign a dictionary named
+    **Returning values**
+    
+    To get values back, the script must assign a dictionary named
     ``result``, for example ``result = {"numBodies": numBodies}``. A script that does not
     define ``result`` returns an empty dictionary even though it ran successfully.
 
-    Side effects: the script may create or modify the active design on the backend. Those
+    **Side effects**
+    
+    The script might create or modify the active design on the backend. Those
     changes are not mirrored into this server's in-process design state or command
     history, so after a script that edits geometry, refresh your view with
     ``get_design_info``, ``list_entities``, or ``get_screenshot`` before relying on
@@ -500,18 +503,19 @@ def run_script_file(
     ctx : Context
         MCP request context (injected automatically).
     file_path : str
-        Path to the script file, including its extension. Must be readable by the
-        machine running this MCP server. Use an absolute path when possible, since
-        relative paths are resolved against the server's working directory.
+        Path to the script file, including its extension. The path must be readable
+        by the machine running this MCP server. Use an absolute path when possible,
+        since relative paths are resolved against the server's working directory.
     args : dict[str, str], default: None
-        String-valued arguments exposed to the script as ``argsDict``. Default ``None``.
+        String-valued arguments exposed to the script as ``argsDict``.
 
     Returns
     -------
     str | dict[str, str]
         On success, the script's ``result`` dictionary with string values (empty if the
-        script defined no ``result``). On failure, a plain string message.
-        Check the returned type: a ``str`` always means the script did not run, and the
+        script defined no ``result``) is returned. On failure, a plain string message is returned.
+        
+        Check the returned type. A ``str`` always means the script did not run, and the
         message should be reported to the user rather than retried unchanged.
 
     """

@@ -31,7 +31,7 @@ Client setup (Copilot and Gemini)
 ---------------------------------
 
 After installing the package, configure your MCP client to start the server
-using the following command:
+with this command:
 
 .. code:: text
 
