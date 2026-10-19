@@ -213,17 +213,22 @@ CASES: list[EvalCase] = [
     ),
     # -- Visualization ------------------------------------------------------
     EvalCase(
-        id="get_screenshot",
+        id="visualize_open",
         prompt="Show me a picture of what the model looks like right now.",
-        checker=expect_tool("get_screenshot", arguments={}),
-        expected="get_screenshot",
-        note="Confusable with get_design_3d_scene.",
+        checker=expect_tool("visualize", arguments={}),
+        expected="visualize",
     ),
     EvalCase(
-        id="get_design_3d_scene",
-        prompt="Open an interactive 3D view of the design that I can rotate.",
-        checker=expect_tool("get_design_3d_scene", arguments={}),
-        expected="get_design_3d_scene",
+        id="visualize_save",
+        prompt="Save an image of the current design to design.png.",
+        checker=expect_tool("visualize", arguments={"path": "design.png"}),
+        expected="visualize",
+    ),
+    EvalCase(
+        id="visualize_save_default",
+        prompt="Save an image of the current design.",
+        checker=expect_tool("visualize", arguments={"save": True}),
+        expected="visualize",
     ),
     # -- Repair (inspect vs. fix are mutually confusable) --------------------
     EvalCase(

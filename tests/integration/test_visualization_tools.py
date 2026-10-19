@@ -16,16 +16,15 @@
 
 """Unit tests for the visualization tools."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pyvista.plotting import system_supports_plotting
 
 from ansys.geometry.mcp.tools import (
     create_design,
-    get_design_3d_scene,
-    get_screenshot,
     read_image_in_base64,
+    visualize,
 )
 
 from .conftest import create_box
@@ -35,37 +34,53 @@ skip_no_xserver = pytest.mark.skipif(
 )
 
 
-def test_get_screenshot(ctx, tmp_path_factory: pytest.TempPathFactory):
-    """Test capturing a screenshot of the active design."""
+def test_visualize_saves_image(ctx, tmp_path_factory: pytest.TempPathFactory):
+    """Test saving an image of the active design when a path is provided."""
     create_design(ctx, "test_screenshot_001")
     create_box(ctx, name="screenshot_box", width=1.0, depth=1.0, height=1.0)
+
+    # Test with an explicit path
     path = str(tmp_path_factory.mktemp("screenshots") / "scene.png")
-    result = get_screenshot(ctx, path=path)
-    assert "3D scene screenshot saved:" in result
+    result = visualize(ctx, path=path)
+    assert "3D scene image saved:" in result
+
+    # Test without an explicit path
+    app_context = MagicMock()
+    app_context.command_history = []
+    design = app_context.product_instance.get_active_design.return_value
+    mock_ctx = MagicMock()
+    with (
+        patch(
+            "ansys.geometry.mcp.tools.visualization_tools.get_geometry_ctx",
+            return_value=app_context,
+        ),
+        patch("ansys.geometry.mcp.tools.visualization_tools.time.time", return_value=123),
+    ):
+        result = visualize(mock_ctx, save=True)
+        design.plot.assert_called_once_with(
+            screenshot="design_3d_scene_123.png",
+            use_service_colors=False,
+        )
+        design.plot.reset_mock()
+        result_without_colors = visualize(mock_ctx, path="scene.png", use_service_colors=False)
+
+    design.plot.assert_called_once_with(
+        screenshot="scene.png",
+        use_service_colors=False,
+    )
+    assert "3D scene image saved: design_3d_scene_123.png" == result
+    assert "3D scene image saved: scene.png" == result_without_colors
+    assert app_context.command_history == [
+        "design.plot(screenshot='design_3d_scene_123.png', use_service_colors=False)",
+        "design.plot(screenshot='scene.png', use_service_colors=False)",
+    ]
 
 
-def test_get_screenshot_not_connected():
-    """Test that getting a screenshot when not connected returns an error message."""
+def test_visualize_not_connected():
+    """Test that visualization without a backend returns an error message."""
     mock_ctx = MagicMock()
     mock_ctx.fastmcp._lifespan_result.product_instance = None
-    result = get_screenshot(mock_ctx)
-    assert "not connected" in result
-
-
-@skip_no_xserver
-def test_get_design_3d_scene(ctx):
-    """Test opening the 3D scene window of the active design."""
-    create_design(ctx, "test_3d_scene_001")
-    create_box(ctx, name="scene_box", width=1.0, depth=1.0, height=1.0)
-    result = get_design_3d_scene(ctx)
-    assert "3D scene window opened" in result
-
-
-def test_get_design_3d_scene_not_connected():
-    """Test that opening the 3D scene when not connected returns an error message."""
-    mock_ctx = MagicMock()
-    mock_ctx.fastmcp._lifespan_result.product_instance = None
-    result = get_design_3d_scene(mock_ctx)
+    result = visualize(mock_ctx)
     assert "not connected" in result
 
 
