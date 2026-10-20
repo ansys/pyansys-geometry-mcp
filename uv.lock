@@ -363,7 +363,7 @@ dev = [
     { name = "nbconvert", specifier = "==7.17.2" },
     { name = "nbsphinx", specifier = "==0.9.8" },
     { name = "notebook", specifier = "==7.6.3" },
-    { name = "pre-commit", specifier = "==4.6.2" },
+    { name = "pre-commit", specifier = "==4.7.0" },
     { name = "pypdf", specifier = "==6.20.0" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
@@ -397,7 +397,7 @@ eval = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
     { name = "ansys-geometry-core", specifier = "==0.18.1" },
     { name = "jsonschema", specifier = "==4.26.0" },
-    { name = "openai", specifier = "==3.26.1" },
+    { name = "openai", specifier = "==3.29.0" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
     { name = "pytest-cov", specifier = "==7.1.0" },
@@ -3308,7 +3308,7 @@ wheels = [
 
 [[package]]
 name = "openai"
-version = "3.26.1"
+version = "3.29.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -3318,9 +3318,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/f5/c9accd2d4077b0e56ffb63e9a943a656797c715bbd7c80f13f401865a350/openai-3.26.1.tar.gz", hash = "sha256:4b64060155596aece83aa81d270f326ee081b83da70a0d4b50091a0c60e9151c", size = 1820349, upload-time = "2026-10-08T08:54:23.757Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e4/99/5f6206494a87edbaa67b35c5212a2cb5e6f414bee5efb0f0672c4704315a/openai-3.29.0.tar.gz", hash = "sha256:bc70a46d97b70ba64daedfcb3227f610a395f297ec68d39f735676190a92be94", size = 1828914, upload-time = "2026-10-11T17:39:41.895Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/ee/f6042342ff42116ff8018849ef24a950ef367730ab0f9912c08c2f9b8aa0/openai-3.26.1-py3-none-any.whl", hash = "sha256:6a05a4615c678922aa16a1a560cfbe059cb20d5b7ab9753d0bf38b41fce1c67a", size = 2163859, upload-time = "2026-10-08T08:54:21.963Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/9a/91285d01a9293d0b3d86167f9c7bd13f08c960d3fa365782751ce9bcbfb1/openai-3.29.0-py3-none-any.whl", hash = "sha256:860d3bad424c5d38cd9ba0a0a2050d558b58ce027596a39f9ccbc0f51a2090b7", size = 2173181, upload-time = "2026-10-11T17:39:39.493Z" },
 ]
 
 [[package]]
@@ -3536,7 +3536,7 @@ wheels = [
 
 [[package]]
 name = "pre-commit"
-version = "4.6.2"
+version = "4.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cfgv" },
@@ -3545,9 +3545,9 @@ dependencies = [
     { name = "pyyaml" },
     { name = "virtualenv" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/74/89/1f3e8e1fc3e97de0fa963495832f581f025f29471602a309e48808244292/pre_commit-4.6.2.tar.gz", hash = "sha256:8f5d7bfb021ecdbcd9d49d89847082dd24172ccde534390081a679ad046e2441", size = 198670, upload-time = "2026-08-10T22:07:18.421Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3a/c3/6965c2690ddce885ec75121572d065a5b94c5a5d8d3e657927ecda9fd715/pre_commit-4.7.0.tar.gz", hash = "sha256:1f3deee12b914c8fa184bd2b5953391c2e4f36763e403d4a23dc9983fa7c6e86", size = 198120, upload-time = "2026-10-12T20:45:40.32Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/45/e2/bbb7129c9e7999a6b8ee9cca3b66486c25c423ab5a75f34071798b74ce94/pre_commit-4.6.2-py2.py3-none-any.whl", hash = "sha256:e2dde9a75d3bce11bd3831c26d134df00a2803c1d818be6a0383c3dcda25dc4e", size = 226202, upload-time = "2026-08-10T22:07:16.942Z" },
+    { url = "https://files.pythonhosted.org/packages/eb/83/ce0a196e4f7b20b11ce3aa1fc72fb973f64b7628d51c1b8aebad37fb7f81/pre_commit-4.7.0-py2.py3-none-any.whl", hash = "sha256:2e229038ad3656081b70c27913157e4b636ef306f643f024a8a8e3f0f7b2f877", size = 226261, upload-time = "2026-10-12T20:45:38.858Z" },
 ]
 
 [[package]]
