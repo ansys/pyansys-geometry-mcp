@@ -1,25 +1,27 @@
 .. _ref_implementing_custom_tools:
 
-Implementing custom tools
-=========================
+Implement a custom tool
+=======================
 
-Learn how to implement a custom MCP tool for PyAnsys Geometry MCP.
+Learn how to implement a custom tool in PyAnsys Geometry-MCP.
 
 Tool overview
 -------------
 
-A tool is a function that performs a specific task using the PyAnsys Geometry library.
-They are discovered by MCP clients when the MCP server is started, and can be invoked by the clients to perform their specific tasks.
-Tools do the following:
+A tool is a function that performs a specific task using PyAnsys Geometry.
+When you start the MCP server, MCP clients discover your tools and
+can invoke them to perform tasks.
 
-- Take structured input parameters
-- Perform some operations
-- Return structured output results
+Your tools should:
+
+- Accept structured input parameters.
+- Perform operations.
+- Return structured output.
 
 Tool anatomy
 ------------
 
-Here is an example tool structure:
+Use this structure to implement your tool:
 
 .. code-block:: python
 
@@ -34,9 +36,9 @@ Here is an example tool structure:
         ctx : Context
             MCP request context (injected automatically).
         param_1 : str
-            The first input parameter.
+            First input parameter.
         param_2 : int
-            The second input parameter.
+            Second input parameter.
 
         Returns
         -------
@@ -47,18 +49,18 @@ Here is an example tool structure:
         app_context = get_geometry_ctx(ctx)
 
         try:
-            # The app_context.product_instance holds the live modeler instance for the session
+            # Access the live modeler instance through app_context.product_instance
             design = app_context.product_instance.create_design("TestDesignName")
 
-            # Perform transcript
+            # Record the command in the history
             app_context.command_history.append(
                 f'design=instance.create_design("TestDesignName")'
             )
 
-            # Perform some operation(s) using the input parameters
+            # Use the input parameters to perform an operation
             result = f"Received {param_1} and {param_2}"
 
-            # Return a str containing the result or error message
+            # Return the result or an error message
             return result
         except Exception as e:
             logger.error(f"my_custom_tool failed: {e}")
@@ -67,9 +69,9 @@ Here is an example tool structure:
 Key components
 ~~~~~~~~~~~~~~
 
-- Detailed documentation string describing what the tool does, when to use it, and the input/output parameters.
-- Context object providing the MCP request context and access to the modeler instance.
-- Input parameters defining the data required for the tool to perform its operation.
-- Graceful handling of errors and useful logging.
-- Addition of commands called to the command history.
-- Return value containing the result or error message after the tool execution.
+- Document what your tool does, when to use it, and its input and output parameters.
+- Use the context object to access the MCP request context and modeler instance.
+- Define the input parameters your tool needs.
+- Handle errors gracefully and log useful details.
+- Add commands to the command history.
+- Return the result or an error message after your tool runs.

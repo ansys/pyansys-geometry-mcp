@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Entry point for running the PyAnsys Geometry MCP server."""
+"""Entry point for running PyAnsys Geometry-MCP."""
 
 import sys
 
@@ -25,7 +25,8 @@ import ansys.geometry.mcp.tools  # noqa: F401
 
 
 def main():
-    """Run the PyAnsys Geometry MCP server."""
+    """Run PyAnsys Geometry-MCP."""
+    setup_logging(level="INFO")
     try:
         app.run_cli()
     except KeyboardInterrupt:

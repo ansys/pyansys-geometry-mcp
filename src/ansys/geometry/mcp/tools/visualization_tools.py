@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP visualization tools for PyAnsys Geometry MCP server.
+"""MCP visualization tools for PyAnsys Geometry-MCP.
 
 Tools that render the active design or read the resulting images.
 
@@ -25,10 +25,10 @@ to the live product instance and command history).
 How to add a tool
 -----------------
 1. Define a Python function with type-annotated parameters.
-2. Add a NumPy-style docstring — the summary line becomes the tool description
+2. Add a NumPy-style docstring. The summary line becomes the tool description.
    visible to the AI assistant.
 3. Decorate it with ``@app.tool()``.
-4. Access the product instance via::
+4. Access the product instance::
 
        app_context = get_geometry_ctx(ctx)
        instance = app_context.product_instance
@@ -90,20 +90,17 @@ def visualize(
 ) -> str:
     """Open a 3D view of the active design or save an image when requested.
 
-    Service colors are disabled by default. Enable them when the design's colors
-    convey essential information or the user requests a full-color plot.
-
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    path : str, optional
-        Path to save the image. Providing a path saves the image there.
-    save : bool, optional
-        Save an image using a timestamped filename if no path is provided. Default False.
-    use_service_colors : bool, optional
-        Plot using service colors. Default False. Enable when colors are essential
-        or a full-color plot is requested.
+    path : str, default: None
+        Path to save the image to. Providing a path saves the image there.
+    save : bool, default: False
+        Whether to save an image using a timestamped filename if no path is provided.
+    use_service_colors : bool, default: False
+        Whether to plot using service colors. Set to ``True`` when the design's colors
+        convey essential information or the user requests a full-color plot.
 
     Returns
     -------

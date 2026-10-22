@@ -14,19 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP session tools for PyAnsys Geometry MCP server.
+"""MCP session tools for PyAnsys Geometry-MCP.
 
 Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
-The ``ctx`` parameter provides access to the application context (and thus
+The ``ctx`` parameter provides access to the app context (and thus
 to the live product instance and command history).
 
 How to add a tool
 -----------------
 1. Define a Python function with type-annotated parameters.
-2. Add a NumPy-style docstring — the summary line becomes the tool description
+2. Add a NumPy-style docstring. The summary line becomes the tool description.
    visible to the AI assistant.
 3. Decorate it with ``@app.tool()``.
-4. Access the product instance via::
+4. Access the product instance::
 
        app_context = ctx.fastmcp._lifespan_result
        instance = app_context.product_instance
@@ -57,13 +57,14 @@ logger = get_logger(__name__)
 
 @app.tool()
 def get_session_script(ctx: Context) -> str:
-    """Return recorded session commands as a reusable PyAnsys Geometry Python script.
+    """Get recorded session commands as a reusable PyAnsys Geometry Python script.
 
-    Includes recorded backend connection setup and commands in execution order.
-    Returns Python source, not a list of commands or Markdown. Replay requires
-    ansys-geometry-core and access to the recorded backend and referenced files.
-    Replaying the script repeats its recorded geometry changes. Only operations
-    recorded in command history are included; backend script-file operations are not.
+    The tool returns a formatted Python script containing the recorded backend connection setup
+    and commands in execution order, not a command list or Markdown. To replay the script,
+    install PyAnsys Geometry (``ansys-geometry-core``) and ensure access to the recorded backend
+    and any referenced files. Replaying repeats the recorded geometry changes.
+    The script includes only operations stored in command history. It excludes
+    backend script-file operations
 
     Parameters
     ----------
@@ -97,7 +98,7 @@ def get_session_script(ctx: Context) -> str:
 
 @app.tool()
 def get_product_status(ctx: Context) -> str:
-    """Return the current status of the product backend.
+    """Get the current status of the product backend.
 
     Parameters
     ----------
@@ -122,23 +123,23 @@ def get_product_status(ctx: Context) -> str:
 async def run_python_code(
     ctx: Context, code: str, timeout: int = 300, no_output_timeout: int = 300
 ) -> str:
-    """Perform ANY geometry/CAD operation that has no dedicated MCP tool.
+    """Perform any geometry/CAD operation that has no dedicated MCP tool.
 
     Run PyAnsys Geometry API code to perform the operation.
 
     This is the general-purpose fallback tool. When the user asks for a modeling,
-    query, or modification action (fillet, chamfer, shell, measure, pattern, ...) and
-    no other tool matches it, do NOT answer that it is unsupported -- write the
-    equivalent ``ansys.geometry.core`` code and run it here. Prefer a dedicated tool
-    whenever one exists; use ``run_script_file`` for an existing Discovery/SpaceClaim
-    script file on disk, and never write a temporary file to run a few statements.
+    query, or modification action (such as fillet, chamfer, shell, measure, pattern) and
+    no other tool matches it, do NOT answer that it is unsupported. Write the
+    equivalent ``ansys.geometry.core`` code and run it here. Choose a dedicated tool
+    whenever one exists. Use ``run_script_file`` for an existing Discovery/SpaceClaim
+    script file on disk. Never write a temporary file to run a few statements.
 
     The session is persistent, so variables defined by one call stay available to the
-    next. ``instance`` (the ``Modeler``) and ``design`` are predefined; import anything
+    next. ``instance`` (the ``Modeler``) and ``design`` are predefined. Import anything
     else explicitly. Bodies, faces, and edges are reached
     through the design tree (``design.bodies[0].faces[0].edges``) and edits are methods
-    on those objects. Only stdout is returned, so ``print()`` the values you need; if
-    unsure of the exact API, introspect it first with ``dir()`` or ``help()``, then
+    on those objects. Only stdout is returned, so ``print()`` the values you need. If
+    you are unsure of the exact API, introspect it first with ``dir()`` or ``help()``, and then
     issue a second call with the real code.
 
     The code runs in a separate process that is connected to the same geometry
@@ -151,11 +152,11 @@ async def run_python_code(
         MCP request context (injected automatically).
     code : str
         PyAnsys Geometry Python code to execute in the persistent session.
-    timeout : int, optional
-        Maximum time in seconds the code may run before it is abandoned. Default 300.
-    no_output_timeout : int, optional
+    timeout : int, default: 300
+        Maximum time in seconds the code may run before it is abandoned.
+    no_output_timeout : int, default: 300
         Maximum time in seconds the code may run without producing output before it
-        is abandoned. Default 300.
+        is abandoned.
 
     Returns
     -------
@@ -294,11 +295,14 @@ def file_io(
     """Import a geometry file or export the active design.
 
     Use ``operation="import"`` to open a geometry file as a new design or insert it
-    into the active design. Supported extensions include 'scdocx', 'dsco', 'pmdb',
-    'step', 'iges', 'x_t', 'xmt_txt', 'stride', and reader formats such as CATIA,
-    Creo, NX, JT, SOLIDWORKS, Solid Edge, Inventor, Rhino, and AutoCAD.
-    Use ``operation="export"`` to save the active design in 'fmd', 'step', 'iges',
-    'scdocx', 'disco', 'parasolid_text', or 'parasolid_bin' format.
+    into the active design. Supported extensions include ``scdocx``, ``dsco``,
+    ``pmdb``, ``step``, ``iges``, ``x_t``, ``xmt_txt``, ``stride``, and reader formats
+    such as ``CATIA``, ``Creo``, ``NX``, ``JT``, ``SOLIDWORKS``, ``Solid Edge``,
+    ``Inventor``, ``Rhino``, and ``AutoCAD``.
+
+    Use ``operation="export"`` to save the active design in ``fmd``, ``step``,
+    ``iges``, ``scdocx``, ``disco``, ``parasolid_text``, or ``parasolid_bin``
+    format.
 
     Parameters
     ----------
@@ -306,29 +310,31 @@ def file_io(
         MCP request context (injected automatically).
     operation : Literal["import", "export"]
         Whether to import a file or export the active design.
-    file_path : str, optional
+    file_path : str, default: None
         Path of the file to import, including its extension. For a shattered assembly,
-        give the path of the assembly file; referenced files in the same folder are
-        included automatically. Required for import.
-    file_format : str, optional
-        Export format: 'fmd', 'step', 'iges', 'scdocx', 'disco', 'parasolid_text', or
-        'parasolid_bin'. Required for export.
-    folder : str, optional
+        give the path of the assembly file. Referenced files in the same folder are
+        included automatically. This parameter is required for import.
+    file_format : str, default: None
+        Export format. Options are ``"fmd"``, ``"step"``, ``"iges"``, ``"scdocx"``,
+        ``"disco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter
+        is required for export.
+    folder : str, default: None
         Export destination. If omitted, the file is saved in the current working directory.
-    mode : str, optional
-        How to import the file. Use 'open' (default) to close the active design and open the
-        file as a new design. Use 'insert' to add the file into the current active design as
-        a new component.
-    import_names : bool, optional
-        Whether to import the names of bodies and curves. Default is False.
-    import_curves : bool, optional
-        Whether to import curves. Default is False.
-    import_coordinate_systems : bool, optional
-        Whether to import coordinate systems. Default is False.
-    import_named_selections : bool, optional
-        Whether to import named selections. Default is True.
-    cleanup_bodies : bool, optional
-        Whether to simplify geometry and clean up topology on import. Default is False.
+    mode : str, default: ``"open"``
+        How to import the file. When ``"open"`` is used, the active design is closed
+        and the file is opened as a new design.
+        Use ``"insert"`` to add the file into the current active design as a new design.
+        Use ``"insert"`` to add the file into the current active design as a new component.
+    import_names : bool, default: False
+        Whether to import the names of bodies and curves.
+    import_curves : bool, default: False
+        Whether to import curves.
+    import_coordinate_systems : bool, default: False
+        Whether to import coordinate systems.
+    import_named_selections : bool, default: True
+        Whether to import named selections.
+    cleanup_bodies : bool, default: False
+        Whether to simplify geometry and clean up topology on import.
 
     Returns
     -------
@@ -460,30 +466,39 @@ def run_script_file(
 
     Use this tool when the user asks to run, execute, or play back a script file that
     already exists on disk (for example "run C:/scripts/make_flange.py", "execute my
-    SpaceClaim script", "replay this .scscript").
+    SpaceClaim script", or "replay this .scscript").
 
-    When NOT to use this tool: to execute Python code you are writing yourself, use
-    ``run_python_code`` instead -- that tool runs the PyAnsys Geometry API
+    When NOT to use this tool: to execute Python code you are writing yourself. Use
+    ``run_python_code`` instead. That tool runs the PyAnsys Geometry API
     (``instance``, ``design``, ...) in a persistent session, while this tool runs a
     different language surface entirely. To load a CAD/geometry file (``.scdocx``,
-    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``. Never write a
-    temporary script file just to run a few statements; prefer ``run_python_code``.
+    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``.
+    Never write a temporary script file just to run a few statements. Choose ``run_python_code``
+    instead.
 
-    Script language: the file must be written against the Discovery/SpaceClaim scripting
+    **Script language**
+
+    The file must be written against the Discovery/SpaceClaim scripting
     API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``,
     ``instance``, ``design``) are NOT available inside the script, and script variables do not leak
     into the ``run_python_code`` session (or vice versa).
 
-    Passing arguments: ``args`` values must all be strings. The script receives them as a
+    **Passing arguments**
+
+    ``args`` values must all be strings. The script receives them as a
     dictionary of strings named ``argsDict`` and is responsible for converting them, for
     example ``radius = MM(int(argsDict["radius"]))``. Pass ``{"radius": "1"}``, never
     ``{"radius": 1}``. Omit ``args`` when the script takes no arguments.
 
-    Returning values: to get values back, the script must assign a dictionary named
+    **Returning values**
+
+    To get values back, the script must assign a dictionary named
     ``result``, for example ``result = {"numBodies": numBodies}``. A script that does not
     define ``result`` returns an empty dictionary even though it ran successfully.
 
-    Side effects: the script may create or modify the active design on the backend. Those
+    **Side effects**
+
+    The script might create or modify the active design on the backend. Those
     changes are not mirrored into this server's in-process design state or command
     history, so after a script that edits geometry, refresh your view with
     ``get_design_info``, ``list_entities``, or ``visualize`` before relying on
@@ -494,18 +509,19 @@ def run_script_file(
     ctx : Context
         MCP request context (injected automatically).
     file_path : str
-        Path to the script file, including its extension. Must be readable by the
-        machine running this MCP server; use an absolute path when possible, since
-        relative paths are resolved against the server's working directory.
-    args : dict[str, str], optional
-        String-valued arguments exposed to the script as ``argsDict``. Default ``None``.
+        Path to the script file, including its extension. The path must be readable
+        by the machine running this MCP server. Use an absolute path when possible,
+        since relative paths are resolved against the server's working directory.
+    args : dict[str, str], default: None
+        String-valued arguments exposed to the script as ``argsDict``.
 
     Returns
     -------
     str | dict[str, str]
         On success, the script's ``result`` dictionary with string values (empty if the
-        script defined no ``result``). On failure, a plain string message.
-        Check the returned type: a ``str`` always means the script did not run, and the
+        script defined no ``result``) is returned. On failure, a plain string message is returned.
+
+        Check the returned type. A ``str`` always means the script did not run, and the
         message should be reported to the user rather than retried unchanged.
 
     """

@@ -6,16 +6,16 @@ Contribute
 Overall guidance on contributing to a PyAnsys library appears in the
 `Contributing <https://dev.docs.pyansys.com/how-to/contributing.html>`_ topic
 in the *PyAnsys developer's guide*. Ensure that you are thoroughly familiar
-with this guide before attempting to contribute to PyAnsys Geometry MCP.
+with this guide before attempting to contribute to PyAnsys Geometry-MCP.
 
-The following contribution information is specific to PyAnsys Geometry MCP.
+The following contribution information is specific to PyAnsys Geometry-MCP.
 
 Install in developer mode
 --------------------------
 
-Installing PyAnsys Geometry MCP in developer mode allows you to modify and enhance the source.
+Installing PyAnsys Geometry-MCP in developer mode allows you to modify and enhance the source.
 
-To clone and install the latest PyAnsys Geometry MCP release in development mode, run these commands:
+To clone and install the latest PyAnsys Geometry-MCP release in development mode, run these commands:
 
 .. code::
 
@@ -27,7 +27,7 @@ To clone and install the latest PyAnsys Geometry MCP release in development mode
 Run tests
 ---------
 
-PyAnsys Geometry MCP uses `pytest <https://docs.pytest.org/en/stable/>`_ for testing.
+PyAnsys Geometry-MCP uses `pytest <https://docs.pytest.org/en/stable/>`_ for testing.
 
 #. Prior to running tests, you must run this command to install test dependencies::
 
@@ -40,7 +40,7 @@ PyAnsys Geometry MCP uses `pytest <https://docs.pytest.org/en/stable/>`_ for tes
 Adhere to code style
 --------------------
 
-PyAnsys Geometry MCP follows the PEP8 standard as outlined in
+PyAnsys Geometry-MCP follows the PEP8 standard as outlined in
 `PEP 8 <https://dev.docs.pyansys.com/coding-style/pep8.html>`_ in
 the *PyAnsys developer's guide* and implements style checking using
 `pre-commit <https://pre-commit.com/>`_.
@@ -72,7 +72,7 @@ This way, it's not possible for you to push code that fails the style checks::
 Build the documentation
 -----------------------
 
-You can build PyAnsys Geometry MCP documentation locally.
+You can build PyAnsys Geometry-MCP documentation locally.
 
 #. Prior to building the documentation, you must run this command to install
    documentation dependencies::
@@ -101,7 +101,7 @@ You can clean the documentation build by running this command::
 Post issues
 -----------
 
-Use the PyAnsys Geometry MCP
+Use the PyAnsys Geometry-MCP
 `Issues <https://github.com/ansys/pyansys-geometry-mcp/issues>`_
 page to report bugs and request new features. When possible, use the issue
 templates provided. If your issue does not fit into one of these templates,
@@ -109,5 +109,5 @@ click the link for opening a blank issue.
 
 If you have general questions about the PyAnsys ecosystem, email
 `pyansys.core@ansys.com <pyansys.core@ansys.com>`_. If your
-question is specific to PyAnsys Geometry MCP, ask your
+question is specific to PyAnsys Geometry-MCP, ask your
 question in an issue as described in the previous paragraph.

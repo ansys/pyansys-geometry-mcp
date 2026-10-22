@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Helper functions for PyAnsys Geometry MCP."""
+"""Helper functions for PyAnsys Geometry-MCP."""
 
 from typing import TYPE_CHECKING, Any
 
@@ -39,7 +39,7 @@ def connect_to_modeler_in_persistent_python(
     Parameters
     ----------
     ctx : Context
-        The MCP context containing server session and application context.
+        MCP context containing server session and app context.
 
     Returns
     -------
@@ -83,7 +83,7 @@ def connect_to_modeler_in_persistent_python(
         session.metadata["instance"] = modeler_instance
 
         logger.info(
-            "Connected to persistent PyAnsys Geometry session successfully at"
+            "Connected to persistent PyAnsys Geometry-MCP session successfully at"
             f" {modeler_instance.client.host}:{modeler_instance.client.port}!"
         )
 
@@ -91,7 +91,7 @@ def connect_to_modeler_in_persistent_python(
 
     except Exception as e:
         error_msg = (
-            f"Failed to connect to Modeler in the persistent PyAnsys Geometry session: {str(e)}"
+            f"Failed to connect to Modeler in the persistent PyAnsys Geometry-MCP session: {str(e)}"
         )
         logger.error(error_msg)
 
@@ -103,13 +103,13 @@ def refresh_design_in_persistent_python(ctx: Context) -> None:
 
     The persistent session runs in its own process with its own ``Modeler`` client,
     so the design it holds has to be re-read whenever the active design changes.
-    Does nothing when the session is not connected yet; the connection step
+    This function does nothing when the session is not connected yet. The connection step
     refreshes the design itself.
 
     Parameters
     ----------
     ctx : Context
-        The MCP context containing server session and application context.
+        MCP context containing server session and app context.
 
     """
     if ctx.request_context is None:
@@ -122,6 +122,6 @@ def refresh_design_in_persistent_python(ctx: Context) -> None:
     result = session.execute("design = instance.read_existing_design()")
     if isinstance(result, dict) and not result.get("success"):
         logger.warning(
-            "Failed to refresh 'design' in the persistent PyAnsys Geometry session: "
+            "Failed to refresh 'design' in the persistent PyAnsys Geometry-MCP session: "
             f"{result.get('error')}"
         )
