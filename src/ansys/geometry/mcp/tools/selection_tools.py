@@ -51,7 +51,7 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import find_body, find_component, get_geometry_ctx
+from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx
 from ansys.geometry.mcp.misc.selection_enums import (
     _CURVE_TYPE_MAP,
     _DEFAULT_RANGE_TYPE,
@@ -198,25 +198,27 @@ def _unsupported(criteria: str, entity_type: str, supported) -> str:
     )
 
 
-def _identifiers(entity_type: str, selection) -> list[str]:
-    """Return the names of the selected bodies, or the IDs for faces and edges."""
-    if entity_type == "body":
-        return [item.name for item in selection.items]
+def _identifiers(selection) -> list[str]:
+    """Return the IDs of the selected bodies, faces, or edges."""
     return [item.id for item in selection.items]
 
 
 def _component_tree(node, indent: int) -> list[str]:
     lines = []
     for comp in node.components:
-        lines.append("  " * indent + comp.name)
+        lines.append("  " * indent + f"id={comp.id}  name={comp.name}")
         lines.extend(_component_tree(comp, indent + 1))
     return lines
 
 
-def _body_paths(node, prefix: str) -> list[str]:
-    lines = [f"{prefix}{body.name}" for body in node.bodies]
+def _body_paths(node, prefix: str, name: str | None = None) -> list[str]:
+    lines = [
+        f"id={body.id}  path={prefix}{body.name}"
+        for body in node.bodies
+        if name is None or body.name.casefold() == name.casefold()
+    ]
     for comp in node.components:
-        lines.extend(_body_paths(comp, f"{prefix}{comp.name}/"))
+        lines.extend(_body_paths(comp, f"{prefix}{comp.name}/", name))
     return lines
 
 
@@ -224,26 +226,35 @@ def _body_paths(node, prefix: str) -> list[str]:
 def list_entities(
     ctx: Context,
     entity_type: Literal["body", "component", "face", "edge"],
-    body_name: str | None = None,
-    component_name: str | None = None,
+    body_id: str | None = None,
+    component_id: str | None = None,
+    name: str | None = None,
 ) -> str:
     """List the entities of a given type in the active design.
 
-    This is the discovery tool. Use it to find the exact body names, component
-    names, face IDs, and edge IDs that every other tool expects as input.
+    This is the discovery tool. Use it to find the exact body and component IDs and names,
+    face IDs, and edge IDs that every other tool expects as input.
+    Body and component names need not be unique, so other tools take IDs.
+
+    Users refer to bodies by name. To turn a body name into its ID, call this
+    tool with ``entity_type="body"`` and ``name`` set to that name. If more than
+    one body matches, use the component path to tell them apart, or ask the
+    user which one they mean.
 
     Behavior per ``entity_type``:
-
-    - ``"body"``: Body names prefixed with their component path, such as
-      ``MainComponent/Cylinder``. Pass ``component_name`` to restrict the
+    - ``"body"``: ``id=<body id>  path=<component path>/<body name>`` for every
+      body, e.g. ``id=0:12  path=MainComponent/Cylinder``. Pass ``name`` to
+      list only bodies with that name, and ``component_id`` to restrict the
       listing to one component and its children.
-    - ``"component"``: Component hierarchy as an indented tree.
+    - ``"component"``: the component hierarchy as an indented tree of
+      ``id=<component id>  name=<component name>`` lines. Component names
+      need not be unique, so use the ID to refer to a component.
     - ``"face"``: ``id=<face id>  surface_type=<type>`` for every face of
-      ``body_name``. Use it whenever a face ID is needed, or to answer
+      ``body_id``. Use it whenever a face ID is needed, or to answer
       questions about how many faces a body has or which faces are planes,
       cylinders, cones, and so on.
     - ``"edge"``: ``id=<edge id>  curve_type=<type>`` for every edge of
-      ``body_name``. Use it whenever an edge ID is needed, or to answer
+      ``body_id``. Use it whenever an edge ID is needed, or to answer
       questions about how many edges a body has or which edges are lines,
       circles, arcs, and so on.
 
@@ -254,12 +265,16 @@ def list_entities(
     entity_type : str
         Kind of entity to select. Options are ``"body"``, ``"component"``,
         ``"face"``, and ``"edge"``.
-    body_name : str, default: None
-        Body to inspect. Required for ``"face"`` and ``"edge"``. This parameter
-        is ignored otherwise. List the bodies first to discover valid names.
-    component_name : str, default: None
-        Restrict a ``"body"`` listing to this component and its children.
-        This parameter is ignored for the other entity types.
+    body_id : str, default: None
+        ID of the body to inspect. Required for ``"face"`` and ``"edge"``,
+        ignored otherwise. List the bodies first to discover valid IDs.
+    component_id : str, default: None
+        ID of a component to restrict a ``"body"`` listing to, together with its
+        children. List the components first to discover IDs. Ignored for the
+        other entity types.
+    name : str, default: None
+        Body name to look up; only bodies with exactly this name (ignoring
+        case) are listed. Ignored for the other entity types.
 
     Returns
     -------
@@ -272,37 +287,46 @@ def list_entities(
     if app_context.product_instance is None:
         return f"Product backend is not connected. Cannot list {entity_type} entities."
 
-    if entity_type in ("face", "edge") and body_name is None:
-        return f"'body_name' is required when listing {entity_type} entities."
+    if entity_type in ("face", "edge") and body_id is None:
+        return f"'body_id' is required when listing {entity_type} entities."
 
     try:
         design = app_context.product_instance.get_active_design()
-        logger.info(f"list_entities: entity_type={entity_type!r}, body_name={body_name!r}")
+        logger.info(f"list_entities: entity_type={entity_type!r}, body_id={body_id!r}")
 
         if entity_type == "component":
             lines = _component_tree(design, 0)
             return "\n".join(lines) if lines else "No components found in the active design."
 
         if entity_type == "body":
-            root = design if component_name is None else find_component(design, component_name)
-            if root is None:
-                return f"Component '{component_name}' not found."
-            lines = _body_paths(root, "")
-            return "\n".join(lines) if lines else "No bodies found."
+            if component_id is None:
+                root = design
+            else:
+                from ansys.geometry.core.misc.auxiliary import get_components_from_ids
 
-        body = find_body(design, body_name)
-        if body is None:
+                matches = get_components_from_ids(design, [component_id])
+                if not matches:
+                    return f"Component ID '{component_id}' not found."
+                root = matches[0]
+            lines = _body_paths(root, "", name)
+            if lines:
+                return "\n".join(lines)
+            return f"No bodies named '{name}' found." if name else "No bodies found."
+
+        found, _ = find_bodies_by_id(design, [body_id])
+        if not found:
             return (
-                f"Body '{body_name}' not found. "
+                f"Body ID '{body_id}' not found. "
                 "Use list_entities with entity_type='body' to see available bodies."
             )
+        body = found[0]
 
         if entity_type == "face":
             lines = [f"id={face.id}  surface_type={face.surface_type.name}" for face in body.faces]
-            return "\n".join(lines) if lines else f"Body '{body_name}' has no faces."
+            return "\n".join(lines) if lines else f"Body '{body_id}' has no faces."
 
         lines = [f"id={edge.id}  curve_type={edge.curve_type.name}" for edge in body.edges]
-        return "\n".join(lines) if lines else f"Body '{body_name}' has no edges."
+        return "\n".join(lines) if lines else f"Body '{body_id}' has no edges."
     except Exception as e:
         logger.error(f"list_entities failed: {e}")
         return f"Error listing {entity_type} entities: {e}"
@@ -553,7 +577,7 @@ def select_entities(
         logger.info(
             f"Selected {len(matching.items)} {entity_type} entities using criterion '{criteria}'."
         )
-        return _identifiers(entity_type, matching)
+        return _identifiers(matching)
     except Exception as e:
         logger.error(f"Error selecting {entity_type} entities: {e}")
         return f"Error selecting {entity_type} entities: {e}"
@@ -806,7 +830,7 @@ def filter_entities(
             f"Filtered to {len(matching.items)} {entity_type} entities "
             f"using criterion '{criteria}'."
         )
-        return _identifiers(entity_type, matching)
+        return _identifiers(matching)
     except Exception as e:
         logger.error(f"Error filtering {entity_type} entities: {e}")
         return f"Error filtering {entity_type} entities: {e}"
@@ -915,7 +939,7 @@ def order_entities(
             f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = ordered.items"
         )
         logger.info(f"Ordered {len(ordered.items)} {entity_type} entities by '{criteria}'.")
-        return _identifiers(entity_type, ordered)
+        return _identifiers(ordered)
     except Exception as e:
         logger.error(f"Error ordering {entity_type} entities: {e}")
         return f"Error ordering {entity_type} entities: {e}"
@@ -972,7 +996,7 @@ def group_entities(
     Returns
     -------
     list of list of str | str
-        Each inner list holds the body names or face/edge IDs of one group.
+        Each inner list holds the body, face, or edge IDs of one group.
 
         If the selection handle is invalid or the criterion does not apply
         to the entity type, a string error message is returned.
@@ -1017,7 +1041,7 @@ def group_entities(
             "[item for group in groups for item in group.items]"
         )
         logger.info(f"Grouped {entity_type} entities into {len(groups)} groups by '{criteria}'.")
-        return [_identifiers(entity_type, group) for group in groups]
+        return [_identifiers(group) for group in groups]
     except Exception as e:
         logger.error(f"Error grouping {entity_type} entities: {e}")
         return f"Error grouping {entity_type} entities: {e}"
@@ -1088,7 +1112,7 @@ def extend_selection(
     Returns
     -------
     list of str | str
-        Body names or face/edge IDs in the extended selection.
+        Body, face, or edge IDs in the extended selection.
 
         If the selection handle is invalid, the criterion does not apply to the entity type,
         or required arguments are missing, a string error message is returned.
@@ -1142,7 +1166,7 @@ def extend_selection(
             f"Extended selection to {len(extended.items)} {entity_type} entities "
             f"using '{criteria}'."
         )
-        return _identifiers(entity_type, extended)
+        return _identifiers(extended)
     except Exception as e:
         logger.error(f"Error extending {entity_type} selection: {e}")
         return f"Error extending {entity_type} selection: {e}"
@@ -1153,12 +1177,12 @@ def create_named_selection(
     ctx: Context,
     name: str,
     selection_handle: str | None = None,
-    body_names: list[str] | None = None,
+    body_ids: list[str] | None = None,
     face_ids: list[str] | None = None,
     edge_ids: list[str] | None = None,
     beam_ids: list[str] | None = None,
     design_point_ids: list[str] | None = None,
-    component_names: list[str] | None = None,
+    component_ids: list[str] | None = None,
     vertex_ids: list[str] | None = None,
     datum_plane_ids: list[str] | None = None,
     coordinate_system_ids: list[str] | None = None,
@@ -1175,14 +1199,15 @@ def create_named_selection(
 
     Typical workflows:
 
-    - Use ``list_entities`` with ``entity_type="body"`` to find body names. Then
-      use ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and
-      edge IDs to pass here.
+    - Use ``list_entities`` with ``entity_type="body"`` or ``"component"`` to find body or component
+      IDs. Then use ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and edge IDs
+      to pass here.
     - Build a selection with ``create_selection_builder`` followed by
       ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
       ``extend_selection``. Then pass that builder's ``selection_handle`` here to
       save its currently selected bodies, faces, and edges as a named selection
-      (for example, "save the bodies/faces I selected as ...").
+      (for example, "save the bodies/faces I selected as ..."). The IDs those tools return
+      can also be passed directly as ``body_ids``, ``face_ids``, or ``edge_ids``.
 
     Parameters
     ----------
@@ -1195,8 +1220,9 @@ def create_named_selection(
         currently selected bodies, faces, and edges should be included. Use this
         when the user refers to entities already picked/selected rather than
         naming them explicitly.
-    body_names : list of str, default: None
-        Body names to include. Use ``list_entities`` to discover names.
+    body_ids : list of str, default: None
+        Body IDs to include. Look up a body named by the user with
+        ``list_entities(entity_type="body", name=...)``.
     face_ids : list of str, default: None
         Face IDs to include. Use ``list_entities`` to discover face IDs of a body.
     edge_ids : list of str, default: None
@@ -1205,8 +1231,9 @@ def create_named_selection(
         Beam IDs to include.
     design_point_ids : list of str, default: None
         Design point IDs to include.
-    component_names : list of str, default: None
-        Component names to include. Use ``list_entities`` to discover names.
+    component_ids : list of str, default: None
+        Component IDs to include. Use ``list_entities`` with
+        ``entity_type="component"`` to discover component IDs.
     vertex_ids : list of str, default: None
         Vertex IDs to include (from ``body.vertices``).
     datum_plane_ids : list of str, default: None
@@ -1230,12 +1257,12 @@ def create_named_selection(
     if not any(
         [
             selection_handle,
-            body_names,
+            body_ids,
             face_ids,
             edge_ids,
             beam_ids,
             design_point_ids,
-            component_names,
+            component_ids,
             vertex_ids,
             datum_plane_ids,
             coordinate_system_ids,
@@ -1246,6 +1273,7 @@ def create_named_selection(
 
     try:
         from ansys.geometry.core.misc.auxiliary import (
+            get_components_from_ids,
             get_datum_planes_from_ids,
             get_design_points_from_ids,
             get_edges_from_ids,
@@ -1281,28 +1309,27 @@ def create_named_selection(
                 f"selection_builder = selection_registry['{selection_handle}']"
             )
 
-        if body_names:
-            for body_name in body_names:
-                body = find_body(design, body_name)
-                if body is None:
-                    return (
-                        f"Body '{body_name}' not found. Use list_entities to see available bodies."
-                    )
-                bodies.append(body)
+        if body_ids:
+            found_bodies, missing = find_bodies_by_id(design, body_ids)
+            if missing:
+                return (
+                    f"Body ID(s) not found: {', '.join(missing)}. "
+                    "Use list_entities to see available bodies."
+                )
+            bodies.extend(found_bodies)
 
         if bodies:
             kwargs["bodies"] = bodies
 
-        if component_names:
-            components = []
-            for comp_name in component_names:
-                comp = find_component(design, comp_name)
-                if comp is None:
-                    return (
-                        f"Component '{comp_name}' not found. "
-                        "Use list_entities to see available components."
-                    )
-                components.append(comp)
+        if component_ids:
+            components = get_components_from_ids(design, component_ids)
+            found_ids = {comp.id for comp in components}
+            missing = [cid for cid in component_ids if cid not in found_ids]
+            if missing:
+                return (
+                    f"Component ID(s) not found: {', '.join(missing)}. "
+                    "Use list_entities to see available components."
+                )
             kwargs["components"] = components
 
         if face_ids:
@@ -1364,8 +1391,8 @@ def create_named_selection(
                 cmd_parts.append("faces=selection_builder._faces.items")
             if selected_edges is not None and selected_edges.items:
                 cmd_parts.append("edges=selection_builder._edges.items")
-        if body_names:
-            cmd_parts.append(f"bodies=[{', '.join(f'design.get_body({b!r})' for b in body_names)}]")
+        if body_ids:
+            cmd_parts.append(f"bodies=get_bodies_from_ids(design, {body_ids!r})")
         if face_ids:
             cmd_parts.append(f"faces=get_faces_from_ids(design, {face_ids!r})")
         if edge_ids:
@@ -1376,10 +1403,8 @@ def create_named_selection(
             cmd_parts.append(
                 f"design_points=get_design_points_from_ids(design, {design_point_ids!r})"
             )
-        if component_names:
-            cmd_parts.append(
-                f"components=[{', '.join(f'design.get_component({c!r})' for c in component_names)}]"
-            )
+        if component_ids:
+            cmd_parts.append(f"components=get_components_from_ids(design, {component_ids!r})")
         if vertex_ids:
             cmd_parts.append(f"vertices=get_vertices_from_ids(design, {vertex_ids!r})")
         if datum_plane_ids:

@@ -106,44 +106,44 @@ CASES: list[EvalCase] = [
     # -- Boolean operations (mutually confusable) ---------------------------
     EvalCase(
         id="boolean_operation_subtract",
-        prompt="Cut the body named 'pin' out of the body named 'block'.",
+        prompt="Cut the body with ID '0:12' out of the body with ID '0:7'.",
         checker=expect_tool(
             "boolean_operation",
             arguments={
                 "operation": "subtract",
-                "target_body_name": "block",
-                "tool_body_name": "pin",
+                "target_body_id": "0:7",
+                "tool_body_id": "0:12",
             },
         ),
         expected="boolean_operation",
     ),
     EvalCase(
         id="boolean_operation_unite",
-        prompt="Merge 'plate_left' and 'plate_right' together into a single body.",
+        prompt="Merge the bodies with IDs '0:21' and '0:22' together into a single body.",
         checker=expect_tool(
             "boolean_operation",
             arguments={
                 "operation": "unite",
-                "target_body_name": "plate_left",
-                "tool_body_name": "plate_right",
+                "target_body_id": "0:21",
+                "tool_body_id": "0:22",
             },
         ),
         expected="boolean_operation",
-        note="Union is symmetric; target/tool role is only a guess at which name survives.",
+        note="Union is symmetric; target/tool role is only a guess at which body survives.",
     ),
     EvalCase(
         id="boolean_operation_intersect",
-        prompt="Keep only the volume that 'sphere_a' and 'sphere_b' have in common.",
+        prompt="Keep only the volume that bodies '0:31' and '0:32' have in common.",
         checker=expect_tool(
             "boolean_operation",
             arguments={
                 "operation": "intersect",
-                "target_body_name": "sphere_a",
-                "tool_body_name": "sphere_b",
+                "target_body_id": "0:31",
+                "tool_body_id": "0:32",
             },
         ),
         expected="boolean_operation",
-        note="Intersection is symmetric; target/tool role is only a guess at which name survives.",
+        note="Intersection is symmetric; target/tool role is only a guess at which body survives.",
     ),
     EvalCase(
         id="list_bodies",
@@ -151,6 +151,16 @@ CASES: list[EvalCase] = [
         checker=expect_tool("list_entities", arguments={"entity_type": "body"}),
         expected="list_entities",
         note="Confusable with select_entities and get_design_info.",
+    ),
+    EvalCase(
+        id="resolve_body_name",
+        prompt="Fill the missing faces in the body named 'housing'.",
+        checker=expect_tool(
+            "list_entities",
+            arguments={"entity_type": "body", "name": "housing"},
+        ),
+        expected="list_entities(name)",
+        note="Tools take body IDs, so a body named by the user must be looked up first.",
     ),
     # -- Selection workflow -------------------------------------------------
     EvalCase(
@@ -204,10 +214,10 @@ CASES: list[EvalCase] = [
     ),
     EvalCase(
         id="create_named_selection",
-        prompt="Save the body 'bolt_01' as a named selection called 'inlet_faces'.",
+        prompt="Save the body with ID '0:42' as a named selection called 'inlet_faces'.",
         checker=expect_tool(
             "create_named_selection",
-            arguments={"name": "inlet_faces", "body_names": ["bolt_01"]},
+            arguments={"name": "inlet_faces", "body_ids": ["0:42"]},
         ),
         expected="create_named_selection",
     ),
@@ -257,13 +267,13 @@ CASES: list[EvalCase] = [
     ),
     EvalCase(
         id="repair_short_edges",
-        prompt="Remove the sliver edges shorter than 0.1 mm from the body named 'housing'.",
+        prompt="Remove the sliver edges shorter than 0.1 mm from the body with ID '0:40'.",
         checker=expect_tool(
             "repair_geometry",
             arguments={
                 "operation": "short_edges",
                 "length": 0.0001,
-                "body_names": ["housing"],
+                "body_ids": ["0:40"],
             },
         ),
         expected="repair_geometry(short_edges)",
@@ -271,19 +281,19 @@ CASES: list[EvalCase] = [
     ),
     EvalCase(
         id="repair_missing_faces",
-        prompt="Fill the missing faces in the body named 'housing'.",
+        prompt="Fill the missing faces in the body with ID '0:40'.",
         checker=expect_tool(
             "repair_geometry",
-            arguments={"operation": "missing_faces", "body_names": ["housing"]},
+            arguments={"operation": "missing_faces", "body_ids": ["0:40"]},
         ),
         expected="repair_geometry(missing_faces)",
     ),
     EvalCase(
         id="repair_small_faces",
-        prompt="Remove the small faces from the body named 'housing'.",
+        prompt="Remove the small faces from the body with ID '0:40'.",
         checker=expect_tool(
             "repair_geometry",
-            arguments={"operation": "small_faces", "body_names": ["housing"]},
+            arguments={"operation": "small_faces", "body_ids": ["0:40"]},
         ),
         expected="repair_geometry(small_faces)",
     ),

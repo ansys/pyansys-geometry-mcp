@@ -47,7 +47,7 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import find_body, get_geometry_ctx
+from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx
 
 logger = get_logger(__name__)
 
@@ -56,8 +56,8 @@ logger = get_logger(__name__)
 def boolean_operation(
     ctx: Context,
     operation: Literal["subtract", "unite", "intersect"],
-    target_body_name: str,
-    tool_body_name: str,
+    target_body_id: str,
+    tool_body_id: str,
 ) -> str:
     """Perform a Boolean subtract, union, or intersection on two bodies.
 
@@ -67,7 +67,8 @@ def boolean_operation(
     - For ``unite``, the tool is merged into the target.
     - For ``intersect``, the target is reduced to the volume common to both bodies.
 
-    Use ``list_entities`` first to confirm exact body names.
+    Bodies are addressed by ID. Look up each body named by the user with
+    ``list_entities(entity_type="body", name=...)`` first.
 
     Parameters
     ----------
@@ -75,10 +76,10 @@ def boolean_operation(
         MCP request context (injected automatically).
     operation : Literal["subtract", "unite", "intersect"]
         Boolean operation to perform.
-    target_body_name : str
-        Name of the body to modify (survives the operation).
-    tool_body_name : str
-        Name of the body used in the operation (consumed afterward).
+    target_body_id : str
+        ID of the body to modify (survives the operation).
+    tool_body_id : str
+        ID of the body used in the operation (consumed afterward).
 
     Returns
     -------
@@ -93,18 +94,22 @@ def boolean_operation(
 
     try:
         design = app_context.product_instance.get_active_design()
-        target = find_body(design, target_body_name)
-        if target is None:
+        found, missing = find_bodies_by_id(design, [target_body_id])
+        if missing:
             return (
-                f"Target body '{target_body_name}' not found. "
+                f"Target body ID '{target_body_id}' not found. "
                 "Use list_entities to see available bodies."
             )
-        tool = find_body(design, tool_body_name)
-        if tool is None:
+        target = found[0]
+        found, missing = find_bodies_by_id(design, [tool_body_id])
+        if missing:
             return (
-                f"Tool body '{tool_body_name}' not found. "
+                f"Tool body ID '{tool_body_id}' not found. "
                 "Use list_entities to see available bodies."
             )
+        tool = found[0]
+        target_label = f"'{target.name}' (id={target_body_id})"
+        tool_label = f"'{tool.name}' (id={tool_body_id})"
         operation_methods = {
             "subtract": target.subtract,
             "unite": target.unite,
@@ -112,21 +117,24 @@ def boolean_operation(
         }
         operation_methods[operation](tool)
 
-        app_context.command_history.append(f"target = design.get_body({target_body_name!r})")
-        app_context.command_history.append(f"tool = design.get_body({tool_body_name!r})")
+        app_context.command_history.append(
+            f"target = get_bodies_from_ids(design, [{target_body_id!r}])[0]"
+        )
+        app_context.command_history.append(
+            f"tool = get_bodies_from_ids(design, [{tool_body_id!r}])[0]"
+        )
         app_context.command_history.append(f"target.{operation}(tool)")
 
         logger.info(
-            f"Boolean_operation: operation={operation!r}, target={target_body_name!r}, "
-            f"tool={tool_body_name!r}"
+            f"boolean_operation: operation={operation!r}, target={target_body_id!r}, "
+            f"tool={tool_body_id!r}"
         )
         return (
-            f"Boolean {operation} complete for '{target_body_name}' using '{tool_body_name}'. "
-            f"'{tool_body_name}' has been consumed."
+            f"Boolean {operation} complete for {target_label} using {tool_label}. "
+            f"{tool_label} has been consumed."
         )
     except Exception as e:
         logger.error(f"Boolean_operation failed: {e}")
         return (
-            f"Error performing Boolean {operation} on '{target_body_name}' "
-            f"with '{tool_body_name}': {e}"
+            f"Error performing boolean {operation} on '{target_body_id}' with '{tool_body_id}': {e}"
         )

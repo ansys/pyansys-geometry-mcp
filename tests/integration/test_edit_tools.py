@@ -27,25 +27,37 @@ from .conftest import create_box
 def test_boolean_operations(ctx):
     """Test subtract, unite, and intersect boolean operations on overlapping boxes."""
     create_design(ctx, "test_boolean_ops_001")
+    ids = {}
     for prefix in ("subtract", "unite", "intersect"):
-        create_box(ctx, name=f"{prefix}_target", width=2.0, depth=2.0, height=2.0)
-        create_box(ctx, name=f"{prefix}_tool", width=1.0, depth=1.0, height=1.0)
+        ids[f"{prefix}_target"] = create_box(
+            ctx, name=f"{prefix}_target", width=2.0, depth=2.0, height=2.0
+        ).id
+        ids[f"{prefix}_tool"] = create_box(
+            ctx, name=f"{prefix}_tool", width=1.0, depth=1.0, height=1.0
+        ).id
+
+    assert "Target body ID 'ghost' not found" in boolean_operation(
+        ctx, operation="subtract", target_body_id="ghost", tool_body_id=ids["subtract_tool"]
+    )
+    assert "Tool body ID 'ghost' not found" in boolean_operation(
+        ctx, operation="subtract", target_body_id=ids["subtract_target"], tool_body_id="ghost"
+    )
 
     assert "complete" in boolean_operation(
         ctx,
         operation="subtract",
-        target_body_name="subtract_target",
-        tool_body_name="subtract_tool",
+        target_body_id=ids["subtract_target"],
+        tool_body_id=ids["subtract_tool"],
     )
     assert "complete" in boolean_operation(
         ctx,
         operation="unite",
-        target_body_name="unite_target",
-        tool_body_name="unite_tool",
+        target_body_id=ids["unite_target"],
+        tool_body_id=ids["unite_tool"],
     )
     assert "complete" in boolean_operation(
         ctx,
         operation="intersect",
-        target_body_name="intersect_target",
-        tool_body_name="intersect_tool",
+        target_body_id=ids["intersect_target"],
+        tool_body_id=ids["intersect_tool"],
     )

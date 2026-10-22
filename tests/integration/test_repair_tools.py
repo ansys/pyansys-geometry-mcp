@@ -42,18 +42,18 @@ def test_repair_geometry_rejects_bad_input(ctx):
     assert "comprehensive_result" in repair_geometry(
         ctx, operation="all", comprehensive_result=True
     )
-    assert "ghost" in repair_geometry(ctx, operation="extra_edges", body_names=["ghost"])
+    assert "ghost" in repair_geometry(ctx, operation="extra_edges", body_ids=["ghost"])
 
 
 def test_inspect_and_repair_round_trip(ctx):
     """Test inspecting, repairing, and re-inspecting across each body scoping mode."""
     create_design(ctx, "test_repair_round_trip_001")
-    create_box(ctx, name="repair_box", width=2.0, depth=2.0, height=2.0)
+    repair_box_id = create_box(ctx, name="repair_box", width=2.0, depth=2.0, height=2.0).id
     create_box(ctx, name="spare_box", width=1.0, depth=1.0, height=1.0)
-    create_named_selection(ctx, name="repair_group", body_names=["repair_box"])
+    create_named_selection(ctx, name="repair_group", body_ids=[repair_box_id])
 
     assert "Inspected 2 bodies" in inspect_geometry(ctx)
-    assert "Inspected 1 bodies" in inspect_geometry(ctx, body_names=["repair_box"])
+    assert "Inspected 1 bodies" in inspect_geometry(ctx, body_ids=[repair_box_id])
 
     result = repair_geometry(ctx, operation="extra_edges", named_selection="repair_group")
     assert "Repair 'extra_edges' ran on 1 bodies" in result
@@ -71,12 +71,12 @@ def test_inspect_and_repair_round_trip(ctx):
 def test_repair_geometry_checks_face_issues(ctx, operation, parameters):
     """Run face checks against a clean solid using the live backend."""
     create_design(ctx, f"test_repair_{operation}_001")
-    create_box(ctx, name=f"{operation}_body", width=1.0, depth=1.0, height=1.0)
+    body_id = create_box(ctx, name=f"{operation}_body", width=1.0, depth=1.0, height=1.0).id
 
     result = repair_geometry(
         ctx,
         operation=operation,
-        body_names=[f"{operation}_body"],
+        body_ids=[body_id],
         **parameters,
     )
 
