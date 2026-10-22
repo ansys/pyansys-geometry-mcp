@@ -56,8 +56,8 @@ def transport_mode(request):
 @pytest.fixture
 def design():
     """Stub design with two bodies and one named selection."""
-    box = SimpleNamespace(name="box")
-    cyl = SimpleNamespace(name="cylinder")
+    box = SimpleNamespace(name="box", id="0:1")
+    cyl = SimpleNamespace(name="cylinder", id="0:2")
     return SimpleNamespace(
         get_all_bodies=lambda: [box, cyl],
         named_selections=[

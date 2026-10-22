@@ -61,7 +61,7 @@ def test_build_sketch_primitives():
 
 
 def test_resolve_bodies_scoping(design):
-    """Test the resolution precedence: handle, then named selection, then names, then all."""
+    """Test the resolution precedence: handle, then named selection, then IDs, then all."""
     app_context = MagicMock()
     app_context.selection_registry = {
         "sel-1": SimpleNamespace(_bodies=SimpleNamespace(items=[design.get_all_bodies()[1]])),
@@ -72,7 +72,7 @@ def test_resolve_bodies_scoping(design):
     assert error is None
     assert [b.name for b in bodies] == ["box", "cylinder"]
 
-    bodies, error = resolve_bodies(app_context, design, body_names=["cylinder"])
+    bodies, error = resolve_bodies(app_context, design, body_ids=["0:2"])
     assert error is None
     assert [b.name for b in bodies] == ["cylinder"]
 
@@ -88,7 +88,7 @@ def test_resolve_bodies_scoping(design):
     bodies, error = resolve_bodies(
         app_context,
         design,
-        body_names=["box"],
+        body_ids=["0:1"],
         named_selection="hot_side",
         selection_handle="sel-1",
     )
@@ -119,9 +119,10 @@ def test_resolve_bodies_errors(design):
     assert bodies == []
     assert "contains no bodies" in error
 
-    bodies, error = resolve_bodies(app_context, design, body_names=["box", "ghost"])
+    bodies, error = resolve_bodies(app_context, design, body_ids=["0:1", "ghost"])
     assert bodies == []
     assert "ghost" in error
+    assert "0:1" not in error
 
     empty_design = SimpleNamespace(get_all_bodies=lambda: [], named_selections=[])
     bodies, error = resolve_bodies(app_context, empty_design)
