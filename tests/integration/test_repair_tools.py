@@ -30,7 +30,7 @@ from .conftest import create_box
 
 
 def test_repair_geometry_removes_logos(ctx):
-    """Test logo removal on a clean solid, including the 5 mm ``max_height`` default."""
+    """Test logo removal on a clean solid, and that ``max_height`` is required."""
     create_design(ctx, "test_repair_logos_001")
     create_box(ctx, name="logo_body", width=1.0, depth=1.0, height=1.0)
     command_history = get_geometry_ctx(ctx).command_history
@@ -45,10 +45,12 @@ def test_repair_geometry_removes_logos(ctx):
     assert result == "Repair 'logos' ran on 1 bodies. Success: False."
     assert "min_height=0.0001, max_height=0.002" in command_history[-1]
 
-    # The backend finds no logos without a maximum height, so the tool supplies one.
+    # Without max_height the tool asks for one instead of guessing, and runs nothing.
+    history_length = len(command_history)
     result = repair_geometry(ctx, operation="logos", body_names=["logo_body"])
-    assert result == "Repair 'logos' ran on 1 bodies. Success: False."
-    assert command_history[-1].endswith("find_and_remove_logos(bodies, max_height=0.005)")
+    assert "requires 'max_height'" in result
+    assert "Ask the user" in result
+    assert len(command_history) == history_length
 
 
 def test_repair_geometry_rejects_bad_input(ctx):
