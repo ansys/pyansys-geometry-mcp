@@ -28,6 +28,22 @@ from ansys.geometry.mcp.tools import (
 from .conftest import create_box
 
 
+def test_repair_geometry_removes_logos(ctx):
+    """Check the no-removal result for a clean solid using the live backend."""
+    create_design(ctx, "test_repair_logos_001")
+    create_box(ctx, name="logo_body", width=1.0, depth=1.0, height=1.0)
+
+    result = repair_geometry(
+        ctx,
+        operation="logos",
+        body_names=["logo_body"],
+        min_height=0.0001,
+        max_height=0.002,
+    )
+
+    assert result == "Repair 'logos' ran on 1 bodies. Success: False."
+
+
 def test_repair_geometry_rejects_bad_input(ctx):
     """Test the unknown operation, inapplicable parameter, and unknown body error paths."""
     create_design(ctx, "test_repair_validation_001")

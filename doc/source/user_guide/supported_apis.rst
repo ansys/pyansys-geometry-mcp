@@ -91,6 +91,11 @@ Use ``inspect_geometry`` when the problem is unknown. If you already know the
 problem, call ``repair_geometry`` directly. Both tools can be scoped to named
 bodies, a named selection, or a selection builder.
 
+Use ``repair_geometry(operation="logos")`` to find and remove logos, optionally
+filtering by ``min_height`` and ``max_height`` in meters. Omitted heights use the
+backend defaults. This operation requires Ansys 25R2 or later (26R1 or later on
+Linux) and reports only the backend success flag, not logo counts.
+
 Select entities
 ^^^^^^^^^^^^^^^
 
