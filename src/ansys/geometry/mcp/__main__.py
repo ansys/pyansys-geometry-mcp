@@ -26,7 +26,6 @@ import ansys.geometry.mcp.tools  # noqa: F401
 
 def main():
     """Run PyAnsys Geometry-MCP."""
-    setup_logging(level="INFO")
     try:
         app.run_cli()
     except KeyboardInterrupt:
