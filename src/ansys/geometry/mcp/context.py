@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Context for PyAnsys Geometry MCP server."""
+"""Context for PyAnsys Geometry-MCP server."""
 
 from dataclasses import dataclass, field
 from typing import Optional
@@ -26,35 +26,36 @@ from ansys.geometry.core.selection_builder.selection_builder import SelectionBui
 
 @dataclass
 class PyAnsysGeometryContext(PyAnsysBaseAppContext):
-    """Application context for PyAnsys Geometry MCP server.
+    """App context for PyAnsys Geometry-MCP server.
 
     Attributes
     ----------
-    product_instance : Optional[Any]
-        The connected product instance.
-    mode : Optional[str]
-        Launch mode for the geometry service (e.g. ``"docker"``, ``"spaceclaim"``).
-    transport_mode : Optional[str]
+    product_instance : [Any], default: None
+        Connected product instance.
+    mode : default: str, default: None
+        Launch mode for the geometry service (such as ``"docker"`` or ``"spaceclaim"``).
+    transport_mode : str, default: None
         Transport mode for the geometry service connection.
-    proto_version : str
+    proto_version : str, default: ``"v1"``
         Geometry service protocol version for an existing service connection.
-    geometry_host : str
+    geometry_host : str, default: ``"localhost"``
         Host name or IP address of the geometry service.
     geometry_port : int
         Port number of the geometry service.
-    uds_dir : Optional[str]
-        Directory for the Unix Domain Socket.
-    uds_id : Optional[str]
-        Optional identifier for the Unix Domain Socket filename.
-    connect_to_existing_service : bool
-        When ``True``, connect to a running geometry service instead of
-        launching a new one.
-    log_level : str
+    uds_dir : str, default: None
+        Directory for the Unix domain socket.
+    uds_id : str, default: None
+        Optional identifier for the Unix domain socket filename.
+    connect_to_existing_service : bool, default: False
+        Whether to connect to a running geometry service. When ``False``, a new
+        geometry service is launched.
+    log_level : str, default: ``"INFO"``
         Logging level for the MCP server.
-    log_file : Optional[str]
+    log_file : str, default: None
         Optional path to a file that receives server logs.
-    selection_registry : dict[str, SelectionBuilder]
+    selection_registry : dict[str, SelectionBuilder], default: None
         Registry mapping selection IDs to their corresponding selection builders.
+        If no registry is provided, an empty dictionary is used.
 
     Examples
     --------

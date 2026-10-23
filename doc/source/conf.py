@@ -22,7 +22,7 @@ cname = os.getenv("DOCUMENTATION_CNAME", default="geometry-mcp.docs.pyansys.com"
 switcher_version = get_version_match(__version__)
 
 html_theme = "ansys_sphinx_theme"
-html_short_title = html_title = "PyAnsys Geometry MCP"
+html_short_title = html_title = "PyAnsys Geometry-MCP"
 html_baseurl = f"https://{cname}/version/stable"
 
 html_context = {

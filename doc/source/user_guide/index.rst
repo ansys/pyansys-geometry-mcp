@@ -4,34 +4,36 @@
 User guide
 ==========
 
-The PyAnsys Geometry MCP user guide explains:
+Use this guide to:
 
-- What this MCP server does and what it needs to run.
-- Which API's (MCP tools) are currently supported.
-- How to connect the server to both GitHub Copilot and Gemini.
+- Learn what PyAnsys Geometry-MCP does and review its run-time requirements.
+- Review the supported APIs (MCP tools).
+- Connect the server to GitHub Copilot and Gemini.
 
-What this server provides
---------------------------
+What PyAnsys Geometry-MCP does
+------------------------------
 
-PyAnsys Geometry MCP exposes workflows from
-``ansys-geometry-core`` through MCP tools.
-When connected to an MCP-capable assistant, you can ask the AI to perform
-tasks using the registered tools.
+Use PyAnsys Geometry-MCP to access workflows from `PyAnsys Geometry <https://github.com/ansys/pyansys-geometry>`_
+(``ansys-geometry-core``) through MCP tools. When you connect an MCP-capable assistant, you can ask it to
+perform tasks with these tools.
 
 Runtime requirements
 --------------------
 
-- Python 3.10 or newer.
-- A working installation of ``ansys-geometry-core``.
+Meet these requirements:
 
-.. TODO: Add product-specific runtime requirements (e.g., Docker, license
-   server, etc.) here.
-
-Guide contents
---------------
+- Use Python 3.12 or later.
+- Install PyAnsys Geometry-MCP. The package installs PyAnsys Geometry
+  (``ansys-geometry-core``) as a dependency.
+- Make an Ansys Geometry backend available. The supported launch modes are
+  Docker, the Ansys Geometry Core Service, and Ansys Discovery. You can also
+  configure the server to connect to an existing backend service. Backend
+  installation, platform, and licensing requirements depend on the selected
+  mode.
 
 .. toctree::
-    :maxdepth: 2
+   :hidden:
+   :maxdepth: 2
 
-    supported_apis
-    copilot_gemini
+   supported_apis
+   copilot_gemini

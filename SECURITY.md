@@ -19,7 +19,7 @@ Provide the PyAnsys Core team with this information:
 
 ## Trust model
 
-PyAnsys Geometry MCP exposes tools that run arbitrary Python code and script files on the
+PyAnsys Geometry-MCP exposes tools that run arbitrary Python code and script files on the
 machine hosting the server:
 
 - `run_python_code` executes any Python code it is given in a persistent session with full

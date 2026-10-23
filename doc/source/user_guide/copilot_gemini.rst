@@ -1,22 +1,21 @@
-Using with Copilot and Gemini
-=============================
+Connect GitHub Copilot and Gemini
+=================================
 
-This guide shows how to connect the PyAnsys Geometry MCP server to both
-GitHub Copilot and Gemini clients.
+You can connect PyAnsys Geometry-MCP to GitHub Copilot, Gemini, or both. You must configure the server separately in each client.
 
-Start command
--------------
+Start the server
+----------------
 
-Both clients launch the same MCP server command:
+Start the MCP server with this command:
 
 .. code-block:: text
 
     python -m ansys.geometry.mcp
 
-GitHub Copilot (VS Code)
-------------------------
+GitHub Copilot (Visual Studio Code)
+-----------------------------------
 
-Add this configuration to your workspace MCP file (``.vscode/mcp.json``):
+Add this configuration to your workspace MCP configuration file (``.vscode/mcp.json``):
 
 .. code-block:: json
 
@@ -48,28 +47,40 @@ Add this configuration to ``.gemini/settings.json``:
       }
     }
 
-How to use from chat
----------------------
+Use tools in chat
+-----------------
 
-After the MCP server is connected, ask the assistant to call tools.
+After you connect to the MCP server, ask your assistant to call one of its tools.
 
-.. TODO: Add example prompts specific to your product tools. For example:
-..
-.. - "Run <tool_name> with parameter X."
-.. - "Get the current state of the model."
+Example prompts
+---------------
+
+Try prompts such as:
+
+- "What bodies are in the active design?" to use ``list_entities``.
+- "Inspect the active design for geometry issues." to use ``inspect_geometry``.
+- "Create a named selection containing the bodies named Housing and Cover."
+  to use ``create_named_selection``.
+- "Create a 10 mm fillet on the edges of the Housing body." If no dedicated
+  tool supports the requested operation, use ``run_python_code`` with the
+  PyAnsys Geometry API.
 
 Troubleshooting
 ---------------
 
-Server does not respond
-^^^^^^^^^^^^^^^^^^^^^^^
+The MCP server does not respond
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Confirm all product prerequisites are met (licenses, services, etc.).
-- Confirm ``ansys-geometry-core`` is installed in the selected environment.
-- Confirm the Python path in your MCP configuration points to the correct virtual environment.
+- Confirm that you have met all product prerequisites, including license
+  and service requirements.
+- Confirm that you installed PyAnsys Geometry (``ansys-geometry-core``)
+  in your virtual environment.
+- Confirm that the Python executable in your MCP configuration belongs to the
+  correct virtual environment.
 
-Tool returns a startup/connection error
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The tool returns a startup or connection error
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- Check that the product backend launched successfully by reviewing server logs.
-- Restart the MCP client session so the server relaunches.
+- Review the server logs to confirm that the Ansys Geometry backend
+  started successfully.
+- Restart the MCP client session to relaunch the server.

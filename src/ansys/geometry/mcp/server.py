@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""MCP server for PyAnsys Geometry MCP."""
+"""MCP server for PyAnsys Geometry-MCP."""
 
 import argparse
 
@@ -27,28 +27,28 @@ logger = get_logger(__name__)
 
 
 class PyAnsysGeometryMCP(PyAnsysBaseMCP):
-    """MCP server for PyAnsys Geometry MCP.
+    """MCP server for PyAnsys Geometry-MCP.
 
-    This server enables AI assistants to interact with
-    ``ansys-geometry-core`` for simulation and analysis workflows.
+    This server enables AI assistants to interact with PyAnsys Geometry
+    (``ansys-geometry-core``) for simulation and analysis workflows.
     """
 
     context: PyAnsysGeometryContext
-    """The application context for the MCP server.
+    """App context for the MCP server.
 
     Contains the product instance and related information.
     """
 
     def __init__(self, name: str = "pyansys-geometry-mcp", *args, **kwargs):
-        """Initialize the PyAnsys Geometry MCP server."""
+        """Initialize PyAnsys Geometry-MCP."""
         super().__init__(name=name, *args, **kwargs)
 
     def create_context(self) -> PyAnsysGeometryContext:
         """Create (or return the pre-existing) product-specific context.
 
-        If the context has already been initialised — for example because
+        If the context has already been initialised, for example because
         CLI arguments were written to ``app.context`` before ``app.run()``
-        was called — this method returns it unchanged so that caller-set
+        was called, this method returns it unchanged so that caller-set
         configuration is preserved.
 
         Returns
@@ -93,14 +93,12 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
             choices=[
                 "docker",
                 "core_service",
-                "geometry_service",
                 "discovery",
             ],
             help=(
                 "Launch mode for the geometry service (default: auto-detect). "
                 "'docker' (local Docker), "
                 "'core_service' (local Ansys Geometry Core Service), "
-                "'geometry_service' (local Ansys Geometry Service), "
                 "'discovery' (local Ansys Discovery)."
             ),
         )
@@ -186,7 +184,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         This method is called automatically during server startup.
         """
         self.context.product_instance = None
-        logger.info("Starting PyAnsys Geometry MCP backend...")
+        logger.info("Starting PyAnsys Geometry-MCP backend...")
 
         if self.context.connect_to_existing_service:
             from ansys.geometry.core import Modeler
@@ -237,7 +235,7 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         self.context.product_instance = instance
 
         # Log the successful launch of the product instance
-        logger.info("PyAnsys Geometry MCP backend launched successfully.")
+        logger.info("PyAnsys Geometry-MCP backend launched successfully.")
         logger.info(f"Product instance details:\n\n{self.context.product_instance}")
 
     def product_cleanup(self):
@@ -247,10 +245,10 @@ class PyAnsysGeometryMCP(PyAnsysBaseMCP):
         """
         if self.context.product_instance is not None:
             try:
-                logger.info("Closing PyAnsys Geometry MCP backend...")
+                logger.info("Closing PyAnsys Geometry-MCP backend...")
                 self.context.product_instance.close()
                 self.context.command_history.append("instance.close()")
-                logger.info("PyAnsys Geometry MCP backend closed successfully.")
+                logger.info("PyAnsys Geometry-MCP backend closed successfully.")
             except Exception as e:
                 logger.error(f"Error during product cleanup: {e}")
 
