@@ -18,6 +18,7 @@
 
 import pytest
 
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
 from ansys.geometry.mcp.tools import (
     create_design,
     create_named_selection,
@@ -29,9 +30,10 @@ from .conftest import create_box
 
 
 def test_repair_geometry_removes_logos(ctx):
-    """Check the no-removal result for a clean solid using the live backend."""
+    """Test logo removal on a clean solid, including the 5 mm ``max_height`` default."""
     create_design(ctx, "test_repair_logos_001")
     create_box(ctx, name="logo_body", width=1.0, depth=1.0, height=1.0)
+    command_history = get_geometry_ctx(ctx).command_history
 
     result = repair_geometry(
         ctx,
@@ -40,8 +42,13 @@ def test_repair_geometry_removes_logos(ctx):
         min_height=0.0001,
         max_height=0.002,
     )
-
     assert result == "Repair 'logos' ran on 1 bodies. Success: False."
+    assert "min_height=0.0001, max_height=0.002" in command_history[-1]
+
+    # The backend finds no logos without a maximum height, so the tool supplies one.
+    result = repair_geometry(ctx, operation="logos", body_names=["logo_body"])
+    assert result == "Repair 'logos' ran on 1 bodies. Success: False."
+    assert command_history[-1].endswith("find_and_remove_logos(bodies, max_height=0.005)")
 
 
 def test_repair_geometry_rejects_bad_input(ctx):

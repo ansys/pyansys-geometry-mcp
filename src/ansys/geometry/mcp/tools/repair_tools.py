@@ -78,6 +78,9 @@ _REPAIR_OPERATIONS: dict[str, tuple[str, tuple[str, ...]]] = {
 
 _PROBLEM_AREA_OPERATIONS = {"missing_faces", "small_faces"}
 
+# The backend detects no logos at all unless a maximum height is given.
+_DEFAULT_LOGO_MAX_HEIGHT = 0.005
+
 
 def _bodies_transcript(bodies) -> str:
     """Render the resolved body scope as a replayable transcript line."""
@@ -242,6 +245,7 @@ def repair_geometry(
         thresholds.
     - ``"logos"``
         Find and remove logos. Accepts ``min_height`` and ``max_height``.
+        ``max_height`` defaults to 5 mm (0.005 m) when omitted.
         Requires Ansys 25R2 or later (26R1 or later on Linux).
         Reports only the backend success flag, not logo or repair counts.
 
@@ -297,7 +301,8 @@ def repair_geometry(
     min_height : float, default: None
         Minimum logo height in meters for ``"logos"``. Omit to use the backend default.
     max_height : float, default: None
-        Maximum logo height in meters for ``"logos"``. Omit to use the backend default.
+        Maximum logo height in meters for ``"logos"``. Defaults to 0.005 (5 mm) when
+        omitted, because the backend detects no logos without a maximum height.
     comprehensive_result : bool, default: False
         Whether to fix each problem area individually. This is expensive. It costs one
         backend round trip per problem area. Leave it set to ``False`` unless the user
@@ -323,6 +328,8 @@ def repair_geometry(
         )
 
     method_name, accepted = _REPAIR_OPERATIONS[operation]
+    if operation == "logos" and max_height is None:
+        max_height = _DEFAULT_LOGO_MAX_HEIGHT
     supplied = {
         "length": length,
         "angle": angle,
