@@ -204,7 +204,6 @@ def test_select_faces_and_edges(ctx: PyAnsysGeometryContext):
         ({"criteria": "name"}, "Body name must be provided"),
         ({"criteria": "named_selection"}, "Named selection name must be provided"),
         ({"criteria": "color"}, "Color must be provided"),
-        ({"criteria": "volume"}, "At least one of min_value or max_value"),
         ({"criteria": "x_location"}, "At least one of min_value or max_value"),
     ],
 )
@@ -225,11 +224,11 @@ def test_select_entities_missing_args(ctx: PyAnsysGeometryContext, kwargs, messa
         ("body", "volume", 0.5, 0),
     ],
 )
-def test_select_measure_max_only(
+def test_select_measure_min_defaults_to_zero(
     ctx: PyAnsysGeometryContext, entity_type, criteria, max_value, expected
 ):
     """A measure criterion with only max_value is treated as [0, max_value]."""
-    handle = _setup(ctx, f"test_select_max_only_{criteria}")
+    handle = _setup(ctx, f"test_select_min_default_{criteria}")
 
     result = select_entities(ctx, handle, entity_type, criteria=criteria, max_value=max_value)
     assert isinstance(result, list)
@@ -309,24 +308,27 @@ def test_filter_edges(ctx: PyAnsysGeometryContext):
 
 
 @pytest.mark.parametrize(
-    "entity_type, criteria, max_value, expected",
+    "entity_type, criteria, kwargs, expected",
     [
-        ("body", "volume", 2.0, 1),
-        ("body", "surface_area", 7.0, 1),
-        ("face", "area", 2.0, 6),
-        ("face", "perimeter", 5.0, 6),
-        ("edge", "length", 2.0, 12),
-        ("body", "volume", 0.5, 0),
+        ("body", "volume", {"max_value": 2.0}, 1),
+        ("body", "surface_area", {"max_value": 7.0}, 1),
+        ("face", "area", {"max_value": 2.0}, 6),
+        ("face", "perimeter", {"max_value": 5.0}, 6),
+        ("edge", "length", {"max_value": 2.0}, 12),
+        ("body", "volume", {"max_value": 0.5}, 0),
+        ("face", "edge_count", {"max_value": 4}, 6),
+        ("body", "surface_count", {"surface_type": "plane", "max_value": 6}, 1),
+        ("body", "surface_count", {"surface_type": "plane"}, 1),
     ],
 )
-def test_filter_measure_max_only(
-    ctx: PyAnsysGeometryContext, entity_type, criteria, max_value, expected
+def test_filter_range_min_defaults_to_zero(
+    ctx: PyAnsysGeometryContext, entity_type, criteria, kwargs, expected
 ):
-    """A measure filter with only max_value is treated as [0, max_value] instead of failing."""
-    handle = _setup(ctx, f"test_filter_max_only_{criteria}")
+    """A range filter without min_value is treated as [0, max_value]."""
+    handle = _setup(ctx, f"test_filter_min_default_{criteria}")
     select_entities(ctx, handle, entity_type, criteria="all")
 
-    result = filter_entities(ctx, handle, entity_type, criteria=criteria, max_value=max_value)
+    result = filter_entities(ctx, handle, entity_type, criteria=criteria, **kwargs)
     assert isinstance(result, list)
     assert len(result) == expected
 
@@ -334,18 +336,12 @@ def test_filter_measure_max_only(
 @pytest.mark.parametrize(
     "entity_type, kwargs, message",
     [
-        ("body", {"criteria": "volume"}, "At least one of min_value or max_value"),
         ("body", {"criteria": "name"}, "name must be provided"),
         ("body", {"criteria": "color"}, "color must be provided"),
         ("body", {"criteria": "containing_surface_type"}, "surface_type must be provided"),
         ("body", {"criteria": "containing_curve_type"}, "curve_type must be provided"),
         ("body", {"criteria": "surface_count"}, "surface_type must be provided"),
         ("body", {"criteria": "curve_count"}, "curve_type must be provided"),
-        (
-            "body",
-            {"criteria": "surface_count", "surface_type": "plane"},
-            "At least one of min_value or max_value",
-        ),
         (
             "body",
             {"criteria": "volume", "find_max": True, "find_min": True},
