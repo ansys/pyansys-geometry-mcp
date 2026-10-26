@@ -438,16 +438,16 @@ def select_entities(
             Bodies whose name matches exactly. Bodies only. Requires ``name``.
         ``"volume"``
             Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
-            Requires at least one of ``min_value`` or ``max_value``.
+            ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"surface_area"``
             Bodies whose surface area falls in [``min_value``, ``max_value``] (m²).
-            Requires at least one of ``min_value`` or ``max_value``.
+            ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"area"``
             Faces whose area falls in [``min_value``, ``max_value``] (m²).
-            Requires at least one of ``min_value`` or ``max_value``.
+            ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"length"``
             Edges whose length falls in [``min_value``, ``max_value``] (m).
-            Requires at least one of ``min_value`` or ``max_value``.
+            ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"x_location"``, ``"y_location"``, ``"z_location"``
             Entities whose centroid coordinate on the specified axis falls in
             [``min_value``, ``max_value``] (m). Requires at least one of
@@ -459,10 +459,12 @@ def select_entities(
     named_selection : str, default: None
         Named selection label for the ``"named_selection"`` criterion.
     min_value : float, default: None
-        Lower bound (inclusive) for range-based criteria, in SI units (m, m², m³).
+        Lower bound (inclusive) for range-based criteria, in SI units: m for ``length``
+        and the location criteria, m² for ``area`` and ``surface_area``, m³ for ``volume``.
+        Convert millimetre values first, for example 2000 mm² is ``0.002``.
     max_value : float, default: None
-        Upper bound (inclusive) for range-based criteria, in SI units (m, m², m³).
-        Pass ``None`` to leave the upper bound open.
+        Upper bound (inclusive) for range-based criteria, in the same SI units as
+        ``min_value``. Pass ``None`` to leave the upper bound open.
     color : str, default: None
         Hex color string for the ``"color"`` criterion, such as ``"#FF0000"``.
 
@@ -526,15 +528,10 @@ def select_entities(
             matching = method(name)
             call = f"{method_name}('{name}')"
         elif criteria in _MEASURE_CRITERIA:
-            if min_value is None and max_value is None:
-                return (
-                    f"At least one of min_value or max_value must be provided "
-                    f"for '{criteria}' criterion."
-                )
-            # requires lower bound and negative measurements are not allowed
-            min_val = min_value if min_value is not None else 0.0
-            matching = method(min_val, max_value)
-            call = f"{method_name}({min_val}, {max_value})"
+            if min_value is None:
+                min_value = 0
+            matching = method(min_value, max_value)
+            call = f"{method_name}({min_value}, {max_value})"
         elif criteria in _LOCATION_CRITERIA:
             if min_value is None and max_value is None:
                 return (
@@ -640,15 +637,17 @@ def filter_entities(
         ``"volume"``, ``"surface_area"``, ``"area"``, ``"perimeter"``, ``"length"``
             Keep entities whose measurement falls in [``min_value``, ``max_value``],
             or the single largest/smallest when ``find_max``/``find_min`` is ``True``.
+            ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"face_count"``, ``"edge_count"``, ``"loop_count"``
             Keep entities with a count in [``min_value``, ``max_value``], or the
             largest/smallest when ``find_max``/``find_min`` is ``True``.
+            ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"surface_count"``
             Keep bodies by how many surfaces of ``surface_type`` they contain.
-            Requires ``surface_type``.
+            Requires ``surface_type``. ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"curve_count"``
             Keep bodies or faces by how many curves of ``curve_type`` they contain.
-            Requires ``curve_type``.
+            Requires ``curve_type``. ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"color"``
             Keep bodies or faces with a specific display color. Requires ``color``.
         ``"name"``
@@ -668,9 +667,13 @@ def filter_entities(
     find_min : bool, default: False
         Keep only the entity with the minimum value of the criterion.
     min_value : float, default: None
-        Lower bound (inclusive) for range-based criteria, in SI units (m, m², m³).
+        Lower bound (inclusive) for range-based criteria. Measurements are in SI units:
+        m for ``length`` and ``perimeter``, m² for ``area`` and ``surface_area``, m³ for
+        ``volume``. Convert millimetre values first, for example 2000 mm² is ``0.002``.
+        Count criteria take plain integers.
     max_value : float, default: None
-        Upper bound (inclusive) for range-based criteria, in SI units (m, m², m³).
+        Upper bound (inclusive) for range-based criteria, in the same units as
+        ``min_value``.
     surface_type : str, default: None
         Surface type for the ``"surface_count"`` and ``"containing_surface_type"`` criteria.
     curve_type : str, default: None
@@ -733,17 +736,11 @@ def filter_entities(
                 matching = getattr(selection, f"filter_{attr}_min_{criteria}")()
                 call = f"filter_{attr}_min_{criteria}()"
             else:
-                if min_value is None and max_value is None:
-                    return (
-                        f"At least one of min_value or max_value must be provided "
-                        f"for '{criteria}' criterion."
-                    )
                 if criteria in _INT_CRITERIA:
-                    min_val = int(min_value) if min_value is not None else None
+                    min_val = int(min_value) if min_value is not None else 0
                     max_val = int(max_value) if max_value is not None else None
                 else:
-                    # requires a lower bound and measurements are never negative.
-                    min_val = min_value if min_value is not None else 0.0
+                    min_val = min_value if min_value is not None else 0
                     max_val = max_value
                 matching = getattr(selection, f"filter_{attr}_by_{criteria}")(min_val, max_val)
                 call = f"filter_{attr}_by_{criteria}({min_val}, {max_val})"
@@ -765,12 +762,7 @@ def filter_entities(
                 matching = getattr(selection, f"filter_{attr}_min_{core_name}")(enum_val)
                 call = f"filter_{attr}_min_{core_name}('{enum_val_str}')"
             else:
-                if min_value is None and max_value is None:
-                    return (
-                        f"At least one of min_value or max_value must be provided "
-                        f"for '{criteria}' criterion."
-                    )
-                min_val = int(min_value) if min_value is not None else None
+                min_val = int(min_value) if min_value is not None else 0
                 max_val = int(max_value) if max_value is not None else None
                 matching = getattr(selection, f"filter_{attr}_by_{core_name}")(
                     enum_val, min_val, max_val
