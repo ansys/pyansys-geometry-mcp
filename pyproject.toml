@@ -14,7 +14,7 @@ keywords = [
   "mcp",
   "model-context-protocol",
 ]
-license = "MIT"
+license = "Apache-2.0"
 maintainers = [
   { name = "Synopsys, Inc. and ANSYS, Inc.", email = "pyansys-core@synopsys.com" },
 ]
@@ -26,7 +26,6 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",
