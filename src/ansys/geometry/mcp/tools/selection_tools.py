@@ -262,8 +262,8 @@ def list_entities(
 ) -> str:
     """List the entities of a given type in the active design.
 
-    This is the discovery tool. Use it to find the exact body and component IDs and names,
-    face IDs, and edge IDs that every other tool expects as input.
+    This is the discovery tool. Use it to find the exact body, component, face, and edge IDs
+    that other tools expect as input, with body paths and component names for context.
     Body and component names need not be unique, so other tools take IDs.
 
     Users refer to bodies by name. To turn a body name into its ID, call this
@@ -370,8 +370,9 @@ def create_selection_builder(ctx: Context) -> str:
     steps. Start with ``select_entities``, refine with ``filter_entities`` or add related
     entities with ``extend_selection``, and use ``order_entities`` or ``group_entities``
     when ranking or grouping is useful. Save the final set with ``create_named_selection``.
-    If the requested entities are already known by name or ID and only need a label, call
-    ``create_named_selection`` directly without a builder.
+    If the requested entities are already known by ID and only need a label, call
+    ``create_named_selection`` directly without a builder. Resolve body names to IDs with
+    ``list_entities`` first.
 
     Call this tool only to start a brand-new selection. If a selection builder already
     exists from earlier in this conversation, reuse its handle in the other
@@ -483,7 +484,8 @@ def select_entities(
         ``"named_selection"``
             Entities belonging to a named selection group. Requires ``named_selection``.
         ``"name"``
-            Bodies whose name matches exactly. Bodies only. Requires ``name``.
+            All bodies whose name matches exactly, including bodies sharing a name.
+            Bodies only. Requires ``name``.
         ``"volume"``
             Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
             Requires ``min_value``.
@@ -517,7 +519,7 @@ def select_entities(
     Returns
     -------
     list of str | str
-        Body names or face/edge IDs for every match. If no entities match, an empty list
+        Body, face, or edge IDs for every match. If no entities match, an empty list
         is returned.
 
         If the selection handle is invalid, the criterion does not apply to the entity type,
@@ -695,7 +697,8 @@ def filter_entities(
         ``"color"``
             Keep bodies or faces with a specific display color. Requires ``color``.
         ``"name"``
-            Keep bodies whose name matches exactly. Bodies only. Requires ``name``.
+            Keep all bodies whose name matches exactly, including bodies sharing a name.
+            Bodies only. Requires ``name``.
         ``"containing_surface_type"``
             Keep bodies containing a surface of ``surface_type``. Bodies only.
         ``"containing_curve_type"``
@@ -725,7 +728,7 @@ def filter_entities(
     Returns
     -------
     list of str | str
-        Body names or face/edge IDs that survive the filter. If no entities survive
+        Body, face, or edge IDs that survive the filter. If no entities survive
         the filter, an empty list is returned.
 
         If the selection handle is invalid, the criterion does not apply to the entity type, or
@@ -919,8 +922,8 @@ def order_entities(
     Returns
     -------
     list of str | str
-        Body names or face/edge IDs for every match. If no entities match, an empty list
-        is returned.
+        Body, face, or edge IDs in ascending order of the chosen property.
+        If the selection is empty, an empty list is returned.
 
         If the selection handle is invalid, the criterion does not apply to the entity type, or
         required arguments are missing, a string error message is returned.
@@ -1223,9 +1226,9 @@ def create_named_selection(
     A named selection is a labelled group of entities that can later be
     referenced by name (for example, for meshing or boundary conditions). Use this tool
     to save the final result of a selection workflow or call it directly when the
-    requested entities are already known by name or ID. It stores the supplied
-    entities. It does not discover or refine them. At least one of
-    ``selection_handle`` or an entity list must be provided.
+    requested entities are already known by ID. Resolve body names to IDs with
+    ``list_entities`` first. It stores the supplied entities. It does not discover
+    or refine them. At least one of ``selection_handle`` or an entity list must be provided.
 
     Typical workflows:
 

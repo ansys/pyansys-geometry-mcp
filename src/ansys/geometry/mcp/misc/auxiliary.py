@@ -139,10 +139,10 @@ def resolve_bodies(
     named_selection: str | None = None,
     selection_handle: str | None = None,
 ) -> tuple[list["Body"], str | None]:
-    """Resolve the bodies a tool should act on from the ways a caller can name them.
+    """Resolve the bodies a tool should act on from IDs or a selection.
 
     Precedence is ``selection_handle``, then ``named_selection``, then
-    ``body_names``, and then every body in the design.
+    ``body_ids``, and then every body in the design.
 
     Parameters
     ----------
