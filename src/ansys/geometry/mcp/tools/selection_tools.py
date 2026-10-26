@@ -1392,6 +1392,9 @@ def create_named_selection(
             if selected_edges is not None and selected_edges.items:
                 cmd_parts.append("edges=selection_builder._edges.items")
         if body_ids:
+            app_context.command_history.append(
+                "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids"
+            )
             cmd_parts.append(f"bodies=get_bodies_from_ids(design, {body_ids!r})")
         if face_ids:
             cmd_parts.append(f"faces=get_faces_from_ids(design, {face_ids!r})")
@@ -1404,6 +1407,9 @@ def create_named_selection(
                 f"design_points=get_design_points_from_ids(design, {design_point_ids!r})"
             )
         if component_ids:
+            app_context.command_history.append(
+                "from ansys.geometry.core.misc.auxiliary import get_components_from_ids"
+            )
             cmd_parts.append(f"components=get_components_from_ids(design, {component_ids!r})")
         if vertex_ids:
             cmd_parts.append(f"vertices=get_vertices_from_ids(design, {vertex_ids!r})")

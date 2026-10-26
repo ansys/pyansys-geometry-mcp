@@ -118,6 +118,9 @@ def boolean_operation(
         operation_methods[operation](tool)
 
         app_context.command_history.append(
+            "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids"
+        )
+        app_context.command_history.append(
             f"target = get_bodies_from_ids(design, [{target_body_id!r}])[0]"
         )
         app_context.command_history.append(

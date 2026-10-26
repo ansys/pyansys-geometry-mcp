@@ -78,9 +78,12 @@ _PROBLEM_AREA_OPERATIONS = {"missing_faces", "small_faces"}
 
 
 def _bodies_transcript(bodies) -> str:
-    """Render the resolved body scope as a replayable transcript line."""
+    """Render the resolved body scope."""
     ids = [body.id for body in bodies]
-    return f"bodies = get_bodies_from_ids(design, {ids!r})"
+    return (
+        "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids\n"
+        f"bodies = get_bodies_from_ids(design, {ids!r})"
+    )
 
 
 def _summarize(operation: str, message, body_count: int) -> str:
