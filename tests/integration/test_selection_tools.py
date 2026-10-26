@@ -311,7 +311,6 @@ def test_filter_edges(ctx: PyAnsysGeometryContext):
 @pytest.mark.parametrize(
     "entity_type, criteria, max_value, expected",
     [
-        # 1×1×1 m box: volume 1 m³, surface area 6 m², faces 1 m² / 4 m, edges 1 m.
         ("body", "volume", 2.0, 1),
         ("body", "surface_area", 7.0, 1),
         ("face", "area", 2.0, 6),
