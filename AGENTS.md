@@ -65,7 +65,7 @@ This rule governs *discovery*. Reading a tool's source is still expected once
   and volumes), and angles passed as `Quantity` need an explicit unit. Users
   usually speak in millimetres, so convert at the boundary and state the unit in
   every numeric parameter's docstring.
-- Keep the existing MIT license header at the top of source files.
+- Keep the existing Apache-2.0 license header at the top of source files.
 - Do not manually create changelog files. These are automatically created on PRs.
 
 ## Testing

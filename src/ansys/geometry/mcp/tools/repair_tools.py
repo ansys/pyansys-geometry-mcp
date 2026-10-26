@@ -52,6 +52,7 @@ RepairOperation = Literal[
     "stitch_faces",
     "missing_faces",
     "small_faces",
+    "logos",
 ]
 
 # Operation -> (RepairTools method, tuning parameters that method accepts).
@@ -72,6 +73,7 @@ _REPAIR_OPERATIONS: dict[str, tuple[str, tuple[str, ...]]] = {
     ),
     "missing_faces": ("find_missing_faces", ("angle", "distance")),
     "small_faces": ("find_small_faces", ("area", "width")),
+    "logos": ("find_and_remove_logos", ("min_height", "max_height")),
 }
 
 _PROBLEM_AREA_OPERATIONS = {"missing_faces", "small_faces"}
@@ -201,12 +203,14 @@ def repair_geometry(
     distance: float | None = None,
     area: float | None = None,
     width: float | None = None,
+    min_height: float | None = None,
+    max_height: float | None = None,
 ) -> str:
     """Repair defective geometry by finding and fixing one class of problem area.
 
     Use this to clean up imported or faulty CAD. Remove slivers and small
     faces, fill missing faces, merge fragmented edges, simplify over-complex
-    faces, or stitch surfaces into solids.
+    faces, stitch surfaces into solids, or find and remove logos.
 
     When the user has already named the defect ("fix the short edges under
     0.5 mm", "stitch these surfaces"), call this tool directly. Running
@@ -240,6 +244,14 @@ def repair_geometry(
     - ``"small_faces"``
         Find and fix small face regions. Accepts ``area`` and ``width``
         thresholds.
+    - ``"logos"``
+        Find and remove logos. Accepts ``min_height`` and ``max_height``.
+        ``max_height`` is required and has no default: if the user has not
+        given one, ask them for it before calling. Do not choose a value
+        yourself, because a height that is too large also removes real
+        features such as bolt heads.
+        Requires Ansys 25R2 or later (26R1 or later on Linux).
+        Reports only the backend success flag, not logo or repair counts.
 
     Passing a tuning parameter that the chosen operation does not accept is
     rejected rather than silently ignored.
@@ -263,7 +275,7 @@ def repair_geometry(
     operation : str
         Which repair to apply. Options are ``"all"``, ``"short_edges"``, ``"extra_edges"``,
         ``"split_edges"``, ``"simplify"``, ``"stitch_faces"``,
-        ``"missing_faces"``, or ``"small_faces"``.
+        ``"missing_faces"``, ``"small_faces"``, and ``"logos"``.
     body_ids : list of str, default: None
         IDs of the bodies to repair. Look up a body named by the user with
         ``list_entities(entity_type="body", name=...)``.
@@ -291,11 +303,16 @@ def repair_geometry(
         Maximum face area in square meters for ``"small_faces"``.
     width : float, default: None
         Maximum face width in meters for ``"small_faces"``.
+    min_height : float, default: None
+        Minimum logo height in meters for ``"logos"``. Omit to use the backend default.
+    max_height : float, default: None
+        Maximum logo height in meters for ``"logos"``. Required for ``"logos"``. Ask the
+        user for it if they have not given one. Never guess it.
     comprehensive_result : bool, default: False
         Whether to fix each problem area individually. This is expensive. It costs one
         backend round trip per problem area. Leave it set to ``False`` unless the user
         asks for it. This parameter is not supported by ``operation="all"``,
-        ``"missing_faces"``, or ``"small_faces"``. The latter two always fix each
+        ``"missing_faces"``, ``"small_faces"``, or ``"logos"``. The face operations fix each
         detected region.
 
     Returns
@@ -316,6 +333,15 @@ def repair_geometry(
         )
 
     method_name, accepted = _REPAIR_OPERATIONS[operation]
+    if operation == "logos" and max_height is None:
+        # The backend detects no logos without a maximum height, and no single default is
+        # safe: too large a value also removes real features such as bolt heads.
+        return (
+            "Operation 'logos' requires 'max_height'. Nothing was changed. Ask the user for "
+            "the maximum logo height (for example in millimeters) and call again with "
+            "max_height in meters. Do not choose a value yourself: too large a height also "
+            "removes real features such as bolt heads."
+        )
     supplied = {
         "length": length,
         "angle": angle,
@@ -323,6 +349,8 @@ def repair_geometry(
         "distance": distance,
         "area": area,
         "width": width,
+        "min_height": min_height,
+        "max_height": max_height,
         "allow_multiple_bodies": allow_multiple_bodies,
         "maintain_components": maintain_components,
         "check_for_coincidence": check_for_coincidence,
@@ -330,7 +358,7 @@ def repair_geometry(
     rejected = [
         name for name, value in supplied.items() if value is not None and name not in accepted
     ]
-    if comprehensive_result and operation in {"all", *_PROBLEM_AREA_OPERATIONS}:
+    if comprehensive_result and operation in {"all", "logos", *_PROBLEM_AREA_OPERATIONS}:
         rejected.append("comprehensive_result")
     if rejected:
         allowed = ", ".join(accepted) or "none"
@@ -340,7 +368,7 @@ def repair_geometry(
         )
 
     kwargs = {name: supplied[name] for name in accepted if supplied[name] is not None}
-    if operation != "all" and operation not in _PROBLEM_AREA_OPERATIONS:
+    if operation not in {"all", "logos", *_PROBLEM_AREA_OPERATIONS}:
         kwargs["comprehensive_result"] = comprehensive_result
 
     call_kwargs = dict(kwargs)
@@ -358,7 +386,8 @@ def repair_geometry(
         if error is not None:
             return error
 
-        method = getattr(app_context.product_instance.repair_tools, method_name)
+        tool_family = "prepare_tools" if operation == "logos" else "repair_tools"
+        method = getattr(getattr(app_context.product_instance, tool_family), method_name)
         if operation in _PROBLEM_AREA_OPERATIONS:
             problem_areas = method(bodies, **call_kwargs)
             messages = [problem_area.fix() for problem_area in problem_areas]
@@ -386,7 +415,7 @@ def repair_geometry(
         if "angle" in kwargs:
             app_context.command_history.append("from ansys.geometry.core.misc import UNITS, Angle")
         app_context.command_history.append(_bodies_transcript(bodies))
-        method_call = f"instance.repair_tools.{method_name}(bodies{kwargs_str})"
+        method_call = f"instance.{tool_family}.{method_name}(bodies{kwargs_str})"
         if operation in _PROBLEM_AREA_OPERATIONS:
             app_context.command_history.append(f"problem_areas = {method_call}")
             app_context.command_history.append(
@@ -396,6 +425,8 @@ def repair_geometry(
             app_context.command_history.append(method_call)
         logger.info(f"repair_geometry: operation={operation!r}, bodies={len(bodies)}")
 
+        if operation == "logos":
+            return f"Repair 'logos' ran on {len(bodies)} bodies. Success: {message}."
         return _summarize(operation, message, len(bodies))
     except Exception as e:
         logger.error(f"repair_geometry failed: {e}")
