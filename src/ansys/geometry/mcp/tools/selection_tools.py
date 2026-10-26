@@ -116,10 +116,11 @@ _FILTER_RANGE_CRITERIA = {
 }
 # Criteria counting entities of a given surface/curve type.
 _FILTER_TYPED_COUNT_CRITERIA = {
-    "body": ("number_surfaces", "number_curves"),
-    "face": ("number_curves",),
+    "body": ("surface_count", "curve_count"),
+    "face": ("curve_count",),
     "edge": (),
 }
+_FILTER_CORE_NAMES = {"surface_count": "number_surfaces", "curve_count": "number_curves"}
 # Criteria taking no numeric range.
 _FILTER_OTHER_CRITERIA = {
     "body": (
@@ -134,7 +135,7 @@ _FILTER_OTHER_CRITERIA = {
     "edge": ("curve_type",),
 }
 # Count-based criteria the backend expects as integers.
-_INT_CRITERIA = ("face_count", "edge_count", "loop_count", "number_surfaces", "number_curves")
+_INT_CRITERIA = ("face_count", "edge_count", "loop_count", "surface_count", "curve_count")
 
 _ORDER_CRITERIA = {
     "body": (
@@ -143,11 +144,16 @@ _ORDER_CRITERIA = {
         "face_count",
         "edge_count",
         "loop_count",
-        "number_of_surfaces",
-        "number_of_curves",
+        "surface_count",
+        "curve_count",
     ),
-    "face": ("area", "perimeter", "edge_count", "loop_count", "number_curves"),
+    "face": ("area", "perimeter", "edge_count", "loop_count", "curve_count"),
     "edge": ("length",),
+}
+_ORDER_CORE_NAMES = {
+    "body": {"surface_count": "number_of_surfaces", "curve_count": "number_of_curves"},
+    "face": {"curve_count": "number_curves"},
+    "edge": {},
 }
 
 _GROUP_CRITERIA = {
@@ -168,16 +174,16 @@ _EXTEND_METHODS = {
     "body": {
         "volume": "extend_to_same_volume",
         "surface_area": "extend_to_same_surface_area",
-        "number_of_faces": "extend_to_same_number_of_faces",
-        "number_of_edges": "extend_to_same_number_of_edges",
+        "face_count": "extend_to_same_number_of_faces",
+        "edge_count": "extend_to_same_number_of_edges",
         "color": "extend_to_same_color",
         "name": "extend_to_same_name",
         "nearby": "extend_nearby_bodies",
     },
     "face": {
         "area": "extend_to_same_area",
-        "number_of_edges": "extend_to_same_number_of_edges",
-        "number_of_loops": "extend_to_same_number_of_loops",
+        "edge_count": "extend_to_same_number_of_edges",
+        "loop_count": "extend_to_same_number_of_loops",
         "color": "extend_to_same_color",
         "coincident": "extend_to_coincident",
         "coaxial": "extend_to_coaxial_faces",
@@ -453,9 +459,9 @@ def select_entities(
     named_selection : str, default: None
         Named selection label for the ``"named_selection"`` criterion.
     min_value : float, default: None
-        Lower bound (inclusive) for range-based criteria.
+        Lower bound (inclusive) for range-based criteria, in SI units (m, m², m³).
     max_value : float, default: None
-        Upper bound (inclusive) for range-based criteria.
+        Upper bound (inclusive) for range-based criteria, in SI units (m, m², m³).
         Pass ``None`` to leave the upper bound open.
     color : str, default: None
         Hex color string for the ``"color"`` criterion, such as ``"#FF0000"``.
@@ -525,7 +531,7 @@ def select_entities(
                     f"At least one of min_value or max_value must be provided "
                     f"for '{criteria}' criterion."
                 )
-            #requires lower bound and negative measurements are not allowed
+            # requires lower bound and negative measurements are not allowed
             min_val = min_value if min_value is not None else 0.0
             matching = method(min_val, max_value)
             call = f"{method_name}({min_val}, {max_value})"
@@ -578,8 +584,8 @@ def filter_entities(
         "face_count",
         "edge_count",
         "loop_count",
-        "number_surfaces",
-        "number_curves",
+        "surface_count",
+        "curve_count",
         "color",
         "name",
         "containing_surface_type",
@@ -612,10 +618,10 @@ def filter_entities(
     Criteria by ``entity_type``:
 
     - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
-      ``loop_count``, ``number_surfaces``, ``number_curves``, ``color``, ``name``,
+      ``loop_count``, ``surface_count``, ``curve_count``, ``color``, ``name``,
       ``containing_surface_type``, ``containing_curve_type``, ``is_surface``, ``is_solid``
     - ``"face"``: ``area``, ``perimeter``, ``edge_count``, ``loop_count``,
-      ``number_curves``, ``color``, ``containing_curve_type``
+      ``curve_count``, ``color``, ``containing_curve_type``
     - ``"edge"``: ``length``, ``curve_type``
 
     Parameters
@@ -637,10 +643,10 @@ def filter_entities(
         ``"face_count"``, ``"edge_count"``, ``"loop_count"``
             Keep entities with a count in [``min_value``, ``max_value``], or the
             largest/smallest when ``find_max``/``find_min`` is ``True``.
-        ``"number_surfaces"``
+        ``"surface_count"``
             Keep bodies by how many surfaces of ``surface_type`` they contain.
             Requires ``surface_type``.
-        ``"number_curves"``
+        ``"curve_count"``
             Keep bodies or faces by how many curves of ``curve_type`` they contain.
             Requires ``curve_type``.
         ``"color"``
@@ -662,13 +668,13 @@ def filter_entities(
     find_min : bool, default: False
         Keep only the entity with the minimum value of the criterion.
     min_value : float, default: None
-        Lower bound (inclusive) for range-based criteria.
+        Lower bound (inclusive) for range-based criteria, in SI units (m, m², m³).
     max_value : float, default: None
-        Upper bound (inclusive) for range-based criteria.
+        Upper bound (inclusive) for range-based criteria, in SI units (m, m², m³).
     surface_type : str, default: None
-        Surface type for the ``"number_surfaces"`` and ``"containing_surface_type"`` criteria.
+        Surface type for the ``"surface_count"`` and ``"containing_surface_type"`` criteria.
     curve_type : str, default: None
-        Curve type for the ``"number_curves"``, ``"containing_curve_type"``, and
+        Curve type for the ``"curve_count"``, ``"containing_curve_type"``, and
         ``"curve_type"`` criteria.
     color : str, default: None
         Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
@@ -736,26 +742,28 @@ def filter_entities(
                     min_val = int(min_value) if min_value is not None else None
                     max_val = int(max_value) if max_value is not None else None
                 else:
-                    #requires a lower bound and measurements are never negative.
+                    # requires a lower bound and measurements are never negative.
                     min_val = min_value if min_value is not None else 0.0
                     max_val = max_value
                 matching = getattr(selection, f"filter_{attr}_by_{criteria}")(min_val, max_val)
                 call = f"filter_{attr}_by_{criteria}({min_val}, {max_val})"
         elif criteria in typed_count_criteria:
-            enum_key = "surface_type" if criteria == "number_surfaces" else "curve_type"
-            enum_val_str = surface_type if criteria == "number_surfaces" else curve_type
-            type_map = _SURFACE_TYPE_MAP if criteria == "number_surfaces" else _CURVE_TYPE_MAP
+            is_surface_count = criteria == "surface_count"
+            enum_key = "surface_type" if is_surface_count else "curve_type"
+            enum_val_str = surface_type if is_surface_count else curve_type
+            type_map = _SURFACE_TYPE_MAP if is_surface_count else _CURVE_TYPE_MAP
             if enum_val_str is None:
                 return f"{enum_key} must be provided for '{criteria}' criterion."
             enum_val = type_map[enum_val_str]
+            core_name = _FILTER_CORE_NAMES[criteria]
             if find_max and find_min:
                 return "Cannot set both find_max and find_min to True."
             if find_max:
-                matching = getattr(selection, f"filter_{attr}_max_{criteria}")(enum_val)
-                call = f"filter_{attr}_max_{criteria}('{enum_val_str}')"
+                matching = getattr(selection, f"filter_{attr}_max_{core_name}")(enum_val)
+                call = f"filter_{attr}_max_{core_name}('{enum_val_str}')"
             elif find_min:
-                matching = getattr(selection, f"filter_{attr}_min_{criteria}")(enum_val)
-                call = f"filter_{attr}_min_{criteria}('{enum_val_str}')"
+                matching = getattr(selection, f"filter_{attr}_min_{core_name}")(enum_val)
+                call = f"filter_{attr}_min_{core_name}('{enum_val_str}')"
             else:
                 if min_value is None and max_value is None:
                     return (
@@ -764,10 +772,10 @@ def filter_entities(
                     )
                 min_val = int(min_value) if min_value is not None else None
                 max_val = int(max_value) if max_value is not None else None
-                matching = getattr(selection, f"filter_{attr}_by_{criteria}")(
+                matching = getattr(selection, f"filter_{attr}_by_{core_name}")(
                     enum_val, min_val, max_val
                 )
-                call = f"filter_{attr}_by_{criteria}('{enum_val_str}', {min_val}, {max_val})"
+                call = f"filter_{attr}_by_{core_name}('{enum_val_str}', {min_val}, {max_val})"
         elif criteria == "color":
             if not color:
                 return "color must be provided for 'color' criterion."
@@ -833,9 +841,8 @@ def order_entities(
         "face_count",
         "edge_count",
         "loop_count",
-        "number_of_surfaces",
-        "number_of_curves",
-        "number_curves",
+        "surface_count",
+        "curve_count",
     ],
     curve_type: Literal["line", "circle", "ellipse", "nurbs", "procedural", "helix", "spline"]
     | None = None,
@@ -849,9 +856,9 @@ def order_entities(
     Criteria by ``entity_type``:
 
     - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
-      ``loop_count``, ``number_of_surfaces``, ``number_of_curves``
+      ``loop_count``, ``surface_count``, ``curve_count``
     - ``"face"``: ``area``, ``perimeter``, ``edge_count``, ``loop_count``,
-      ``number_curves`` (requires ``curve_type``)
+      ``curve_count`` (requires ``curve_type``)
     - ``"edge"``: ``length``
 
     Parameters
@@ -867,7 +874,7 @@ def order_entities(
     criteria : str
         Property to sort by, smallest first.
     curve_type : str, default: None
-        Curve type for the face ``"number_curves"`` criterion.
+        Curve type for the face ``"curve_count"`` criterion.
 
     Returns
     -------
@@ -905,16 +912,22 @@ def order_entities(
             return _unsupported(criteria, entity_type, supported)
 
         attr = _SELECTION_ATTR[entity_type]
-        method = getattr(getattr(selection_builder, attr), f"order_{attr}_by_{criteria}")
+        core_name = _ORDER_CORE_NAMES[entity_type].get(criteria, criteria)
+        method = getattr(getattr(selection_builder, attr), f"order_{attr}_by_{core_name}")
 
-        if criteria == "number_curves":
+        if entity_type == "face" and criteria == "curve_count":
             if not curve_type:
-                return "curve_type must be provided for 'number_curves' criterion."
+                return "curve_type must be provided for face 'curve_count' criterion."
             ordered = method(_CURVE_TYPE_MAP[curve_type])
-            call = f"order_{attr}_by_{criteria}('{curve_type}')"
+            call = f"order_{attr}_by_{core_name}('{curve_type}')"
+        elif curve_type is not None:
+            return (
+                f"curve_type is not supported for {entity_type} '{criteria}'; "
+                "only face 'curve_count' takes a curve_type."
+            )
         else:
             ordered = method()
-            call = f"order_{attr}_by_{criteria}()"
+            call = f"order_{attr}_by_{core_name}()"
 
         app_context.command_history.append(f"ordered = selection_builder.{attr}.{call}")
         getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = ordered.items
@@ -1039,9 +1052,9 @@ def extend_selection(
         "volume",
         "surface_area",
         "area",
-        "number_of_faces",
-        "number_of_edges",
-        "number_of_loops",
+        "face_count",
+        "edge_count",
+        "loop_count",
         "color",
         "name",
         "nearby",
@@ -1063,9 +1076,9 @@ def extend_selection(
 
     Criteria by ``entity_type``:
 
-    - ``"body"``: ``volume``, ``surface_area``, ``number_of_faces``,
-      ``number_of_edges``, ``color``, ``name``, ``nearby``
-    - ``"face"``: ``area``, ``number_of_edges``, ``number_of_loops``, ``color``,
+    - ``"body"``: ``volume``, ``surface_area``, ``face_count``,
+      ``edge_count``, ``color``, ``name``, ``nearby``
+    - ``"face"``: ``area``, ``edge_count``, ``loop_count``, ``color``,
       ``coincident``, ``coaxial``
     - ``"edge"``: ``nearby``, ``connected``, ``tangent_chain``, ``coaxial``
 

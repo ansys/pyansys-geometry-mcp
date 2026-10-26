@@ -252,9 +252,9 @@ def test_select_measure_max_only(
         ("face_count", {"find_max": True}),
         ("edge_count", {"find_max": True}),
         ("loop_count", {"find_max": True}),
-        ("number_surfaces", {"surface_type": "plane", "min_value": 1, "max_value": 10}),
-        ("number_surfaces", {"surface_type": "plane", "find_max": True}),
-        ("number_curves", {"curve_type": "line", "find_min": True}),
+        ("surface_count", {"surface_type": "plane", "min_value": 1, "max_value": 10}),
+        ("surface_count", {"surface_type": "plane", "find_max": True}),
+        ("curve_count", {"curve_type": "line", "find_min": True}),
         ("name", {"name": "num_box"}),
         ("containing_surface_type", {"surface_type": "plane"}),
         ("containing_curve_type", {"curve_type": "line"}),
@@ -339,11 +339,11 @@ def test_filter_measure_max_only(
         ("body", {"criteria": "color"}, "color must be provided"),
         ("body", {"criteria": "containing_surface_type"}, "surface_type must be provided"),
         ("body", {"criteria": "containing_curve_type"}, "curve_type must be provided"),
-        ("body", {"criteria": "number_surfaces"}, "surface_type must be provided"),
-        ("body", {"criteria": "number_curves"}, "curve_type must be provided"),
+        ("body", {"criteria": "surface_count"}, "surface_type must be provided"),
+        ("body", {"criteria": "curve_count"}, "curve_type must be provided"),
         (
             "body",
-            {"criteria": "number_surfaces", "surface_type": "plane"},
+            {"criteria": "surface_count", "surface_type": "plane"},
             "At least one of min_value or max_value",
         ),
         (
@@ -354,7 +354,7 @@ def test_filter_measure_max_only(
         (
             "body",
             {
-                "criteria": "number_surfaces",
+                "criteria": "surface_count",
                 "surface_type": "plane",
                 "find_max": True,
                 "find_min": True,
@@ -382,9 +382,11 @@ def test_filter_entities_missing_args(ctx: PyAnsysGeometryContext, entity_type, 
     [
         ("body", {"criteria": "volume"}, 1),
         ("body", {"criteria": "face_count"}, 1),
+        ("body", {"criteria": "surface_count"}, 1),
+        ("body", {"criteria": "curve_count"}, 1),
         ("face", {"criteria": "area"}, 6),
         ("face", {"criteria": "perimeter"}, 6),
-        ("face", {"criteria": "number_curves", "curve_type": "line"}, 6),
+        ("face", {"criteria": "curve_count", "curve_type": "line"}, 6),
         ("edge", {"criteria": "length"}, 12),
     ],
 )
@@ -403,14 +405,46 @@ def test_order_entities(ctx: PyAnsysGeometryContext, entity_type, kwargs, count)
     assert [item.name if entity_type == "body" else item.id for item in selection.items] == ordered
 
 
-def test_order_faces_number_curves_requires_curve_type(ctx: PyAnsysGeometryContext):
-    """The face number_curves criterion is the only ordering rule taking an argument."""
+def test_order_faces_curve_count_requires_curve_type(ctx: PyAnsysGeometryContext):
+    """The face curve_count criterion is the only ordering rule taking an argument."""
     handle = _setup(ctx, "test_order_missing_arg")
     select_entities(ctx, handle, "face", criteria="all")
 
     assert "curve_type must be provided" in order_entities(
-        ctx, handle, "face", criteria="number_curves"
+        ctx, handle, "face", criteria="curve_count"
     )
+
+
+def test_order_bodies_curve_count_rejects_curve_type(ctx: PyAnsysGeometryContext):
+    """Body curve_count counts every curve, so a curve_type is refused instead of ignored."""
+    handle = _setup(ctx, "test_order_body_curve_type")
+    select_entities(ctx, handle, "body", criteria="all")
+
+    assert "curve_type is not supported" in order_entities(
+        ctx, handle, "body", criteria="curve_count", curve_type="line"
+    )
+
+
+@pytest.mark.parametrize(
+    "tool, entity_type, criteria",
+    [
+        (filter_entities, "body", "number_surfaces"),
+        (filter_entities, "face", "number_curves"),
+        (order_entities, "body", "number_of_surfaces"),
+        (order_entities, "body", "number_of_curves"),
+        (order_entities, "face", "number_curves"),
+        (extend_selection, "body", "number_of_faces"),
+        (extend_selection, "face", "number_of_loops"),
+    ],
+)
+def test_legacy_count_criteria_rejected(ctx: PyAnsysGeometryContext, tool, entity_type, criteria):
+    """Count criteria share the *_count names, and the error points to them."""
+    handle = _setup(ctx, "test_legacy_count_names")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    message = tool(ctx, handle, entity_type, criteria=criteria)
+    assert f"Criterion '{criteria}' is not supported" in message
+    assert "_count" in message
 
 
 @pytest.mark.parametrize(
@@ -479,8 +513,11 @@ def test_extend_bodies_nearby(ctx: PyAnsysGeometryContext):
     "entity_type, criteria",
     [
         ("body", "surface_area"),
-        ("body", "number_of_faces"),
+        ("body", "face_count"),
+        ("body", "edge_count"),
         ("face", "area"),
+        ("face", "edge_count"),
+        ("face", "loop_count"),
         ("face", "coincident"),
         ("edge", "tangent_chain"),
     ],
