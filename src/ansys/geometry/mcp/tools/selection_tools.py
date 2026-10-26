@@ -432,16 +432,16 @@ def select_entities(
             Bodies whose name matches exactly. Bodies only. Requires ``name``.
         ``"volume"``
             Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
-            Requires ``min_value``.
+            Requires at least one of ``min_value`` or ``max_value``.
         ``"surface_area"``
             Bodies whose surface area falls in [``min_value``, ``max_value``] (m²).
-            Requires ``min_value``.
+            Requires at least one of ``min_value`` or ``max_value``.
         ``"area"``
             Faces whose area falls in [``min_value``, ``max_value``] (m²).
-            Requires ``min_value``.
+            Requires at least one of ``min_value`` or ``max_value``.
         ``"length"``
             Edges whose length falls in [``min_value``, ``max_value``] (m).
-            Requires ``min_value``.
+            Requires at least one of ``min_value`` or ``max_value``.
         ``"x_location"``, ``"y_location"``, ``"z_location"``
             Entities whose centroid coordinate on the specified axis falls in
             [``min_value``, ``max_value``] (m). Requires at least one of
@@ -520,10 +520,15 @@ def select_entities(
             matching = method(name)
             call = f"{method_name}('{name}')"
         elif criteria in _MEASURE_CRITERIA:
-            if min_value is None:
-                return f"min_value must be provided for '{criteria}' criterion."
-            matching = method(min_value, max_value)
-            call = f"{method_name}({min_value}, {max_value})"
+            if min_value is None and max_value is None:
+                return (
+                    f"At least one of min_value or max_value must be provided "
+                    f"for '{criteria}' criterion."
+                )
+            #requires lower bound and negative measurements are not allowed
+            min_val = min_value if min_value is not None else 0.0
+            matching = method(min_val, max_value)
+            call = f"{method_name}({min_val}, {max_value})"
         elif criteria in _LOCATION_CRITERIA:
             if min_value is None and max_value is None:
                 return (
@@ -731,7 +736,9 @@ def filter_entities(
                     min_val = int(min_value) if min_value is not None else None
                     max_val = int(max_value) if max_value is not None else None
                 else:
-                    min_val, max_val = min_value, max_value
+                    #requires a lower bound and measurements are never negative.
+                    min_val = min_value if min_value is not None else 0.0
+                    max_val = max_value
                 matching = getattr(selection, f"filter_{attr}_by_{criteria}")(min_val, max_val)
                 call = f"filter_{attr}_by_{criteria}({min_val}, {max_val})"
         elif criteria in typed_count_criteria:
