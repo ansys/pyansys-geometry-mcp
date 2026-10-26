@@ -222,6 +222,36 @@ def _body_paths(node, prefix: str, name: str | None = None) -> list[str]:
     return lines
 
 
+def _list_entities_transcript(
+    design, entity_type: str, body_id: str | None, component_id: str | None, name: str | None
+) -> str:
+    """Render code that binds the entities ``list_entities`` listed to a variable."""
+    if entity_type == "component":
+        ids = [comp.id for comp in design._get_all_components()]
+        return (
+            "from ansys.geometry.core.misc.auxiliary import get_components_from_ids\n"
+            f"components = get_components_from_ids(design, {ids!r})"
+        )
+
+    if entity_type == "body":
+        lines = []
+        root = "design"
+        if component_id is not None:
+            lines.append("from ansys.geometry.core.misc.auxiliary import get_components_from_ids")
+            lines.append(f"component = get_components_from_ids(design, [{component_id!r}])[0]")
+            root = "component"
+        query = f"{root}.get_all_bodies()"
+        if name is not None:
+            query = f"[body for body in {query} if body.name.casefold() == {name.casefold()!r}]"
+        lines.append(f"bodies = {query}")
+        return "\n".join(lines)
+
+    return (
+        "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids\n"
+        f"{entity_type}s = get_bodies_from_ids(design, [{body_id!r}])[0].{entity_type}s"
+    )
+
+
 @app.tool()
 def list_entities(
     ctx: Context,
@@ -296,9 +326,8 @@ def list_entities(
 
         if entity_type == "component":
             lines = _component_tree(design, 0)
-            return "\n".join(lines) if lines else "No components found in the active design."
-
-        if entity_type == "body":
+            empty = "No components found in the active design."
+        elif entity_type == "body":
             if component_id is None:
                 root = design
             else:
@@ -309,24 +338,25 @@ def list_entities(
                     return f"Component ID '{component_id}' not found."
                 root = matches[0]
             lines = _body_paths(root, "", name)
-            if lines:
-                return "\n".join(lines)
-            return f"No bodies named '{name}' found." if name else "No bodies found."
+            empty = f"No bodies named '{name}' found." if name else "No bodies found."
+        else:
+            found, _ = find_bodies_by_id(design, [body_id])
+            if not found:
+                return (
+                    f"Body ID '{body_id}' not found. "
+                    "Use list_entities with entity_type='body' to see available bodies."
+                )
+            body = found[0]
+            if entity_type == "face":
+                lines = [f"id={f.id}  surface_type={f.surface_type.name}" for f in body.faces]
+            else:
+                lines = [f"id={e.id}  curve_type={e.curve_type.name}" for e in body.edges]
+            empty = f"Body '{body_id}' has no {entity_type}s."
 
-        found, _ = find_bodies_by_id(design, [body_id])
-        if not found:
-            return (
-                f"Body ID '{body_id}' not found. "
-                "Use list_entities with entity_type='body' to see available bodies."
-            )
-        body = found[0]
-
-        if entity_type == "face":
-            lines = [f"id={face.id}  surface_type={face.surface_type.name}" for face in body.faces]
-            return "\n".join(lines) if lines else f"Body '{body_id}' has no faces."
-
-        lines = [f"id={edge.id}  curve_type={edge.curve_type.name}" for edge in body.edges]
-        return "\n".join(lines) if lines else f"Body '{body_id}' has no edges."
+        app_context.command_history.append(
+            _list_entities_transcript(design, entity_type, body_id, component_id, name)
+        )
+        return "\n".join(lines) if lines else empty
     except Exception as e:
         logger.error(f"list_entities failed: {e}")
         return f"Error listing {entity_type} entities: {e}"

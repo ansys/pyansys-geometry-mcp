@@ -549,6 +549,47 @@ def test_list_faces_and_edges(ctx: PyAnsysGeometryContext, entity_type, detail, 
         assert "Error" in list_entities(ctx, entity_type, body_id=body_id)
 
 
+@pytest.mark.parametrize(
+    "entity_type, kwargs",
+    [
+        ("component", {}),
+        ("body", {}),
+        ("body", {"name": "REC_BOX"}),
+        ("body", {"component_id": "<comp>"}),
+        ("face", {"body_id": "<body>"}),
+        ("edge", {"body_id": "<body>"}),
+    ],
+)
+def test_list_entities_records_history(ctx: PyAnsysGeometryContext, entity_type, kwargs):
+    """The recorded transcript binds the listed entities; failed lookups record nothing."""
+    tools.create_design(ctx, "test_list_history_001")
+    comp = add_component(ctx, name="rec_comp")
+    body = create_box(
+        ctx, name="rec_box", width=1.0, depth=1.0, height=1.0, parent_component_name="rec_comp"
+    )
+    create_box(ctx, name="other_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+    kwargs = {
+        key: {"<comp>": comp.id, "<body>": body.id}.get(value, value)
+        for key, value in kwargs.items()
+    }
+    app_context = get_geometry_ctx(ctx)
+    history_length = len(app_context.command_history)
+
+    listing = list_entities(ctx, entity_type, **kwargs)
+    assert len(app_context.command_history) == history_length + 1
+
+    namespace = {"design": app_context.product_instance.get_active_design()}
+    exec(app_context.command_history[-1], namespace)
+    listed_ids = {line.split()[0].removeprefix("id=") for line in listing.splitlines()}
+    variable = {"body": "bodies"}.get(entity_type, f"{entity_type}s")
+    assert {entity.id for entity in namespace[variable]} == listed_ids
+    assert tools.get_session_script(ctx)
+
+    list_entities(ctx, "face", body_id="nonexistent_body")
+    list_entities(ctx, "body", component_id="nonexistent_comp")
+    assert len(app_context.command_history) == history_length + 1
+
+
 def test_duplicate_named_bodies_are_addressed_by_id(ctx: PyAnsysGeometryContext):
     """Bodies sharing a name are listed separately and each can be targeted by ID."""
     tools.create_design(ctx, "test_dup_bodies_001")
