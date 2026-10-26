@@ -14,7 +14,7 @@ keywords = [
   "mcp",
   "model-context-protocol",
 ]
-license = "MIT"
+license = "Apache-2.0"
 maintainers = [
   { name = "Synopsys, Inc. and ANSYS, Inc.", email = "pyansys-core@synopsys.com" },
 ]
@@ -26,7 +26,6 @@ classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.12",
@@ -59,7 +58,7 @@ dev = [
 ]
 doc = [
   "ansys-common-mcp==0.3.6",
-  "ansys-geometry-core==0.18.1",
+  "ansys-geometry-core==0.18.2",
   "ansys-sphinx-theme[autoapi,changelog]==1.11.0",
   "jupytext==1.19.6",
   "myst-parser==5.1.0",
@@ -84,7 +83,7 @@ eval = [
 ]
 tests = [
   "ansys-common-mcp==0.3.6",
-  "ansys-geometry-core==0.18.1",
+  "ansys-geometry-core==0.18.2",
   "pytest==9.1.1",
   "pytest-asyncio==1.4.0",
   "pytest-cov==7.1.0",
