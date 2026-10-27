@@ -272,6 +272,7 @@ def list_entities(
     user which one they mean.
 
     Behavior per ``entity_type``:
+
     - ``"body"``: ``id=<body id>  path=<component path>/<body name>`` for every
       body, e.g. ``id=0:12  path=MainComponent/Cylinder``. Pass ``name`` to
       list only bodies with that name, and ``component_id`` to restrict the
