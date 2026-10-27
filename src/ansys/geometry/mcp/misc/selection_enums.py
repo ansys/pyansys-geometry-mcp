@@ -47,5 +47,7 @@ _SCOPE_MAP = {
     "body": ExtendScope.EXTENDSCOPE_BODY,
 }
 
-# Face and edge location queries require an explicit range type; bodies do not take one.
-_DEFAULT_RANGE_TYPE = RangeType.RANGETYPE_INTERSECT
+_RANGE_TYPE_MAP = {
+    "intersect": RangeType.RANGETYPE_INTERSECT,
+    "contain": RangeType.RANGETYPE_CONTAIN,
+}

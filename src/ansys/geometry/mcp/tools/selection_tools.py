@@ -54,7 +54,7 @@ from ansys.geometry.mcp import app
 from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx
 from ansys.geometry.mcp.misc.selection_enums import (
     _CURVE_TYPE_MAP,
-    _DEFAULT_RANGE_TYPE,
+    _RANGE_TYPE_MAP,
     _SCOPE_MAP,
     _SURFACE_TYPE_MAP,
 )
@@ -447,6 +447,7 @@ def select_entities(
     min_value: float | None = None,
     max_value: float | None = None,
     color: str | None = None,
+    range_type: Literal["intersect", "contain"] = "intersect",
 ) -> list[str] | str:
     """Query the design for entities matching a property and store them in a selection builder.
 
@@ -506,9 +507,9 @@ def select_entities(
             Edges whose length falls in [``min_value``, ``max_value``] (m).
             ``min_value`` defaults to 0. ``max_value`` is optional.
         ``"x_location"``, ``"y_location"``, ``"z_location"``
-            Entities whose centroid coordinate on the specified axis falls in
-            [``min_value``, ``max_value``] (m). Requires at least one of
-            ``min_value`` or ``max_value``.
+            Entities whose location range on that axis intersects or is contained
+            within [``min_value``, ``max_value``] (m), according to ``range_type``.
+            Requires at least one of ``min_value`` or ``max_value``.
         ``"color"``
             Bodies or faces with a specific display color. Requires ``color``.
     name : str, default: None
@@ -524,6 +525,9 @@ def select_entities(
         ``min_value``. Pass ``None`` to leave the upper bound open.
     color : str, default: None
         Hex color string for the ``"color"`` criterion, such as ``"#FF0000"``.
+    range_type : str, default: ``"intersect"``
+        Whether a location criterion intersects or contains the specified range.
+        Options are ``"intersect"`` and ``"contain"``.
 
     Returns
     -------
@@ -545,7 +549,7 @@ def select_entities(
     Edges longer than 0.01 m:
         ``select_entities(entity_type="edge", criteria="length", min_value=0.01)``
 
-    Bodies whose centroid is at Z > 0.05 m:
+    Bodies matching a Z-location range starting at 0.05 m:
         ``select_entities(entity_type="body", criteria="z_location", min_value=0.05)``
 
     """
@@ -590,20 +594,24 @@ def select_entities(
             matching = method(min_value, max_value)
             call = f"{method_name}({min_value}, {max_value})"
         elif criteria in _LOCATION_CRITERIA:
+            if range_type not in _RANGE_TYPE_MAP:
+                return "range_type must be 'intersect' or 'contain'."
             if min_value is None and max_value is None:
                 return (
                     f"At least one of min_value or max_value must be provided "
                     f"for '{criteria}' criterion."
                 )
-            if entity_type == "body":
-                matching = method(min=min_value, max=max_value)
-                call = f"{method_name}(min={min_value}, max={max_value})"
-            else:
-                matching = method(_DEFAULT_RANGE_TYPE, min=min_value, max=max_value)
-                call = (
-                    f"{method_name}(RangeType.RANGETYPE_INTERSECT, "
-                    f"min={min_value}, max={max_value})"
-                )
+            range_type_value = _RANGE_TYPE_MAP[range_type]
+            matching = method(range_type=range_type_value, min=min_value, max=max_value)
+            range_type_import = (
+                "from ansys.geometry.core.selection_builder.selection_builder import RangeType"
+            )
+            if range_type_import not in app_context.command_history:
+                app_context.command_history.append(range_type_import)
+            call = (
+                f"{method_name}(range_type=RangeType.RANGETYPE_{range_type.upper()}, "
+                f"min={min_value}, max={max_value})"
+            )
         elif criteria == "color":
             if not color:
                 return "Color must be provided for 'color' criterion."

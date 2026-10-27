@@ -169,6 +169,63 @@ def test_select_bodies_by_criteria(ctx: PyAnsysGeometryContext, criteria, kwargs
     assert [body.id for body in selection.items] == result
 
 
+@pytest.mark.parametrize(
+    "entity_type, intersect_count, contain_count",
+    [("body", 3, 1), ("face", 10, 2), ("edge", 16, 8)],
+)
+def test_select_location_range_type(
+    ctx: PyAnsysGeometryContext, entity_type, intersect_count, contain_count
+):
+    """Location queries support intersection and containment for each entity type."""
+    tools.create_design(ctx, f"test_location_range_{entity_type}")
+    create_box(ctx, name="Plate", width=0.06, depth=0.06, height=0.01)
+    create_box(ctx, name="Tower", width=0.02, depth=0.02, height=0.02, origin=[0, 0, 0.01])
+    create_box(ctx, name="Straddle", width=0.02, depth=0.02, height=0.02, origin=[0.15, 0, 0.02])
+    create_box(ctx, name="High", width=0.02, depth=0.02, height=0.01, origin=[0.2, 0, 0.03])
+    handle = tools.create_selection_builder(ctx)
+
+    kwargs = (
+        {"min_value": 0.025}
+        if entity_type == "body"
+        else {
+            "min_value": 0.0099,
+            "max_value": 0.0101,
+        }
+    )
+    assert (
+        len(select_entities(ctx, handle, entity_type, criteria="z_location", **kwargs))
+        == intersect_count
+    )
+    assert (
+        len(
+            select_entities(
+                ctx, handle, entity_type, criteria="z_location", range_type="contain", **kwargs
+            )
+        )
+        == contain_count
+    )
+    script = tools.get_session_script(ctx)
+    assert "from ansys.geometry.core.selection_builder.selection_builder import RangeType" in script
+    assert "RangeType.RANGETYPE_CONTAIN" in script
+
+
+def test_select_location_range_type_invalid(ctx: PyAnsysGeometryContext):
+    """Location queries report the accepted range types for invalid input."""
+    handle = _setup(ctx, "test_location_range_type_invalid")
+
+    assert (
+        select_entities(
+            ctx,
+            handle,
+            "body",
+            criteria="z_location",
+            min_value=0.1,
+            range_type="overlap",
+        )
+        == "range_type must be 'intersect' or 'contain'."
+    )
+
+
 def test_select_bodies_named_selection_and_color(ctx: PyAnsysGeometryContext):
     """Both criteria need entities prepared first: a named selection group and a display color."""
     handle = _colored_box(ctx, "test_select_ns_color", "ns_color_box", "#FF0000")
