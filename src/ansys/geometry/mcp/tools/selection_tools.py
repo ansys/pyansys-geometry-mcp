@@ -461,7 +461,7 @@ def select_entities(
     min_value : float, default: None
         Lower bound (inclusive) for range-based criteria, in SI units: m for ``length``
         and the location criteria, m² for ``area`` and ``surface_area``, m³ for ``volume``.
-        Convert millimetre values first, for example 2000 mm² is ``0.002``.
+        Convert millimeter values first, for example 2000 mm² is ``0.002``.
     max_value : float, default: None
         Upper bound (inclusive) for range-based criteria, in the same SI units as
         ``min_value``. Pass ``None`` to leave the upper bound open.
@@ -669,7 +669,7 @@ def filter_entities(
     min_value : float, default: None
         Lower bound (inclusive) for range-based criteria. Measurements are in SI units:
         m for ``length`` and ``perimeter``, m² for ``area`` and ``surface_area``, m³ for
-        ``volume``. Convert millimetre values first, for example 2000 mm² is ``0.002``.
+        ``volume``. Convert millimeter values first, for example 2000 mm² is ``0.002``.
         Count criteria take plain integers.
     max_value : float, default: None
         Upper bound (inclusive) for range-based criteria, in the same units as
