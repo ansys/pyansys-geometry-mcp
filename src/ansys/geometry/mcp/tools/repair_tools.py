@@ -80,9 +80,12 @@ _PROBLEM_AREA_OPERATIONS = {"missing_faces", "small_faces"}
 
 
 def _bodies_transcript(bodies) -> str:
-    """Render the resolved body scope as a replayable transcript line."""
-    names = ", ".join(repr(body.name) for body in bodies)
-    return f"bodies = [design.get_body(name) for name in [{names}]]"
+    """Render the resolved body scope."""
+    ids = [body.id for body in bodies]
+    return (
+        "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids\n"
+        f"bodies = get_bodies_from_ids(design, {ids!r})"
+    )
 
 
 def _summarize(operation: str, message, body_count: int) -> str:
@@ -108,7 +111,7 @@ def _summarize(operation: str, message, body_count: int) -> str:
 @app.tool()
 def inspect_geometry(
     ctx: Context,
-    body_names: list[str] | None = None,
+    body_ids: list[str] | None = None,
     named_selection: str | None = None,
     selection_handle: str | None = None,
 ) -> str:
@@ -122,16 +125,17 @@ def inspect_geometry(
     If the user has already said what is wrong ("fix the short edges under
     0.5 mm"), skip this tool and call ``repair_geometry`` directly.
 
-    By default, every body in the active design is inspected. Narrow the scope
-    with exactly one of ``body_names``, ``named_selection``, or
+    By default every body in the active design is inspected. Narrow the scope
+    with exactly one of ``body_ids``, ``named_selection``, or
     ``selection_handle``.
 
     Parameters
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    body_names : list of str, default: None
-        Names of the bodies to inspect. Use ``list_entities`` to discover names.
+    body_ids : list of str, default: None
+        IDs of the bodies to inspect. Look up a body named by the user with
+        ``list_entities(entity_type="body", name=...)``.
     named_selection : str, default: None
         Label of a named selection whose bodies should be inspected.
     selection_handle : str, default: None
@@ -152,7 +156,7 @@ def inspect_geometry(
     try:
         design = app_context.product_instance.get_active_design()
         bodies, error = resolve_bodies(
-            app_context, design, body_names, named_selection, selection_handle
+            app_context, design, body_ids, named_selection, selection_handle
         )
         if error is not None:
             return error
@@ -167,7 +171,7 @@ def inspect_geometry(
 
         lines = [f"Inspected {len(bodies)} bodies. Issues found on {len(results)}:"]
         for result in results:
-            lines.append(f"{result.body.name}: {len(result.issues)} issues")
+            lines.append(f"{result.body.name} (id={result.body.id}): {len(result.issues)} issues")
             for issue in result.issues:
                 scope = []
                 if issue.faces:
@@ -186,7 +190,7 @@ def inspect_geometry(
 def repair_geometry(
     ctx: Context,
     operation: RepairOperation,
-    body_names: list[str] | None = None,
+    body_ids: list[str] | None = None,
     named_selection: str | None = None,
     selection_handle: str | None = None,
     length: float | None = None,
@@ -253,7 +257,7 @@ def repair_geometry(
     rejected rather than silently ignored.
 
     By default every body in the active design is repaired. Narrow the scope
-    with exactly one of ``body_names``, ``named_selection``, or
+    with exactly one of ``body_ids``, ``named_selection``, or
     ``selection_handle``.
 
     Partial repair is a normal outcome. The modeling kernel legitimately
@@ -272,8 +276,9 @@ def repair_geometry(
         Which repair to apply. Options are ``"all"``, ``"short_edges"``, ``"extra_edges"``,
         ``"split_edges"``, ``"simplify"``, ``"stitch_faces"``,
         ``"missing_faces"``, ``"small_faces"``, and ``"logos"``.
-    body_names : list of str, default: None
-        Names of the bodies to repair. Use ``list_entities`` to discover names.
+    body_ids : list of str, default: None
+        IDs of the bodies to repair. Look up a body named by the user with
+        ``list_entities(entity_type="body", name=...)``.
     named_selection : str, default: None
         Label of a named selection whose bodies should be repaired.
     selection_handle : str, default: None
@@ -376,7 +381,7 @@ def repair_geometry(
     try:
         design = app_context.product_instance.get_active_design()
         bodies, error = resolve_bodies(
-            app_context, design, body_names, named_selection, selection_handle
+            app_context, design, body_ids, named_selection, selection_handle
         )
         if error is not None:
             return error
