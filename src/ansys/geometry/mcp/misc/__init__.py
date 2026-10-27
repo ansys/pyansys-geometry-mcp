@@ -18,7 +18,8 @@
 
 from ansys.geometry.mcp.misc.auxiliary import (  # noqa: F401
     build_sketch,
-    find_body,
+    find_bodies_by_id,
+    find_body_by_name,
     find_component,
     find_named_selection,
     resolve_bodies,

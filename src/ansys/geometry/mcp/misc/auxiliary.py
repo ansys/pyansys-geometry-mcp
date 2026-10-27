@@ -25,6 +25,7 @@ from ansys.geometry.mcp.context import PyAnsysGeometryContext
 if TYPE_CHECKING:
     from ansys.geometry.core.designer.body import Body
     from ansys.geometry.core.designer.component import Component
+    from ansys.geometry.core.designer.design import Design
     from ansys.geometry.core.designer.selection import NamedSelection
     from ansys.geometry.core.sketch import Sketch
 
@@ -34,7 +35,7 @@ def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
     return ctx.fastmcp._lifespan_result  # type: ignore[return-value]
 
 
-def find_body(design, body_name: str) -> "Body | None":
+def find_body_by_name(design: "Design", body_name: str) -> "Body | None":
     """Find a body by name across the full design tree.
 
     Uses the ``Component.get_all_bodies()`` method, which recursively collects every body
@@ -59,7 +60,32 @@ def find_body(design, body_name: str) -> "Body | None":
     return None
 
 
-def find_component(design, component_name: str) -> "Component | None":
+def find_bodies_by_id(design: "Design", body_ids: list[str]) -> tuple[list["Body"], list[str]]:
+    """Find bodies by ID across the full design tree.
+
+    Body names need not be unique, so tools address bodies by ID.
+
+    Parameters
+    ----------
+    design : Design
+        Active design to search in.
+    body_ids : list of str
+        IDs of the bodies to find, as reported by ``list_entities``.
+
+    Returns
+    -------
+    tuple[list[Body], list[str]]
+        ``(bodies, missing)``: the bodies found, in the order requested, and the
+        IDs that matched no body.
+
+    """
+    by_id = {body.id: body for body in design.get_all_bodies()}
+    bodies = [by_id[bid] for bid in body_ids if bid in by_id]
+    missing = [bid for bid in body_ids if bid not in by_id]
+    return bodies, missing
+
+
+def find_component(design: "Design", component_name: str) -> "Component | None":
     """Find a component by name across the full design tree.
 
     Uses the ``Design._get_all_components()`` method, which recursively collects every
@@ -84,7 +110,7 @@ def find_component(design, component_name: str) -> "Component | None":
     return None
 
 
-def find_named_selection(design, name: str) -> "NamedSelection | None":
+def find_named_selection(design: "Design", name: str) -> "NamedSelection | None":
     """Find a named selection by name in the design.
 
     Parameters
@@ -107,16 +133,16 @@ def find_named_selection(design, name: str) -> "NamedSelection | None":
 
 
 def resolve_bodies(
-    app_context,
-    design,
-    body_names: list[str] | None = None,
+    app_context: "PyAnsysGeometryContext",
+    design: "Design",
+    body_ids: list[str] | None = None,
     named_selection: str | None = None,
     selection_handle: str | None = None,
 ) -> tuple[list["Body"], str | None]:
-    """Resolve the bodies a tool should act on from the ways a caller can name them.
+    """Resolve the bodies a tool should act on from IDs or a selection.
 
     Precedence is ``selection_handle``, then ``named_selection``, then
-    ``body_names``, and then every body in the design.
+    ``body_ids``, and then every body in the design.
 
     Parameters
     ----------
@@ -124,8 +150,8 @@ def resolve_bodies(
         Application state, which is used to look up ``selection_handle``.
     design : Design
         Active design to resolve against.
-    body_names : list of str, default: None
-        Body names, as reported by ``list_entities``.
+    body_ids : list of str, default: None
+        Body IDs, as reported by ``list_entities``.
     named_selection : str, default: None
         Label of a named selection whose bodies should be used.
     selection_handle : str, default: None
@@ -158,18 +184,11 @@ def resolve_bodies(
             return [], f"Named selection '{named_selection}' contains no bodies."
         return bodies, None
 
-    if body_names:
-        bodies = []
-        missing = []
-        for body_name in body_names:
-            body = find_body(design, body_name)
-            if body is None:
-                missing.append(body_name)
-            else:
-                bodies.append(body)
+    if body_ids:
+        bodies, missing = find_bodies_by_id(design, body_ids)
         if missing:
             return [], (
-                f"Bodies not found: {', '.join(missing)}. "
+                f"Body ID(s) not found: {', '.join(missing)}. "
                 "Use list_entities to see available bodies."
             )
         return bodies, None

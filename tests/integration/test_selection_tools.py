@@ -22,7 +22,7 @@ import pytest
 
 from ansys.geometry.mcp import tools
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
-from ansys.geometry.mcp.misc.auxiliary import find_body
+from ansys.geometry.mcp.misc.auxiliary import find_body_by_name
 from ansys.geometry.mcp.tools import get_geometry_ctx
 from ansys.geometry.mcp.tools.selection_tools import (
     create_named_selection,
@@ -58,8 +58,14 @@ def _colored_box(ctx, design_name, box_name, color):
     """Create a box with a display color set; return the selection handle."""
     handle = _setup(ctx, design_name, box_name=box_name)
     design = get_geometry_ctx(ctx).product_instance.get_active_design()
-    find_body(design, box_name).set_color(color)
+    find_body_by_name(design, box_name).set_color(color)
     return handle
+
+
+def _body_id(ctx, body_name):
+    """Return the ID of the named body in the active design."""
+    design = get_geometry_ctx(ctx).product_instance.get_active_design()
+    return find_body_by_name(design, body_name).id
 
 
 # ---------------------------------------------------------------------------
@@ -158,20 +164,21 @@ def test_select_bodies_by_criteria(ctx: PyAnsysGeometryContext, criteria, kwargs
 
     result = select_entities(ctx, handle, "body", criteria=criteria, **kwargs)
     assert isinstance(result, list)
-    assert ("sel_box" in result) is matches
+    assert (_body_id(ctx, "sel_box") in result) is matches
     assert selection_builder._bodies is selection
-    assert [body.name for body in selection.items] == result
+    assert [body.id for body in selection.items] == result
 
 
 def test_select_bodies_named_selection_and_color(ctx: PyAnsysGeometryContext):
     """Both criteria need entities prepared first: a named selection group and a display color."""
     handle = _colored_box(ctx, "test_select_ns_color", "ns_color_box", "#FF0000")
-    create_named_selection(ctx, "ns_group", body_names=["ns_color_box"])
+    box_id = _body_id(ctx, "ns_color_box")
+    create_named_selection(ctx, "ns_group", body_ids=[box_id])
 
     assert select_entities(
         ctx, handle, "body", criteria="named_selection", named_selection="ns_group"
-    ) == ["ns_color_box"]
-    assert "ns_color_box" in select_entities(ctx, handle, "body", criteria="color", color="#FF0000")
+    ) == [box_id]
+    assert box_id in select_entities(ctx, handle, "body", criteria="color", color="#FF0000")
 
 
 def test_select_faces_and_edges(ctx: PyAnsysGeometryContext):
@@ -265,7 +272,9 @@ def test_filter_bodies_by_criteria(ctx: PyAnsysGeometryContext, criteria, kwargs
     handle = _setup(ctx, f"test_filter_{criteria}", box_name="num_box")
     select_entities(ctx, handle, "body", criteria="all")
 
-    assert "num_box" in filter_entities(ctx, handle, "body", criteria=criteria, **kwargs)
+    assert _body_id(ctx, "num_box") in filter_entities(
+        ctx, handle, "body", criteria=criteria, **kwargs
+    )
 
 
 def test_filter_bodies_excluding_criteria(ctx: PyAnsysGeometryContext):
@@ -288,7 +297,7 @@ def test_filter_bodies_by_color(ctx: PyAnsysGeometryContext):
     handle = _colored_box(ctx, "test_filter_color", "filter_color_box", "#00FF00")
     select_entities(ctx, handle, "body", criteria="all")
 
-    assert "filter_color_box" in filter_entities(
+    assert _body_id(ctx, "filter_color_box") in filter_entities(
         ctx, handle, "body", criteria="color", color="#00FF00"
     )
 
@@ -398,7 +407,7 @@ def test_order_entities(ctx: PyAnsysGeometryContext, entity_type, kwargs, count)
     assert isinstance(ordered, list)
     assert len(ordered) == count
     assert getattr(selection_builder, f"_{attr}") is selection
-    assert [item.name if entity_type == "body" else item.id for item in selection.items] == ordered
+    assert [item.id for item in selection.items] == ordered
 
 
 def test_order_faces_curve_count_requires_curve_type(ctx: PyAnsysGeometryContext):
@@ -465,7 +474,7 @@ def test_group_entities(ctx: PyAnsysGeometryContext, entity_type, criteria, coun
     assert isinstance(groups, list)
     assert sum(len(group) for group in groups) == count
     assert getattr(selection_builder, f"_{attr}") is selection
-    assert [item.name if entity_type == "body" else item.id for item in selection.items] == [
+    assert [item.id for item in selection.items] == [
         identifier for group in groups for identifier in group
     ]
 
@@ -482,8 +491,8 @@ def test_extend_bodies_by_shared_property(ctx: PyAnsysGeometryContext):
 
     select_entities(ctx, handle, "body", criteria="name", name="extend_box")
     extended = extend_selection(ctx, handle, "body", criteria="volume")
-    assert "extend_box" in extended
-    assert "extend_twin" in extended
+    assert _body_id(ctx, "extend_box") in extended
+    assert _body_id(ctx, "extend_twin") in extended
 
 
 def test_extend_bodies_nearby(ctx: PyAnsysGeometryContext):
@@ -529,7 +538,7 @@ def test_extend_selection_criteria(ctx: PyAnsysGeometryContext, entity_type, cri
     extended = extend_selection(ctx, handle, entity_type, criteria=criteria)
     assert isinstance(extended, list)
     assert getattr(selection_builder, f"_{attr}") is selection
-    assert [item.name if entity_type == "body" else item.id for item in selection.items] == extended
+    assert [item.id for item in selection.items] == extended
 
 
 # ---------------------------------------------------------------------------
@@ -540,18 +549,52 @@ def test_extend_selection_criteria(ctx: PyAnsysGeometryContext, entity_type, cri
 def test_list_bodies_and_components(ctx: PyAnsysGeometryContext):
     """Bodies can be listed design-wide or scoped to a component; components list as a tree."""
     tools.create_design(ctx, "test_list_bodies_001")
-    add_component(ctx, name="body_comp")
-    add_component(ctx, name="empty_comp")
+    body_comp = add_component(ctx, name="body_comp")
+    empty_comp = add_component(ctx, name="empty_comp")
     create_box(
         ctx, name="listed_box", width=1.0, depth=1.0, height=1.0, parent_component_name="body_comp"
     )
 
     assert "listed_box" in list_entities(ctx, entity_type="body")
-    assert "listed_box" in list_entities(ctx, entity_type="body", component_name="body_comp")
-    assert "body_comp" in list_entities(ctx, entity_type="component")
+    assert f"id={_body_id(ctx, 'listed_box')}  path=listed_box" in list_entities(
+        ctx, entity_type="body", component_id=body_comp.id
+    )
+    assert f"id={body_comp.id}  name=body_comp" in list_entities(ctx, entity_type="component")
 
-    assert "No bodies found" in list_entities(ctx, entity_type="body", component_name="empty_comp")
-    assert "not found" in list_entities(ctx, entity_type="body", component_name="nonexistent_comp")
+    assert "No bodies found" in list_entities(ctx, entity_type="body", component_id=empty_comp.id)
+    assert "not found" in list_entities(ctx, entity_type="body", component_id="nonexistent_comp")
+
+
+def test_list_bodies_in_duplicate_named_components(ctx: PyAnsysGeometryContext):
+    """Components sharing a name are told apart by ID."""
+    tools.create_design(ctx, "test_list_dup_comps_001")
+    first = add_component(ctx, name="dup")
+    second = add_component(ctx, name="dup")
+    first.add_component("first_child")
+    second.add_component("second_child")
+    create_box(
+        ctx, name="first_box", width=1.0, depth=1.0, height=1.0, parent_component_name="first_child"
+    )
+    create_box(
+        ctx,
+        name="second_box",
+        width=1.0,
+        depth=1.0,
+        height=1.0,
+        parent_component_name="second_child",
+    )
+
+    components = list_entities(ctx, entity_type="component")
+    assert f"id={first.id}  name=dup" in components
+    assert f"id={second.id}  name=dup" in components
+
+    second_bodies = list_entities(ctx, entity_type="body", component_id=second.id)
+    assert "second_box" in second_bodies
+    assert "first_box" not in second_bodies
+
+    assert "created successfully" in create_named_selection(
+        ctx, "ns_dup_comp", component_ids=[second.id]
+    )
 
 
 @pytest.mark.parametrize(
@@ -562,23 +605,95 @@ def test_list_faces_and_edges(ctx: PyAnsysGeometryContext, entity_type, detail, 
     """Listing returns one ID line per entity, and reports missing bodies and backend errors."""
     disconnected_ctx = MagicMock()
     disconnected_ctx.fastmcp._lifespan_result.product_instance = None
-    assert "not connected" in list_entities(disconnected_ctx, entity_type, body_name="box")
+    assert "not connected" in list_entities(disconnected_ctx, entity_type, body_id="box")
 
     assert "required" in list_entities(ctx, entity_type)
 
     tools.create_design(ctx, f"test_list_{entity_type}_001")
-    assert "not found" in list_entities(ctx, entity_type, body_name="nonexistent_body")
+    assert "not found" in list_entities(ctx, entity_type, body_id="nonexistent_body")
 
-    create_box(ctx, name="list_box", width=1.0, depth=1.0, height=1.0)
-    result = list_entities(ctx, entity_type, body_name="list_box")
+    body_id = create_box(ctx, name="list_box", width=1.0, depth=1.0, height=1.0).id
+    result = list_entities(ctx, entity_type, body_id=body_id)
     assert "id=" in result
     assert detail in result
     assert len(result.strip().splitlines()) == count
 
     with patch(
-        "ansys.geometry.mcp.tools.selection_tools.find_body", side_effect=Exception("Test error")
+        "ansys.geometry.mcp.tools.selection_tools.find_bodies_by_id",
+        side_effect=Exception("Test error"),
     ):
-        assert "Error" in list_entities(ctx, entity_type, body_name="list_box")
+        assert "Error" in list_entities(ctx, entity_type, body_id=body_id)
+
+
+@pytest.mark.parametrize(
+    "entity_type, kwargs",
+    [
+        ("component", {}),
+        ("body", {}),
+        ("body", {"name": "REC_BOX"}),
+        ("body", {"component_id": "<comp>"}),
+        ("face", {"body_id": "<body>"}),
+        ("edge", {"body_id": "<body>"}),
+    ],
+)
+def test_list_entities_records_history(ctx: PyAnsysGeometryContext, entity_type, kwargs):
+    """The recorded transcript binds the listed entities; failed lookups record nothing."""
+    tools.create_design(ctx, "test_list_history_001")
+    comp = add_component(ctx, name="rec_comp")
+    body = create_box(
+        ctx, name="rec_box", width=1.0, depth=1.0, height=1.0, parent_component_name="rec_comp"
+    )
+    create_box(ctx, name="other_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+    kwargs = {
+        key: {"<comp>": comp.id, "<body>": body.id}.get(value, value)
+        for key, value in kwargs.items()
+    }
+    app_context = get_geometry_ctx(ctx)
+    history_length = len(app_context.command_history)
+
+    listing = list_entities(ctx, entity_type, **kwargs)
+    assert len(app_context.command_history) == history_length + 1
+
+    namespace = {"design": app_context.product_instance.get_active_design()}
+    exec(app_context.command_history[-1], namespace)
+    listed_ids = {line.split()[0].removeprefix("id=") for line in listing.splitlines()}
+    variable = {"body": "bodies"}.get(entity_type, f"{entity_type}s")
+    assert {entity.id for entity in namespace[variable]} == listed_ids
+    assert tools.get_session_script(ctx)
+
+    list_entities(ctx, "face", body_id="nonexistent_body")
+    list_entities(ctx, "body", component_id="nonexistent_comp")
+    assert len(app_context.command_history) == history_length + 1
+
+
+def test_duplicate_named_bodies_are_addressed_by_id(ctx: PyAnsysGeometryContext):
+    """Bodies sharing a name are listed separately and each can be targeted by ID."""
+    tools.create_design(ctx, "test_dup_bodies_001")
+    small = create_box(ctx, name="dup_box", width=1.0, depth=1.0, height=1.0)
+    large = create_box(ctx, name="dup_box", width=2.0, depth=2.0, height=2.0, origin=[5, 5, 5])
+
+    listing = list_entities(ctx, entity_type="body")
+    assert f"id={small.id}  path=dup_box" in listing
+    assert f"id={large.id}  path=dup_box" in listing
+
+    create_box(ctx, name="other_box", width=1.0, depth=1.0, height=1.0, origin=[9, 9, 9])
+    by_name = list_entities(ctx, entity_type="body", name="DUP_BOX")
+    assert by_name.splitlines() == [f"id={small.id}  path=dup_box", f"id={large.id}  path=dup_box"]
+    assert "No bodies named 'ghost' found." in list_entities(ctx, entity_type="body", name="ghost")
+
+    handle = tools.create_selection_builder(ctx)
+    assert select_entities(ctx, handle, "body", criteria="name", name="dup_box") == [
+        small.id,
+        large.id,
+    ]
+    assert filter_entities(ctx, handle, "body", criteria="volume", find_max=True) == [large.id]
+
+    assert "created successfully" in create_named_selection(
+        ctx, "ns_large_dup", body_ids=[large.id]
+    )
+    assert select_entities(
+        ctx, handle, "body", criteria="named_selection", named_selection="ns_large_dup"
+    ) == [large.id]
 
 
 # ---------------------------------------------------------------------------
@@ -592,14 +707,14 @@ def test_create_named_selection(ctx):
     # Test the not connected case
     disconnected_ctx = MagicMock()
     disconnected_ctx.fastmcp._lifespan_result.product_instance = None
-    assert "not connected" in create_named_selection(disconnected_ctx, "ns", body_names=["x"])
+    assert "not connected" in create_named_selection(disconnected_ctx, "ns", body_ids=["x"])
 
     # Test the no entities provided case
     assert "At least one entity list" in create_named_selection(ctx, "empty_ns")
 
     # Test setup: design with a box and a component
     tools.create_design(ctx, "test_named_sel_001")
-    add_component(ctx, name="ns_comp")
+    ns_comp = add_component(ctx, name="ns_comp")
     create_box(
         ctx,
         name="ns_box",
@@ -609,10 +724,14 @@ def test_create_named_selection(ctx):
         parent_component_name="ns_comp",
     )
     create_box(ctx, name="root_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
+    ns_box_id = _body_id(ctx, "ns_box")
 
     # Test not-found error paths
-    assert "not found" in create_named_selection(ctx, "bad_ns", body_names=["no_such_body"])
-    assert "not found" in create_named_selection(ctx, "bad_ns", component_names=["no_such_comp"])
+    result = create_named_selection(ctx, "bad_ns", body_ids=[ns_box_id, "no_such_body"])
+    assert "not found" in result
+    assert "no_such_body" in result
+    assert ns_box_id not in result
+    assert "not found" in create_named_selection(ctx, "bad_ns", component_ids=["no_such_comp"])
     assert "not found" in create_named_selection(ctx, "bad_ns", beam_ids=["nonexistent_beam"])
     assert "not found" in create_named_selection(
         ctx, "bad_ns", coordinate_system_ids=["nonexistent_cs"]
@@ -620,11 +739,11 @@ def test_create_named_selection(ctx):
     assert "not found" in create_named_selection(ctx, "bad_ns", datum_point_ids=["nonexistent_dp"])
 
     # Test the bodies case
-    result = create_named_selection(ctx, "ns_bodies", body_names=["ns_box"])
+    result = create_named_selection(ctx, "ns_bodies", body_ids=[ns_box_id])
     assert "created successfully" in result
 
     # Test the components case
-    result = create_named_selection(ctx, "ns_comps", component_names=["ns_comp"])
+    result = create_named_selection(ctx, "ns_comps", component_ids=[ns_comp.id])
     assert "created successfully" in result
 
     app_context = get_geometry_ctx(ctx)
@@ -632,11 +751,11 @@ def test_create_named_selection(ctx):
 
     # Test method exception handling
     with patch.object(design, "create_named_selection", side_effect=Exception("Test error")):
-        result = create_named_selection(ctx, "ns_error", body_names=["ns_box"])
+        result = create_named_selection(ctx, "ns_error", body_ids=[ns_box_id])
         assert "Error" in result
 
-    box_body = find_body(design, "ns_box")
-    root_box_body = find_body(design, "root_box")
+    box_body = find_body_by_name(design, "ns_box")
+    root_box_body = find_body_by_name(design, "root_box")
 
     face = box_body.faces[0]
     result = create_named_selection(ctx, "ns_faces", face_ids=[face.id])
@@ -654,11 +773,11 @@ def test_create_named_selection(ctx):
     result = create_named_selection(
         ctx,
         "ns_mixed",
-        body_names=["ns_box"],
+        body_ids=[ns_box_id],
         face_ids=[face.id],
         edge_ids=[edge.id],
         vertex_ids=[vertex.id],
-        component_names=["ns_comp"],
+        component_ids=[ns_comp.id],
     )
     assert "created successfully" in result
 
@@ -722,11 +841,11 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
     result = create_named_selection(ctx, "ns_from_handle", selection_handle=handle)
     assert "created successfully" in result
 
-    # Faces from the handle merge with an explicitly named body.
+    # Faces from the handle merge with an explicitly listed body.
     select_entities(ctx, handle, "face", criteria="all")
     create_box(ctx, name="extra_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
     result = create_named_selection(
-        ctx, "ns_from_handle_mixed", selection_handle=handle, body_names=["extra_box"]
+        ctx, "ns_from_handle_mixed", selection_handle=handle, body_ids=[_body_id(ctx, "extra_box")]
     )
     assert "created successfully" in result
 
