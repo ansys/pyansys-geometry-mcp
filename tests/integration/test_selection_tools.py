@@ -211,7 +211,6 @@ def test_select_faces_and_edges(ctx: PyAnsysGeometryContext):
         ({"criteria": "name"}, "Body name must be provided"),
         ({"criteria": "named_selection"}, "Named selection name must be provided"),
         ({"criteria": "color"}, "Color must be provided"),
-        ({"criteria": "volume", "max_value": 2.0}, "min_value must be provided"),
         ({"criteria": "x_location"}, "At least one of min_value or max_value"),
     ],
 )
@@ -222,6 +221,27 @@ def test_select_entities_missing_args(ctx: PyAnsysGeometryContext, kwargs, messa
     assert message in select_entities(ctx, handle, "body", **kwargs)
 
 
+@pytest.mark.parametrize(
+    "entity_type, criteria, max_value, expected",
+    [
+        ("body", "volume", 2.0, 1),
+        ("body", "surface_area", 7.0, 1),
+        ("face", "area", 2.0, 6),
+        ("edge", "length", 2.0, 12),
+        ("body", "volume", 0.5, 0),
+    ],
+)
+def test_select_measure_min_defaults_to_zero(
+    ctx: PyAnsysGeometryContext, entity_type, criteria, max_value, expected
+):
+    """A measure criterion with only max_value is treated as [0, max_value]."""
+    handle = _setup(ctx, f"test_select_min_default_{criteria}")
+
+    result = select_entities(ctx, handle, entity_type, criteria=criteria, max_value=max_value)
+    assert isinstance(result, list)
+    assert len(result) == expected
+
+
 # ---------------------------------------------------------------------------
 # filter_entities
 # ---------------------------------------------------------------------------
@@ -230,7 +250,6 @@ def test_select_entities_missing_args(ctx: PyAnsysGeometryContext, kwargs, messa
 @pytest.mark.parametrize(
     "criteria, kwargs",
     [
-        # 1×1×1 m box: volume 1 m³, surface area 6 m², 6 faces, 12 edges, 6 loops.
         ("volume", {"min_value": 0.5, "max_value": 2.0}),
         ("volume", {"find_max": True}),
         ("volume", {"find_min": True}),
@@ -239,9 +258,9 @@ def test_select_entities_missing_args(ctx: PyAnsysGeometryContext, kwargs, messa
         ("face_count", {"find_max": True}),
         ("edge_count", {"find_max": True}),
         ("loop_count", {"find_max": True}),
-        ("number_surfaces", {"surface_type": "plane", "min_value": 1, "max_value": 10}),
-        ("number_surfaces", {"surface_type": "plane", "find_max": True}),
-        ("number_curves", {"curve_type": "line", "find_min": True}),
+        ("surface_count", {"surface_type": "plane", "min_value": 1, "max_value": 10}),
+        ("surface_count", {"surface_type": "plane", "find_max": True}),
+        ("curve_count", {"curve_type": "line", "find_min": True}),
         ("name", {"name": "num_box"}),
         ("containing_surface_type", {"surface_type": "plane"}),
         ("containing_curve_type", {"curve_type": "line"}),
@@ -298,20 +317,40 @@ def test_filter_edges(ctx: PyAnsysGeometryContext):
 
 
 @pytest.mark.parametrize(
+    "entity_type, criteria, kwargs, expected",
+    [
+        ("body", "volume", {"max_value": 2.0}, 1),
+        ("body", "surface_area", {"max_value": 7.0}, 1),
+        ("face", "area", {"max_value": 2.0}, 6),
+        ("face", "perimeter", {"max_value": 5.0}, 6),
+        ("edge", "length", {"max_value": 2.0}, 12),
+        ("body", "volume", {"max_value": 0.5}, 0),
+        ("face", "edge_count", {"max_value": 4}, 6),
+        ("body", "surface_count", {"surface_type": "plane", "max_value": 6}, 1),
+        ("body", "surface_count", {"surface_type": "plane"}, 1),
+    ],
+)
+def test_filter_range_min_defaults_to_zero(
+    ctx: PyAnsysGeometryContext, entity_type, criteria, kwargs, expected
+):
+    """A range filter without min_value is treated as [0, max_value]."""
+    handle = _setup(ctx, f"test_filter_min_default_{criteria}")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    result = filter_entities(ctx, handle, entity_type, criteria=criteria, **kwargs)
+    assert isinstance(result, list)
+    assert len(result) == expected
+
+
+@pytest.mark.parametrize(
     "entity_type, kwargs, message",
     [
-        ("body", {"criteria": "volume"}, "At least one of min_value or max_value"),
         ("body", {"criteria": "name"}, "name must be provided"),
         ("body", {"criteria": "color"}, "color must be provided"),
         ("body", {"criteria": "containing_surface_type"}, "surface_type must be provided"),
         ("body", {"criteria": "containing_curve_type"}, "curve_type must be provided"),
-        ("body", {"criteria": "number_surfaces"}, "surface_type must be provided"),
-        ("body", {"criteria": "number_curves"}, "curve_type must be provided"),
-        (
-            "body",
-            {"criteria": "number_surfaces", "surface_type": "plane"},
-            "At least one of min_value or max_value",
-        ),
+        ("body", {"criteria": "surface_count"}, "surface_type must be provided"),
+        ("body", {"criteria": "curve_count"}, "curve_type must be provided"),
         (
             "body",
             {"criteria": "volume", "find_max": True, "find_min": True},
@@ -320,7 +359,7 @@ def test_filter_edges(ctx: PyAnsysGeometryContext):
         (
             "body",
             {
-                "criteria": "number_surfaces",
+                "criteria": "surface_count",
                 "surface_type": "plane",
                 "find_max": True,
                 "find_min": True,
@@ -348,9 +387,11 @@ def test_filter_entities_missing_args(ctx: PyAnsysGeometryContext, entity_type, 
     [
         ("body", {"criteria": "volume"}, 1),
         ("body", {"criteria": "face_count"}, 1),
+        ("body", {"criteria": "surface_count"}, 1),
+        ("body", {"criteria": "curve_count"}, 1),
         ("face", {"criteria": "area"}, 6),
         ("face", {"criteria": "perimeter"}, 6),
-        ("face", {"criteria": "number_curves", "curve_type": "line"}, 6),
+        ("face", {"criteria": "curve_count", "curve_type": "line"}, 6),
         ("edge", {"criteria": "length"}, 12),
     ],
 )
@@ -369,14 +410,46 @@ def test_order_entities(ctx: PyAnsysGeometryContext, entity_type, kwargs, count)
     assert [item.id for item in selection.items] == ordered
 
 
-def test_order_faces_number_curves_requires_curve_type(ctx: PyAnsysGeometryContext):
-    """The face number_curves criterion is the only ordering rule taking an argument."""
+def test_order_faces_curve_count_requires_curve_type(ctx: PyAnsysGeometryContext):
+    """The face curve_count criterion is the only ordering rule taking an argument."""
     handle = _setup(ctx, "test_order_missing_arg")
     select_entities(ctx, handle, "face", criteria="all")
 
     assert "curve_type must be provided" in order_entities(
-        ctx, handle, "face", criteria="number_curves"
+        ctx, handle, "face", criteria="curve_count"
     )
+
+
+def test_order_bodies_curve_count_rejects_curve_type(ctx: PyAnsysGeometryContext):
+    """Body curve_count counts every curve, so a curve_type is refused instead of ignored."""
+    handle = _setup(ctx, "test_order_body_curve_type")
+    select_entities(ctx, handle, "body", criteria="all")
+
+    assert "curve_type is not supported" in order_entities(
+        ctx, handle, "body", criteria="curve_count", curve_type="line"
+    )
+
+
+@pytest.mark.parametrize(
+    "tool, entity_type, criteria",
+    [
+        (filter_entities, "body", "number_surfaces"),
+        (filter_entities, "face", "number_curves"),
+        (order_entities, "body", "number_of_surfaces"),
+        (order_entities, "body", "number_of_curves"),
+        (order_entities, "face", "number_curves"),
+        (extend_selection, "body", "number_of_faces"),
+        (extend_selection, "face", "number_of_loops"),
+    ],
+)
+def test_legacy_count_criteria_rejected(ctx: PyAnsysGeometryContext, tool, entity_type, criteria):
+    """Count criteria share the *_count names, and the error points to them."""
+    handle = _setup(ctx, "test_legacy_count_names")
+    select_entities(ctx, handle, entity_type, criteria="all")
+
+    message = tool(ctx, handle, entity_type, criteria=criteria)
+    assert f"Criterion '{criteria}' is not supported" in message
+    assert "_count" in message
 
 
 @pytest.mark.parametrize(
@@ -445,8 +518,11 @@ def test_extend_bodies_nearby(ctx: PyAnsysGeometryContext):
     "entity_type, criteria",
     [
         ("body", "surface_area"),
-        ("body", "number_of_faces"),
+        ("body", "face_count"),
+        ("body", "edge_count"),
         ("face", "area"),
+        ("face", "edge_count"),
+        ("face", "loop_count"),
         ("face", "coincident"),
         ("edge", "tangent_chain"),
     ],
