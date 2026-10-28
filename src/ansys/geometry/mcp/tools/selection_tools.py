@@ -1223,6 +1223,7 @@ def create_named_selection(
     ctx: Context,
     name: str,
     selection_handle: str | None = None,
+    entity_types: list[EntityType] | None = None,
     body_ids: list[str] | None = None,
     face_ids: list[str] | None = None,
     edge_ids: list[str] | None = None,
@@ -1252,8 +1253,10 @@ def create_named_selection(
       ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
       ``extend_selection``. Then pass that builder's ``selection_handle`` here to
       save its currently selected bodies, faces, and edges as a named selection
-      (for example, "save the bodies/faces I selected as ..."). The IDs those tools return
-      can also be passed directly as ``body_ids``, ``face_ids``, or ``edge_ids``.
+      (for example, "save the bodies/faces I selected as ..."). If the builder contains
+      more than one entity type, specify ``entity_types`` to choose which types to save.
+      The IDs those tools return can also be passed directly as ``body_ids``, ``face_ids``,
+      or ``edge_ids``.
 
     Parameters
     ----------
@@ -1265,7 +1268,14 @@ def create_named_selection(
         Handle of a selection builder (from ``create_selection_builder``) whose
         currently selected bodies, faces, and edges should be included. Use this
         when the user refers to entities already picked/selected rather than
-        naming them explicitly.
+        naming them explicitly. If it contains more than one entity type,
+        ``entity_types`` is required.
+    entity_types : list of str, default: None
+        Entity types to include from ``selection_handle``: ``"body"``, ``"face"``,
+        and/or ``"edge"``. Required when the builder contains multiple selected
+        entity types. If omitted for a builder containing only one type, that type
+        is included. This does not restrict entities supplied by the explicit ID
+        arguments.
     body_ids : list of str, default: None
         Body IDs to include. Look up a body named by the user with
         ``list_entities(entity_type="body", name=...)``.
@@ -1317,6 +1327,17 @@ def create_named_selection(
     ):
         return "At least one entity list must be provided."
 
+    if entity_types is not None:
+        if not selection_handle:
+            return "'entity_types' can only be used with 'selection_handle'."
+        if not entity_types:
+            return "'entity_types' must include at least one of 'body', 'face', or 'edge'."
+        invalid_types = [
+            entity_type for entity_type in entity_types if entity_type not in _RESULT_ATTR
+        ]
+        if invalid_types:
+            return f"Unsupported entity type(s): {', '.join(invalid_types)}."
+
     try:
         from ansys.geometry.core.misc.auxiliary import (
             get_components_from_ids,
@@ -1340,16 +1361,39 @@ def create_named_selection(
             selected_bodies = getattr(selection_builder, "_bodies", None)
             selected_faces = getattr(selection_builder, "_faces", None)
             selected_edges = getattr(selection_builder, "_edges", None)
-            if not any(
-                sel is not None and getattr(sel, "items", None)
-                for sel in (selected_bodies, selected_faces, selected_edges)
-            ):
+            selections = {
+                "body": selected_bodies,
+                "face": selected_faces,
+                "edge": selected_edges,
+            }
+            available_types = [
+                entity_type
+                for entity_type, selection in selections.items()
+                if selection is not None and getattr(selection, "items", None)
+            ]
+            if not available_types:
                 return f"Selection '{selection_handle}' has no entities selected."
-            if selected_bodies is not None and selected_bodies.items:
+            if entity_types is None and len(available_types) > 1:
+                available = ", ".join(available_types)
+                return (
+                    f"Selection '{selection_handle}' contains multiple entity types: {available}. "
+                    "Specify entity_types=['body'] (or the desired types) to choose which "
+                    "types to include."
+                )
+            included_types = set(entity_types or available_types)
+            unavailable_types = [kind for kind in included_types if kind not in available_types]
+            if unavailable_types:
+                unavailable = ", ".join(sorted(unavailable_types))
+                available = ", ".join(available_types)
+                return (
+                    f"Selection '{selection_handle}' has no selected entities of type(s): "
+                    f"{unavailable}. Available entity types: {available}."
+                )
+            if "body" in included_types:
                 bodies.extend(selected_bodies.items)
-            if selected_faces is not None and selected_faces.items:
+            if "face" in included_types:
                 faces.extend(selected_faces.items)
-            if selected_edges is not None and selected_edges.items:
+            if "edge" in included_types:
                 edges.extend(selected_edges.items)
             app_context.command_history.append(
                 f"selection_builder = selection_registry['{selection_handle}']"
@@ -1431,11 +1475,11 @@ def create_named_selection(
         # Build fully expanded command history entry
         cmd_parts = []
         if selection_handle:
-            if selected_bodies is not None and selected_bodies.items:
+            if "body" in included_types:
                 cmd_parts.append("bodies=selection_builder._bodies.items")
-            if selected_faces is not None and selected_faces.items:
+            if "face" in included_types:
                 cmd_parts.append("faces=selection_builder._faces.items")
-            if selected_edges is not None and selected_edges.items:
+            if "edge" in included_types:
                 cmd_parts.append("edges=selection_builder._edges.items")
         if body_ids:
             app_context.command_history.append(

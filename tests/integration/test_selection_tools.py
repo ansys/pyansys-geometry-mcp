@@ -16,6 +16,7 @@
 
 """Unit tests for the selection tools."""
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -845,10 +846,72 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
     select_entities(ctx, handle, "face", criteria="all")
     create_box(ctx, name="extra_box", width=1.0, depth=1.0, height=1.0, origin=[5, 5, 5])
     result = create_named_selection(
-        ctx, "ns_from_handle_mixed", selection_handle=handle, body_ids=[_body_id(ctx, "extra_box")]
+        ctx,
+        "ns_from_handle_mixed",
+        selection_handle=handle,
+        entity_types=["body", "face"],
+        body_ids=[_body_id(ctx, "extra_box")],
     )
     assert "created successfully" in result
 
     history = tools.get_session_script(ctx)
     assert "create_named_selection" in history
     assert "ns_from_handle_mixed" in history
+
+
+def test_create_named_selection_requires_entity_types_for_mixed_builder():
+    """A mixed builder is not saved until the requested entity types are explicit."""
+    body = object()
+    face = object()
+    selection_builder = SimpleNamespace(
+        _bodies=SimpleNamespace(items=[body]),
+        _faces=SimpleNamespace(items=[face]),
+        _edges=SimpleNamespace(items=[]),
+    )
+    design = MagicMock()
+    app_context = SimpleNamespace(
+        product_instance=SimpleNamespace(get_active_design=lambda: design),
+        selection_registry={"handle": selection_builder},
+        command_history=[],
+    )
+
+    with patch(
+        "ansys.geometry.mcp.tools.selection_tools.get_geometry_ctx",
+        return_value=app_context,
+    ):
+        result = create_named_selection(MagicMock(), "ns_ambiguous", selection_handle="handle")
+
+    assert "multiple entity types: body, face" in result
+    assert "entity_types=['body']" in result
+    design.create_named_selection.assert_not_called()
+
+
+def test_create_named_selection_filters_builder_by_entity_types():
+    """Explicit entity types include only those builder selections in the named selection."""
+    body = object()
+    face = object()
+    selection_builder = SimpleNamespace(
+        _bodies=SimpleNamespace(items=[body]),
+        _faces=SimpleNamespace(items=[face]),
+        _edges=SimpleNamespace(items=[]),
+    )
+    design = MagicMock()
+    app_context = SimpleNamespace(
+        product_instance=SimpleNamespace(get_active_design=lambda: design),
+        selection_registry={"handle": selection_builder},
+        command_history=[],
+    )
+
+    with patch(
+        "ansys.geometry.mcp.tools.selection_tools.get_geometry_ctx",
+        return_value=app_context,
+    ):
+        result = create_named_selection(
+            MagicMock(),
+            "ns_bodies_only",
+            selection_handle="handle",
+            entity_types=["body"],
+        )
+
+    assert "created successfully" in result
+    design.create_named_selection.assert_called_once_with("ns_bodies_only", bodies=[body])
