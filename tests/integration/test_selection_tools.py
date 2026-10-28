@@ -16,7 +16,6 @@
 
 """Unit tests for the selection tools."""
 
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -916,59 +915,33 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
     assert "ns_from_handle_mixed" in history
 
 
-def test_create_named_selection_requires_entity_types_for_mixed_builder():
-    """A mixed builder is not saved until the requested entity types are explicit."""
-    body = object()
-    face = object()
-    selection_builder = SimpleNamespace(
-        _bodies=SimpleNamespace(items=[body]),
-        _faces=SimpleNamespace(items=[face]),
-        _edges=SimpleNamespace(items=[]),
-    )
-    design = MagicMock()
-    app_context = SimpleNamespace(
-        product_instance=SimpleNamespace(get_active_design=lambda: design),
-        selection_registry={"handle": selection_builder},
-        command_history=[],
-    )
+@pytest.mark.parametrize("entity_types", [None, ["body"], ["body", "face"]])
+def test_create_named_selection_from_mixed_builder(ctx: PyAnsysGeometryContext, entity_types):
+    """Mixed builders require explicit types and save exactly the requested entities."""
+    handle = _setup(ctx, "test_named_selection_mixed_builder", box_name="BoxA")
+    create_box(ctx, name="BoxB", width=1.0, depth=1.0, height=1.0, origin=[2, 0, 0])
+    face_ids = select_entities(ctx, handle, "face", criteria="all")
+    body_ids = select_entities(ctx, handle, "body", criteria="name", name="BoxA")
+    assert isinstance(face_ids, list)
+    assert len(face_ids) == 12
+    assert isinstance(body_ids, list)
+    assert len(body_ids) == 1
 
-    with patch(
-        "ansys.geometry.mcp.tools.selection_tools.get_geometry_ctx",
-        return_value=app_context,
-    ):
-        result = create_named_selection(MagicMock(), "ns_ambiguous", selection_handle="handle")
-
-    assert "multiple entity types: body, face" in result
-    assert "entity_types=['body']" in result
-    design.create_named_selection.assert_not_called()
-
-
-def test_create_named_selection_filters_builder_by_entity_types():
-    """Explicit entity types include only those builder selections in the named selection."""
-    body = object()
-    face = object()
-    selection_builder = SimpleNamespace(
-        _bodies=SimpleNamespace(items=[body]),
-        _faces=SimpleNamespace(items=[face]),
-        _edges=SimpleNamespace(items=[]),
-    )
-    design = MagicMock()
-    app_context = SimpleNamespace(
-        product_instance=SimpleNamespace(get_active_design=lambda: design),
-        selection_registry={"handle": selection_builder},
-        command_history=[],
+    design = get_geometry_ctx(ctx).product_instance.get_active_design()
+    assert not design.named_selections
+    result = create_named_selection(
+        ctx, "ns_mixed_builder", selection_handle=handle, entity_types=entity_types
     )
 
-    with patch(
-        "ansys.geometry.mcp.tools.selection_tools.get_geometry_ctx",
-        return_value=app_context,
-    ):
-        result = create_named_selection(
-            MagicMock(),
-            "ns_bodies_only",
-            selection_handle="handle",
-            entity_types=["body"],
-        )
-
-    assert "created successfully" in result
-    design.create_named_selection.assert_called_once_with("ns_bodies_only", bodies=[body])
+    if entity_types is None:
+        assert "multiple entity types: body, face" in result
+        assert "entity_types=['body']" in result
+        assert not design.named_selections
+    else:
+        assert "created successfully" in result
+        assert len(design.named_selections) == 1
+        named_selection = design.named_selections[0]
+        assert {body.id for body in named_selection.bodies} == set(body_ids)
+        expected_face_ids = set(face_ids) if "face" in entity_types else set()
+        assert {face.id for face in named_selection.faces} == expected_face_ids
+        assert not named_selection.edges
