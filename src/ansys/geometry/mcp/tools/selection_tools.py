@@ -1034,6 +1034,13 @@ def group_entities(
       ``edge_count``, ``loop_count``, ``color``, ``coincident``
     - ``"edge"``: ``curve_type``
 
+    Backend compatibility: face ``coincident`` grouping has been reported as
+    unimplemented on CoreService ``CORE_WINDOWS`` 27.1.0. Do not use that combination
+    on the affected backend. Other grouping properties, such as ``area`` or ``body``,
+    do not identify coincident faces; use them only when they match the request.
+    If no supported criterion satisfies the request, report the limitation rather
+    than substituting a different property.
+
     Parameters
     ----------
     ctx : Context
@@ -1139,6 +1146,15 @@ def extend_selection(
     - ``"face"``: ``area``, ``edge_count``, ``loop_count``, ``color``,
       ``coincident``, ``coaxial``
     - ``"edge"``: ``nearby``, ``connected``, ``tangent_chain``, ``coaxial``
+
+    Backend compatibility: body ``nearby`` is unsupported on CoreService backends,
+    regardless of ``distance``, including zero. Face ``coincident`` and edge
+    ``nearby``/``connected`` have also been reported as unimplemented on CoreService
+    ``CORE_WINDOWS`` 27.1.0. Do not use these combinations on the affected backend
+    or retry them with different distances. These restrictions take precedence over
+    the general criterion guidance below. Property-based criteria are not substitutes
+    for contact, coincidence, or connectivity. If no supported criterion satisfies
+    the request, report the limitation rather than claiming an equivalent selection.
 
     Parameters
     ----------
