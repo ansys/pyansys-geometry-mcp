@@ -55,7 +55,7 @@ Client setup (Copilot and Gemini)
 PyAnsys Geometry-MCP supports two transports for communicating with your MCP
 client:
 
-- **stdio** (default): Your MCP client starts the server as a subprocess and
+- **stdio** (default): Your MCP client starts the server as a child process and
   communicates with it through standard input and output. This is the simplest
   option for local use.
 - **HTTP**: You start the server yourself, and your MCP client connects to it
