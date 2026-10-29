@@ -78,14 +78,14 @@ doc = [
 # OpenAI deployment and is never run as part of the regular test run.
 eval = [
   "jsonschema==4.26.0",
-  "openai==3.35.1",
+  "openai==3.36.1",
   { include-group = "tests" },
 ]
 tests = [
   "ansys-common-mcp==0.3.6",
   "ansys-geometry-core==0.18.2",
   "pytest==9.1.1",
-  "pytest-asyncio==1.4.0",
+  "pytest-asyncio==1.4.1",
   "pytest-cov==7.1.0",
   "pytest-mock==3.17.0",
 ]
