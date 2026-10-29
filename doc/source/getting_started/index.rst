@@ -87,7 +87,8 @@ GitHub Copilot (Visual Studio Code) with stdio
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Open or create ``.vscode/mcp.json`` in your workspace. Alternatively, you
-   can use a ``.mcp.json`` file at the root of your workspace.
+   can use a ``.mcp.json`` file at the root of your workspace, which uses a
+   different format. For an example, see the end of this section.
 2. Add a server entry for ``pyansys-geometry-mcp``.
 3. Set ``type`` to ``"stdio"``.
 4. Set ``command`` to the path to the Python interpreter where you installed
@@ -98,7 +99,7 @@ GitHub Copilot (Visual Studio Code) with stdio
    append more options to this list, such as ``"--mode", "discovery"``. For all
    available options, see `Startup options`_.
 
-**Example:**
+**Example** (``.vscode/mcp.json``):
 
 .. code-block:: json
 
@@ -111,6 +112,23 @@ GitHub Copilot (Visual Studio Code) with stdio
         }
       },
       "inputs": []
+    }
+
+If you use a ``.mcp.json`` file at the root of your workspace instead, put the
+server entry under ``mcpServers`` and omit ``inputs``:
+
+**Example** (``.mcp.json``):
+
+.. code-block:: json
+
+    {
+      "mcpServers": {
+        "pyansys-geometry-mcp": {
+          "type": "stdio",
+          "command": "<path-to-python>",
+          "args": ["-m", "ansys.geometry.mcp"]
+        }
+      }
     }
 
 Gemini with stdio
@@ -179,13 +197,14 @@ GitHub Copilot (Visual Studio Code) with HTTP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Open or create ``.vscode/mcp.json`` in your workspace. Alternatively, you
-   can use a ``.mcp.json`` file at the root of your workspace.
+   can use a ``.mcp.json`` file at the root of your workspace, which uses a
+   different format. For an example, see the end of this section.
 2. Add a server entry for ``pyansys-geometry-mcp``.
 3. Set ``type`` to ``"http"``.
 4. Set ``url`` to the address the server is listening on. If you changed
    ``--http-host``, ``--http-port``, or ``--http-path``, update the URL to match.
 
-**Example:**
+**Example** (``.vscode/mcp.json``):
 
 .. code-block:: json
 
@@ -197,6 +216,22 @@ GitHub Copilot (Visual Studio Code) with HTTP
         }
       },
       "inputs": []
+    }
+
+If you use a ``.mcp.json`` file at the root of your workspace instead, put the
+server entry under ``mcpServers`` and omit ``inputs``:
+
+**Example** (``.mcp.json``):
+
+.. code-block:: json
+
+    {
+      "mcpServers": {
+        "pyansys-geometry-mcp": {
+          "type": "http",
+          "url": "http://127.0.0.1:8080/mcp"
+        }
+      }
     }
 
 Gemini with HTTP
