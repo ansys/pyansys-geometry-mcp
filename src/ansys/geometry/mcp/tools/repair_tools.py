@@ -79,15 +79,6 @@ _REPAIR_OPERATIONS: dict[str, tuple[str, tuple[str, ...]]] = {
 _PROBLEM_AREA_OPERATIONS = {"missing_faces", "small_faces"}
 
 
-def _bodies_transcript(bodies) -> str:
-    """Render the resolved body scope."""
-    ids = [body.id for body in bodies]
-    return (
-        "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids\n"
-        f"bodies = get_bodies_from_ids(design, {ids!r})"
-    )
-
-
 def _summarize(operation: str, message, body_count: int) -> str:
     """Render a ``RepairToolMessage`` as a single human-readable line."""
     parts = [
@@ -162,7 +153,6 @@ def inspect_geometry(
             return error
 
         results = app_context.product_instance.repair_tools.inspect_geometry(bodies)
-        app_context.command_history.append(_bodies_transcript(bodies))
         app_context.command_history.append("instance.repair_tools.inspect_geometry(bodies)")
         logger.info(f"inspect_geometry: {len(bodies)} bodies, {len(results)} with issues.")
 
@@ -414,7 +404,6 @@ def repair_geometry(
         )
         if "angle" in kwargs:
             app_context.command_history.append("from ansys.geometry.core.misc import UNITS, Angle")
-        app_context.command_history.append(_bodies_transcript(bodies))
         method_call = f"instance.{tool_family}.{method_name}(bodies{kwargs_str})"
         if operation in _PROBLEM_AREA_OPERATIONS:
             app_context.command_history.append(f"problem_areas = {method_call}")

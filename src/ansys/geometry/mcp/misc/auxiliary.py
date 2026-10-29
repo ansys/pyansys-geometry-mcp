@@ -144,10 +144,16 @@ def resolve_bodies(
     Precedence is ``selection_handle``, then ``named_selection``, then
     ``body_ids``, and then every body in the design.
 
+    On success, a ``bodies = ...`` line is appended to the command history. It
+    replays the lookup the caller asked for (the selection, the named selection,
+    the supplied IDs, or every body) rather than the IDs it resolved to, so the
+    script stays valid when the design is rebuilt and IDs change.
+
     Parameters
     ----------
     app_context : PyAnsysGeometryContext
-        Application state, which is used to look up ``selection_handle``.
+        Application state, which is used to look up ``selection_handle`` and to
+        record the command history.
     design : Design
         Active design to resolve against.
     body_ids : list of str, default: None
@@ -172,6 +178,9 @@ def resolve_bodies(
         bodies = list(selected.items) if selected is not None else []
         if not bodies:
             return [], f"Selection '{selection_handle}' has no bodies selected."
+        app_context.command_history.append(
+            f"bodies = list(selection_registry[{selection_handle!r}]._bodies.items)"
+        )
         return bodies, None
 
     if named_selection:
@@ -182,6 +191,10 @@ def resolve_bodies(
         bodies = list(found.bodies)
         if not bodies:
             return [], f"Named selection '{named_selection}' contains no bodies."
+        app_context.command_history.append(
+            "bodies = list(next(ns for ns in design.named_selections "
+            f"if ns.name == {named_selection!r}).bodies)"
+        )
         return bodies, None
 
     if body_ids:
@@ -191,11 +204,16 @@ def resolve_bodies(
                 f"Body ID(s) not found: {', '.join(missing)}. "
                 "Use list_entities to see available bodies."
             )
+        app_context.command_history.append(
+            "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids\n"
+            f"bodies = get_bodies_from_ids(design, {list(body_ids)!r})"
+        )
         return bodies, None
 
     bodies = list(design.get_all_bodies())
     if not bodies:
         return [], "The active design contains no bodies."
+    app_context.command_history.append("bodies = design.get_all_bodies()")
     return bodies, None
 
 
