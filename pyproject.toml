@@ -78,7 +78,7 @@ doc = [
 # OpenAI deployment and is never run as part of the regular test run.
 eval = [
   "jsonschema==4.26.0",
-  "openai==3.36.1",
+  "openai==3.37.0",
   { include-group = "tests" },
 ]
 tests = [
