@@ -59,7 +59,7 @@ dev = [
 doc = [
   "ansys-common-mcp==0.3.6",
   "ansys-geometry-core==0.18.2",
-  "ansys-sphinx-theme[autoapi,changelog]==1.11.0",
+  "ansys-sphinx-theme[autoapi,changelog]==1.12.0",
   "jupytext==1.19.6",
   "myst-parser==5.1.0",
   "nbconvert==7.17.2",
