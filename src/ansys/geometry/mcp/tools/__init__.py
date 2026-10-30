@@ -20,6 +20,7 @@ Importing this package registers every ``@app.tool()`` defined in its submodules
 """
 
 from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
+from ansys.geometry.mcp.tools.doc_tools import get_api_details, suggest_api
 from ansys.geometry.mcp.tools.edit_tools import boolean_operation
 from ansys.geometry.mcp.tools.repair_tools import inspect_geometry, repair_geometry
 from ansys.geometry.mcp.tools.selection_tools import (

@@ -139,8 +139,10 @@ async def run_python_code(
     else explicitly. Bodies, faces, and edges are reached
     through the design tree (``design.bodies[0].faces[0].edges``) and edits are methods
     on those objects. Only stdout is returned, so ``print()`` the values you need. If
-    you are unsure of the exact API, introspect it first with ``dir()`` or ``help()``, and then
-    issue a second call with the real code.
+    you are unsure of the exact API, look it up first with ``suggest_api`` and
+    ``get_api_details``, which search the bundled PyAnsys Geometry documentation offline,
+    and then issue the call with the real code. Fall back to ``dir()`` or ``help()`` in
+    this session only when the documentation does not cover it.
 
     The code runs in a separate process that is connected to the same geometry
     service the other tools use, so bodies they created are immediately available
