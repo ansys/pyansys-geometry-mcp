@@ -25,7 +25,7 @@ call in step 2 represents a tool invocation, not a local Python client script.
    come from your own tool responses. No thermal solution is computed here.
 
 The base is centered on the XY plane and extends from Z = 0 to 5 mm.
-Five fins run along Y and extend another 20 mm above the base.
+Five fins run along Y and extend from Z = 5 to 25 mm.
 The entire underside, at Z = 0, receives heat from a component beneath it.
 It is a single face in this simple model; named selections can contain
 multiple faces in more complex models.
@@ -37,7 +37,7 @@ multiple faces in more complex models.
 
     Create a new design called BasicHeatSink. Make a 60 by 40 mm base,
     5 mm thick, with five evenly spaced fins. Each fin should be 2 mm
-    thick, 40 mm long, and rise 20 mm above the base. Make one solid body.
+    thick, 40 mm long, and extend 20 mm from the top of the base. Make one solid body.
 
 **Tool:** ``create_design``
 
@@ -58,7 +58,7 @@ multiple faces in more complex models.
 
 The same prompt continues with ``run_python_code`` because there is no
 dedicated primitive-creation tool. All bare lengths below are in metres.
-The fins overlap the base by 1 mm to make the boolean union unambiguous;
+The fins overlap the base by 1 mm to make the union operation unambiguous;
 their exposed height remains 20 mm.
 
 **Tool call with arguments**
@@ -102,7 +102,7 @@ their exposed height remains 20 mm.
 The printed message reports completion of the call, not an independent
 check of the resulting topology. If execution fails, read ``error`` and
 ``stderr`` before continuing. Do not select faces until modeling is finished:
-boolean operations can change face IDs.
+modeling operations can change face IDs.
 
 3. Select the heat-input face
 -----------------------------
@@ -153,8 +153,8 @@ example; an existing assembly would need additional scoping.
 
 **Prompt**
 
-    Save those selected faces as HeatInput so I can scope a thermal load
-    to them in a simulation.
+    Save those selected faces as HeatInput for scoping a thermal load
+    in a simulation.
 
 **Tool:** ``create_named_selection``
 
@@ -180,7 +180,7 @@ Convection, ambient temperature, meshing, and solving are separate steps.
 
 **Prompt**
 
-    Show me a 3D plot of the heat sink.
+    Show a 3D plot of the heat sink.
 
 **Tool:** ``visualize``
 
@@ -196,8 +196,8 @@ Convection, ambient temperature, meshing, and solving are separate steps.
 
     3D scene window opened.
 
-The plot should show a rectangular base with five parallel fins. This
-plots the design, not a highlighted named selection or temperature contours.
+The plot should show a rectangular base with five parallel fins.
+It does not highlight the named selection or display temperature contours.
 Interactive rendering requires a display on the MCP server host.
 To request an image instead, use ``{"save": true}``; the tool returns
 the generated PNG path. Pass that path as ``image_path`` to
