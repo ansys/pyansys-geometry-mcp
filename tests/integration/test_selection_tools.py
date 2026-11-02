@@ -752,6 +752,15 @@ def test_duplicate_named_bodies_are_addressed_by_id(ctx: PyAnsysGeometryContext)
         ctx, handle, "body", criteria="named_selection", named_selection="ns_large_dup"
     ) == [large.id]
 
+    assert select_entities(ctx, handle, "body", criteria="name", name="DUP_BOX") == [
+        small.id,
+        large.id,
+    ]
+    assert filter_entities(ctx, handle, "body", criteria="name", name="Dup_Box") == [
+        small.id,
+        large.id,
+    ]
+
 
 # ---------------------------------------------------------------------------
 # create_named_selection

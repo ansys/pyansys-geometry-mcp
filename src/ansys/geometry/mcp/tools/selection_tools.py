@@ -492,7 +492,7 @@ def select_entities(
         ``"named_selection"``
             Entities belonging to a named selection group. Requires ``named_selection``.
         ``"name"``
-            All bodies whose name matches exactly, including bodies sharing a name.
+            All bodies whose name matches, ignoring case, including bodies sharing a name.
             Bodies only. Requires ``name``.
         ``"volume"``
             Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
@@ -586,8 +586,8 @@ def select_entities(
         elif criteria == "name":
             if not name:
                 return "Body name must be provided for 'name' criterion."
-            matching = method(name)
-            call = f"{method_name}('{name}')"
+            matching = method(name, ignore_case=True)
+            call = f"{method_name}('{name}', ignore_case=True)"
         elif criteria in _MEASURE_CRITERIA:
             if min_value is None:
                 min_value = 0
@@ -716,7 +716,7 @@ def filter_entities(
         ``"color"``
             Keep bodies or faces with a specific display color. Requires ``color``.
         ``"name"``
-            Keep all bodies whose name matches exactly, including bodies sharing a name.
+            Keep all bodies whose name matches, ignoring case, including bodies sharing a name.
             Bodies only. Requires ``name``.
         ``"containing_surface_type"``
             Keep bodies containing a surface of ``surface_type``. Bodies only.
@@ -842,8 +842,8 @@ def filter_entities(
         elif criteria == "name":
             if not name:
                 return "name must be provided for 'name' criterion."
-            matching = selection.filter_bodies_by_name(name)
-            call = f"filter_bodies_by_name('{name}')"
+            matching = selection.filter_bodies_by_name(name, ignore_case=True)
+            call = f"filter_bodies_by_name('{name}', ignore_case=True)"
         elif criteria == "containing_surface_type":
             if not surface_type:
                 return "surface_type must be provided for 'containing_surface_type' criterion."
