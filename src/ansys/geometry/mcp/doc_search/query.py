@@ -1214,7 +1214,10 @@ def _resolve_ids(connection: sqlite3.Connection, record_id: str) -> list[str]:
     -------
     list of str
         Matches from the most specific identifier rule that finds any: exact
-        id, then id suffix, then leaf name. Empty for a phrase.
+        id, then id suffix, then leaf name. When that rule finds several and
+        exactly one is a class or enumeration whose name is written exactly as
+        given, only that one is returned, so ``Body`` means the class rather
+        than every ``body`` property. Empty for a phrase.
 
     """
     normalized = _normalize_identifier(record_id)
@@ -1222,9 +1225,45 @@ def _resolve_ids(connection: sqlite3.Connection, record_id: str) -> list[str]:
         return []
     for finder in (_exact_ids, _suffix_ids, _leaf_ids):
         found = finder(connection, normalized)
+        if len(found) > 1:
+            types = _exact_type_ids(connection, normalized, found)
+            if len(types) == 1:
+                return types
         if found:
             return found
     return []
+
+
+def _exact_type_ids(connection: sqlite3.Connection, name: str, record_ids: list[str]) -> list[str]:
+    """Return the classes and enumerations in ``record_ids`` whose id ends with ``name``.
+
+    Parameters
+    ----------
+    connection
+        Open documentation database.
+    name
+        Identifier compared with case, such as ``Body`` or ``designer.Body``.
+    record_ids
+        Candidate ids.
+
+    Returns
+    -------
+    list of str
+        Matching ids in the order given.
+
+    """
+    kinds = {
+        row["id"]: row["kind"]
+        for row in _execute_in(
+            connection, "SELECT id, kind FROM records WHERE id IN ({placeholders})", record_ids
+        )
+    }
+    return [
+        record_id
+        for record_id in record_ids
+        if kinds.get(record_id) in {"class", "enumeration"}
+        and (record_id == name or record_id.endswith(f".{name}"))
+    ]
 
 
 def _not_found(
