@@ -63,6 +63,7 @@ def test_build_sketch_primitives():
 def test_resolve_bodies_scoping(design):
     """Test the resolution precedence: handle, then named selection, then IDs, then all."""
     app_context = MagicMock()
+    app_context.command_history = []
     app_context.selection_registry = {
         "sel-1": SimpleNamespace(_bodies=SimpleNamespace(items=[design.get_all_bodies()[1]])),
         "sel-empty": SimpleNamespace(_bodies=SimpleNamespace(items=[])),
@@ -71,18 +72,24 @@ def test_resolve_bodies_scoping(design):
     bodies, error = resolve_bodies(app_context, design)
     assert error is None
     assert [b.name for b in bodies] == ["box", "cylinder"]
+    assert app_context.command_history[-1] == "bodies = design.get_all_bodies()"
 
     bodies, error = resolve_bodies(app_context, design, body_ids=["0:2"])
     assert error is None
     assert [b.name for b in bodies] == ["cylinder"]
+    assert app_context.command_history[-1].endswith("bodies = get_bodies_from_ids(design, ['0:2'])")
 
     bodies, error = resolve_bodies(app_context, design, named_selection="hot_side")
     assert error is None
     assert [b.name for b in bodies] == ["box"]
+    assert "ns.name == 'hot_side'" in app_context.command_history[-1]
 
     bodies, error = resolve_bodies(app_context, design, selection_handle="sel-1")
     assert error is None
     assert [b.name for b in bodies] == ["cylinder"]
+    assert app_context.command_history[-1] == (
+        "bodies = list(selection_registry['sel-1']._bodies.items)"
+    )
 
     # A handle wins over the other scoping arguments.
     bodies, error = resolve_bodies(
@@ -99,6 +106,7 @@ def test_resolve_bodies_scoping(design):
 def test_resolve_bodies_errors(design):
     """Test every error path returns an empty body list and an explanatory message."""
     app_context = MagicMock()
+    app_context.command_history = []
     app_context.selection_registry = {
         "sel-empty": SimpleNamespace(_bodies=SimpleNamespace(items=[])),
     }
@@ -128,3 +136,4 @@ def test_resolve_bodies_errors(design):
     bodies, error = resolve_bodies(app_context, empty_design)
     assert bodies == []
     assert "no bodies" in error
+    assert app_context.command_history == []
