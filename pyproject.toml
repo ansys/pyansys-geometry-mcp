@@ -65,8 +65,8 @@ doc = [
   "nbconvert==7.17.2",
   "nbsphinx==0.9.8",
   "notebook==7.6.3",
-  "pypdf==6.21.3",
-  "quarto-cli==1.10.19",
+  "pypdf==6.21.4",
+  "quarto-cli==1.10.20",
   "sphinx==9.1.1",
   "sphinx-click==6.2.0",
   "sphinx-copybutton==0.5.2",
@@ -78,7 +78,7 @@ doc = [
 # OpenAI deployment and is never run as part of the regular test run.
 eval = [
   "jsonschema==4.26.0",
-  "openai==3.37.0",
+  "openai==3.39.0",
   { include-group = "tests" },
 ]
 tests = [
