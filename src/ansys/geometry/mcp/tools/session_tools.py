@@ -46,7 +46,11 @@ import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx, walk_components
+from ansys.geometry.mcp.misc.auxiliary import (
+    get_geometry_ctx,
+    serialize_design_access,
+    walk_components,
+)
 from ansys.geometry.mcp.misc.helpers import (
     connect_to_modeler_in_persistent_python,
     refresh_design_in_persistent_python,
@@ -214,6 +218,7 @@ async def run_python_code(
 
 
 @app.tool()
+@serialize_design_access
 def create_design(ctx: Context, design_name: str) -> str:
     """Create a new design in the product backend.
 
@@ -250,6 +255,7 @@ def create_design(ctx: Context, design_name: str) -> str:
 
 
 @app.tool()
+@serialize_design_access
 def get_design_info(ctx: Context) -> str:
     """Get an inventory of the active design, including objects inside components.
 
@@ -324,6 +330,7 @@ def get_design_info(ctx: Context) -> str:
 
 
 @app.tool()
+@serialize_design_access
 def file_io(
     ctx: Context,
     operation: Literal["import", "export"],
@@ -504,6 +511,7 @@ def file_io(
 
 
 @app.tool()
+@serialize_design_access
 def run_script_file(
     ctx: Context, file_path: str, args: dict[str, str] | None = None
 ) -> str | dict[str, str]:
