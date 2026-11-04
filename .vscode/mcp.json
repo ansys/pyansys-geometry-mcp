@@ -2,12 +2,8 @@
 {
     "servers": {
         "pyansys-geometry-mcp": {
-            "type": "stdio",
-            "command": ".\\.venv\\Scripts\\pyansys-geometry-mcp.exe",
-            "args": ["--transport-mode", "insecure"],
-            "env": {
-                "ANSRV_GEO_LICENSE_SERVER": "1055@host.docker.internal",
-            }
+            "type": "http",
+            "url": "http://localhost:62000"
         }
     }
 }
