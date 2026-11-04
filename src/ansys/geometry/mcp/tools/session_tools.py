@@ -316,7 +316,7 @@ def file_io(
         included automatically. This parameter is required for import.
     file_format : str, default: None
         Export format. Options are ``"fmd"``, ``"step"``, ``"iges"``, ``"scdocx"``,
-        ``"disco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter
+        ``"dsco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter
         is required for export.
     folder : str, default: None
         Export destination. If omitted, the file is saved in the current working directory.
