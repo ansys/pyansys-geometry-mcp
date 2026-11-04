@@ -367,9 +367,9 @@ def file_io(
             elif file_format.lower() == DesignFileFormat.SCDOCX.name.lower():
                 saved_path = design.export_to_scdocx(folder)
                 command = f"design.export_to_scdocx({folder!r})"
-            elif file_format.lower() == DesignFileFormat.DISCO.name.lower():
-                saved_path = design.export_to_disco(folder)
-                command = f"design.export_to_disco({folder!r})"
+            elif file_format.lower() == DesignFileFormat.DSCO.name.lower():
+                saved_path = design.export_to_dsco(folder)
+                command = f"design.export_to_dsco({folder!r})"
             elif file_format.lower() == DesignFileFormat.PARASOLID_TEXT.name.lower():
                 saved_path = design.export_to_parasolid_text(folder)
                 command = f"design.export_to_parasolid_text({folder!r})"
@@ -379,7 +379,7 @@ def file_io(
             else:
                 return (
                     f"Unsupported format '{file_format}'. Supported formats are: fmd, step, "
-                    "iges, scdocx, disco, parasolid_text, parasolid_bin."
+                    "iges, scdocx, dsco, parasolid_text, parasolid_bin."
                 )
 
             app_context.command_history.append(command)
