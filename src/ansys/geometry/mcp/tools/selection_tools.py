@@ -51,7 +51,7 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx
+from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx, walk_components
 from ansys.geometry.mcp.misc.selection_enums import (
     _CURVE_TYPE_MAP,
     _RANGE_TYPE_MAP,
@@ -62,6 +62,14 @@ from ansys.geometry.mcp.misc.selection_enums import (
 logger = get_logger(__name__)
 
 EntityType = Literal["body", "face", "edge"]
+
+_COMPONENT_ENTITY_TYPES = {
+    "design_curves",
+    "datum_points",
+    "datum_planes",
+    "datum_lines",
+    "coordinate_systems",
+}
 
 # Attribute on SelectionBuilder holding the typed selection, and the attribute the
 # result is written back to.
@@ -252,6 +260,33 @@ def _list_entities_transcript(
         lines.append(f"bodies = {query}")
         return "\n".join(lines)
 
+    if entity_type in _COMPONENT_ENTITY_TYPES:
+        lines = []
+        root = "design"
+        if component_id is not None:
+            lines.append("from ansys.geometry.core.misc.auxiliary import get_components_from_ids")
+            lines.append(f"component = get_components_from_ids(design, [{component_id!r}])[0]")
+            root = "component"
+        lines.extend(
+            [
+                "def _collect_component_entities(component):",
+                "    if not component.is_alive:",
+                "        return []",
+                f"    entities = [entity for entity in component.{entity_type} if entity.is_alive]",
+                "    for child in component.components:",
+                "        if child.is_alive:",
+                "            entities.extend(_collect_component_entities(child))",
+                "    return entities",
+                f"{entity_type} = _collect_component_entities({root})",
+            ]
+        )
+        if name is not None:
+            lines.append(
+                f"{entity_type} = [entity for entity in {entity_type} "
+                f"if entity.name.casefold() == {name.casefold()!r}]"
+            )
+        return "\n".join(lines)
+
     return (
         "from ansys.geometry.core.misc.auxiliary import get_bodies_from_ids\n"
         f"{entity_type}s = get_bodies_from_ids(design, [{body_id!r}])[0].{entity_type}s"
@@ -261,7 +296,17 @@ def _list_entities_transcript(
 @app.tool()
 def list_entities(
     ctx: Context,
-    entity_type: Literal["body", "component", "face", "edge"],
+    entity_type: Literal[
+        "body",
+        "component",
+        "face",
+        "edge",
+        "design_curves",
+        "datum_points",
+        "datum_planes",
+        "datum_lines",
+        "coordinate_systems",
+    ],
     body_id: str | None = None,
     component_id: str | None = None,
     name: str | None = None,
@@ -294,6 +339,14 @@ def list_entities(
       ``body_id``. Use it whenever an edge ID is needed, or to answer
       questions about how many edges a body has or which edges are lines,
       circles, arcs, and so on.
+    - ``"design_curves"``, ``"datum_points"``, ``"datum_planes"``, ``"datum_lines"``,
+      and ``"coordinate_systems"``: ``id=<entity id>  path=<component path>/<name>``
+      for live objects throughout the design, including nested components.
+      Design curves include construction lines left by modeling operations;
+      they are separate from body edges. Pass ``name`` for an exact case-insensitive
+      name match or ``component_id`` to restrict the listing to a component and
+      its children. Use these IDs with the PyAnsys Geometry API through
+      ``run_python_code``; selection-builder tools accept only bodies, faces, and edges.
 
     Parameters
     ----------
@@ -301,17 +354,19 @@ def list_entities(
         MCP request context (injected automatically).
     entity_type : str
         Kind of entity to select. Options are ``"body"``, ``"component"``,
-        ``"face"``, and ``"edge"``.
+        ``"face"``, ``"edge"``, ``"design_curves"``, ``"datum_points"``,
+        ``"datum_planes"``, ``"datum_lines"``, and ``"coordinate_systems"``.
     body_id : str, default: None
         ID of the body to inspect. Required for ``"face"`` and ``"edge"``,
         ignored otherwise. List the bodies first to discover valid IDs.
     component_id : str, default: None
-        ID of a component to restrict a ``"body"`` listing to, together with its
-        children. List the components first to discover IDs. Ignored for the
-        other entity types.
+        ID of a component to restrict body, design curve, datum object, or coordinate
+        system listings to, together with its children. List the components first
+        to discover IDs. Ignored for component, face, and edge listings.
     name : str, default: None
-        Body name to look up; only bodies with exactly this name (ignoring
-        case) are listed. Ignored for the other entity types.
+        Entity name to look up; only objects with exactly this name (ignoring
+        case) are listed. Applies to bodies, design curves, datum objects, and
+        coordinate systems. Ignored for components, faces, and edges.
 
     Returns
     -------
@@ -334,7 +389,7 @@ def list_entities(
         if entity_type == "component":
             lines = _component_tree(design, 0)
             empty = "No components found in the active design."
-        elif entity_type == "body":
+        elif entity_type == "body" or entity_type in _COMPONENT_ENTITY_TYPES:
             if component_id is None:
                 root = design
             else:
@@ -344,8 +399,19 @@ def list_entities(
                 if not matches:
                     return f"Component ID '{component_id}' not found."
                 root = matches[0]
-            lines = _body_paths(root, "", name)
-            empty = f"No bodies named '{name}' found." if name else "No bodies found."
+            if entity_type == "body":
+                lines = _body_paths(root, "", name)
+                empty = f"No bodies named '{name}' found." if name else "No bodies found."
+            else:
+                lines = [
+                    f"id={entity.id}  path={prefix}{entity.name}"
+                    for component, prefix in walk_components(root)
+                    for entity in getattr(component, entity_type)
+                    if entity.is_alive
+                    and (name is None or entity.name.casefold() == name.casefold())
+                ]
+                label = entity_type.replace("_", " ")
+                empty = f"No {label} named '{name}' found." if name else f"No {label} found."
         else:
             found, _ = find_bodies_by_id(design, [body_id])
             if not found:
