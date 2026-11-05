@@ -16,6 +16,7 @@
 
 """Shared helpers used by the MCP tool modules."""
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 from fastmcp.server import Context
@@ -33,6 +34,15 @@ if TYPE_CHECKING:
 def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":
     """Access the PyAnsys Geometry-MCP context from the MCP context."""
     return ctx.fastmcp._lifespan_result  # type: ignore[return-value]
+
+
+def walk_components(component: "Component", prefix: str = "") -> Iterator[tuple["Component", str]]:
+    """Yield a component and its live descendants with relative name paths."""
+    if not component.is_alive:
+        return
+    yield component, prefix
+    for child in component.components:
+        yield from walk_components(child, f"{prefix}{child.name}/")
 
 
 def find_body_by_name(design: "Design", body_name: str) -> "Body | None":
