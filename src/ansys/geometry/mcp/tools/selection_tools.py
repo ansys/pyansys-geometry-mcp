@@ -522,11 +522,14 @@ def select_entities(
     max_value: float | None = None,
     color: str | None = None,
     range_type: Literal["intersect", "contain"] = "intersect",
+    body_ids: list[str] | None = None,
 ) -> list[str] | str:
     """Query the design for entities matching a property and store them in a selection builder.
 
     Query the design for the starting set of bodies, faces, or edges in a selection
     workflow. The result replaces the builder's current selection for that entity type.
+    Queries search the whole design. To select only faces or edges of specific bodies,
+    such as "the circular edges of the plate", pass those bodies' IDs as ``body_ids``.
     Follow with ``filter_entities`` to narrow the set, ``extend_selection`` to add
     related entities, or ``create_named_selection`` to save the final set. Pass one
     ``criteria`` value with its one or more corresponding arguments. Available criteria depend
@@ -602,6 +605,9 @@ def select_entities(
     range_type : str, default: ``"intersect"``
         Whether a location criterion intersects or contains the specified range.
         Options are ``"intersect"`` and ``"contain"``.
+    body_ids : list of str, default: None
+        Keep only faces or edges that belong to these bodies. Faces and edges only.
+        Look up a body named by the user with ``list_entities(entity_type="body", name=...)``.
 
     Returns
     -------
@@ -626,6 +632,11 @@ def select_entities(
     Bodies matching a Z-location range starting at 0.05 m:
         ``select_entities(entity_type="body", criteria="z_location", min_value=0.05)``
 
+    Circular edges of one body, after looking up its ID with ``list_entities``:
+        ``select_entities(entity_type="edge", criteria="all", body_ids=[plate_id])``
+        followed by
+        ``filter_entities(entity_type="edge", criteria="curve_type", curve_type="circle")``
+
     """
     app_context = get_geometry_ctx(ctx)
 
@@ -644,6 +655,20 @@ def select_entities(
         method_name = methods.get(criteria)
         if method_name is None:
             return _unsupported(criteria, entity_type, methods)
+
+        if body_ids is not None:
+            if entity_type == "body":
+                return "body_ids applies only to 'face' and 'edge' selections."
+            if not body_ids:
+                return "body_ids must contain at least one body ID."
+            design = app_context.product_instance.get_active_design()
+            known_ids = {body.id for body in design.get_all_bodies()}
+            unknown_ids = [body_id for body_id in body_ids if body_id not in known_ids]
+            if unknown_ids:
+                return (
+                    f"Unknown body IDs: {', '.join(unknown_ids)}. "
+                    "Use list_entities(entity_type='body') to find body Ids."
+                )
 
         attr = _SELECTION_ATTR[entity_type]
         selection = getattr(selection_builder, attr)
@@ -693,6 +718,12 @@ def select_entities(
             call = f"{method_name}('{color}')"
 
         app_context.command_history.append(f"matching = selection_builder.{attr}.{call}")
+        if body_ids is not None:
+            matching.items[:] = [item for item in matching.items if item.body.id in body_ids]
+            app_context.command_history.append(
+                "matching.items[:] = "
+                f"[item for item in matching.items if item.body.id in {body_ids!r}]"
+            )
         getattr(selection_builder, _RESULT_ATTR[entity_type]).items[:] = matching.items
         app_context.command_history.append(
             f"selection_builder.{_RESULT_ATTR[entity_type]}.items[:] = matching.items"
