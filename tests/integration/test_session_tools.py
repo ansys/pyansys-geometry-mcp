@@ -277,8 +277,7 @@ async def test_success_refreshes_after_execution(ctx, monkeypatch):
         assert cached_design.bodies == []
         return result
 
-    def refresh(*, sync_with_backend):
-        assert sync_with_backend is True
+    def refresh():
         events.append("refresh")
         cached_design.bodies = ["box"]
         return cached_design
@@ -338,7 +337,7 @@ async def test_refresh_failure_preserves_execution_success(ctx, monkeypatch, cap
     assert refresh_error in caplog.text
     assert app_context.command_history == ["create_box()"]
     execute.assert_awaited_once()
-    app_context.product_instance.get_active_design.assert_called_once_with(sync_with_backend=True)
+    app_context.product_instance.get_active_design.assert_called_once_with()
 
 
 async def test_run_python_code_success(ctx, execute_mock, connect_mock):
