@@ -16,10 +16,8 @@
 
 """Shared helpers used by the MCP tool modules."""
 
-from collections.abc import Callable, Iterator
-import functools
-import threading
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from fastmcp.server import Context
 
@@ -31,31 +29,6 @@ if TYPE_CHECKING:
     from ansys.geometry.core.designer.design import Design
     from ansys.geometry.core.designer.selection import NamedSelection
     from ansys.geometry.core.sketch import Sketch
-
-_P = ParamSpec("_P")
-_R = TypeVar("_R")
-
-_DESIGN_LOCK = threading.RLock()
-
-
-def serialize_design_access(func: Callable[_P, _R]) -> Callable[_P, _R]:
-    """Run a synchronous tool while holding the server-wide design lock.
-
-    FastMCP runs synchronous tools on worker threads, so tools called in parallel can
-    run concurrently. ``Modeler.get_active_design()`` re-reads the shared ``Design`` in
-    place, clearing and refilling its component and body lists, and that is not
-    thread-safe: concurrent syncs leave duplicated components behind, and a tool that
-    iterates the design while another tool syncs it sees partial results. Apply this
-    decorator below ``@app.tool()`` on every synchronous tool that uses the server's
-    ``Modeler`` or ``Design``.
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args: _P.args, **kwargs: _P.kwargs) -> _R:
-        with _DESIGN_LOCK:
-            return func(*args, **kwargs)
-
-    return wrapper
 
 
 def get_geometry_ctx(ctx: Context) -> "PyAnsysGeometryContext":

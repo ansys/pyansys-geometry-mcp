@@ -18,7 +18,7 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -30,6 +30,7 @@ from ansys.geometry.mcp.tools import (
     get_session_script,
     run_python_code,
     run_script_file,
+    session_tools,
 )
 
 from .conftest import FILES_DIR, create_box
@@ -259,6 +260,85 @@ async def test_run_python_code_not_connected(ctx, execute_mock, monkeypatch):
     assert result["success"] is False
     assert result["error"] == "The product backend is not connected."
     execute_mock.assert_not_called()
+
+
+async def test_success_refreshes_after_execution(ctx, monkeypatch):
+    app_context = ctx.fastmcp._lifespan_result
+    monkeypatch.setattr(app_context, "product_instance", MagicMock())
+    monkeypatch.setattr(app_context, "command_history", [])
+    monkeypatch.setitem(app_context.python_session.metadata, "instance", MagicMock())
+    cached_design = app_context.product_instance.get_active_design.return_value
+    cached_design.bodies = []
+    events = []
+    result = json.dumps({"success": True, "stdout": "box\n", "stderr": "", "error": None})
+
+    async def execute(*args, **kwargs):
+        events.append("execute")
+        assert cached_design.bodies == []
+        return result
+
+    def refresh(*, sync_with_backend):
+        assert sync_with_backend is True
+        events.append("refresh")
+        cached_design.bodies = ["box"]
+        return cached_design
+
+    monkeypatch.setattr(session_tools.shared_tools, "execute_python_code", execute)
+    app_context.product_instance.get_active_design.side_effect = refresh
+
+    returned = await session_tools.run_python_code(ctx, "create_box()")
+
+    assert returned == result
+    assert events == ["execute", "refresh"]
+    assert cached_design.bodies == ["box"]
+    assert app_context.command_history == ["create_box()"]
+
+
+@pytest.mark.parametrize(
+    "result",
+    [
+        json.dumps({"success": False, "error": "Execution failed"}),
+        "invalid JSON",
+        "null",
+    ],
+)
+async def test_unsuccessful_execution_does_not_refresh(ctx, monkeypatch, result):
+    app_context = ctx.fastmcp._lifespan_result
+    monkeypatch.setattr(app_context, "product_instance", MagicMock())
+    monkeypatch.setattr(app_context, "command_history", [])
+    monkeypatch.setitem(app_context.python_session.metadata, "instance", MagicMock())
+    execute = AsyncMock(return_value=result)
+    monkeypatch.setattr(session_tools.shared_tools, "execute_python_code", execute)
+
+    assert await session_tools.run_python_code(ctx, "code") == result
+    app_context.product_instance.get_active_design.assert_not_called()
+    assert app_context.command_history == []
+
+
+async def test_refresh_failure_preserves_execution_success(ctx, monkeypatch, caplog):
+    execution_result = {
+        "success": True,
+        "stdout": "box created\n",
+        "stderr": "",
+        "error": None,
+    }
+    execute = AsyncMock(return_value=json.dumps(execution_result))
+    monkeypatch.setattr(session_tools.shared_tools, "execute_python_code", execute)
+    app_context = ctx.fastmcp._lifespan_result
+    monkeypatch.setattr(app_context, "product_instance", MagicMock())
+    monkeypatch.setattr(app_context, "command_history", [])
+    monkeypatch.setitem(app_context.python_session.metadata, "instance", MagicMock())
+    app_context.product_instance.get_active_design.side_effect = RuntimeError("service unavailable")
+
+    result = json.loads(await session_tools.run_python_code(ctx, "create_box()"))
+
+    refresh_error = result.pop("refresh_error")
+    assert result == execution_result
+    assert "service unavailable" in refresh_error
+    assert refresh_error in caplog.text
+    assert app_context.command_history == ["create_box()"]
+    execute.assert_awaited_once()
+    app_context.product_instance.get_active_design.assert_called_once_with(sync_with_backend=True)
 
 
 async def test_run_python_code_success(ctx, execute_mock, connect_mock):

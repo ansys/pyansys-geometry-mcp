@@ -47,17 +47,12 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import (
-    find_bodies_by_id,
-    get_geometry_ctx,
-    serialize_design_access,
-)
+from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx
 
 logger = get_logger(__name__)
 
 
 @app.tool()
-@serialize_design_access
 def boolean_operation(
     ctx: Context,
     operation: Literal["subtract", "unite", "intersect"],

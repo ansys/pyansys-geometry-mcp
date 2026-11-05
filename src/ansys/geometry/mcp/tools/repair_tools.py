@@ -39,11 +39,7 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import (
-    get_geometry_ctx,
-    resolve_bodies,
-    serialize_design_access,
-)
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx, resolve_bodies
 
 logger = get_logger(__name__)
 
@@ -104,7 +100,6 @@ def _summarize(operation: str, message, body_count: int) -> str:
 
 
 @app.tool()
-@serialize_design_access
 def inspect_geometry(
     ctx: Context,
     body_ids: list[str] | None = None,
@@ -182,7 +177,6 @@ def inspect_geometry(
 
 
 @app.tool()
-@serialize_design_access
 def repair_geometry(
     ctx: Context,
     operation: RepairOperation,

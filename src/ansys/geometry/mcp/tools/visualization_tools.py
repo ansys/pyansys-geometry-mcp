@@ -46,7 +46,7 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx, serialize_design_access
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
 
 logger = get_logger(__name__)
 
@@ -82,7 +82,6 @@ def read_image_in_base64(ctx: Context, image_path: str) -> dict[str, str]:
 
 
 @app.tool()
-@serialize_design_access
 def visualize(
     ctx: Context,
     path: str | None = None,

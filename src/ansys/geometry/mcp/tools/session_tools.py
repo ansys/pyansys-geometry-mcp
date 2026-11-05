@@ -46,11 +46,7 @@ import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import (
-    get_geometry_ctx,
-    serialize_design_access,
-    walk_components,
-)
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx, walk_components
 from ansys.geometry.mcp.misc.helpers import (
     connect_to_modeler_in_persistent_python,
     refresh_design_in_persistent_python,
@@ -149,6 +145,7 @@ async def run_python_code(
     The code runs in a separate process that is connected to the same geometry
     service the other tools use, so bodies they created are immediately available
     here, and bodies created here are immediately visible to them.
+    After successful execution, the server-side design cache is synchronized.
 
     Parameters
     ----------
@@ -168,6 +165,9 @@ async def run_python_code(
         JSON string with ``success``, ``stdout``, ``stderr``, and ``error`` keys.
         On failure, read ``error``/``stderr``, correct the code, and retry rather than
         reporting the operation as impossible.
+        If execution succeeds but synchronizing the server-side design fails,
+        ``success`` remains true and ``refresh_error`` describes the synchronization
+        failure. Do not rerun successful geometry operations because of ``refresh_error``.
 
     """
     app_context = get_geometry_ctx(ctx)
@@ -213,12 +213,20 @@ async def run_python_code(
             app_context.command_history.append(code)
     except (json.JSONDecodeError, AttributeError):
         pass
+    else:
+        if parsed.get("success"):
+            try:
+                instance.get_active_design(sync_with_backend=True)
+            except Exception as e:
+                refresh_error = f"Python execution succeeded, but refreshing the design failed: {e}"
+                logger.error(refresh_error)
+                parsed["refresh_error"] = refresh_error
+                return json.dumps(parsed, ensure_ascii=False)
 
     return result
 
 
 @app.tool()
-@serialize_design_access
 def create_design(ctx: Context, design_name: str) -> str:
     """Create a new design in the product backend.
 
@@ -255,7 +263,6 @@ def create_design(ctx: Context, design_name: str) -> str:
 
 
 @app.tool()
-@serialize_design_access
 def get_design_info(ctx: Context) -> str:
     """Get an inventory of the active design, including objects inside components.
 
@@ -330,7 +337,6 @@ def get_design_info(ctx: Context) -> str:
 
 
 @app.tool()
-@serialize_design_access
 def file_io(
     ctx: Context,
     operation: Literal["import", "export"],
@@ -511,7 +517,6 @@ def file_io(
 
 
 @app.tool()
-@serialize_design_access
 def run_script_file(
     ctx: Context, file_path: str, args: dict[str, str] | None = None
 ) -> str | dict[str, str]:

@@ -16,19 +16,12 @@
 
 """Unit tests for the shared auxiliary helpers."""
 
-import inspect
-import threading
-import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
 
-from ansys.geometry.mcp.misc.auxiliary import (
-    build_sketch,
-    resolve_bodies,
-    serialize_design_access,
-)
+from ansys.geometry.mcp.misc.auxiliary import build_sketch, resolve_bodies
 
 
 def test_build_sketch_primitives():
@@ -144,65 +137,3 @@ def test_resolve_bodies_errors(design):
     assert bodies == []
     assert "no bodies" in error
     assert app_context.command_history == []
-
-
-def test_serialize_design_access_runs_calls_one_at_a_time():
-    """Test that concurrent calls never overlap, so in-place design syncs cannot interleave."""
-    active = 0
-    peak = 0
-    counter_lock = threading.Lock()
-
-    @serialize_design_access
-    def tool(value: int) -> int:
-        nonlocal active, peak
-        with counter_lock:
-            active += 1
-            peak = max(peak, active)
-        time.sleep(0.02)
-        with counter_lock:
-            active -= 1
-        return value * 2
-
-    results = [None] * 5
-
-    def call(i: int) -> None:
-        results[i] = tool(i)
-
-    threads = [threading.Thread(target=call, args=(i,)) for i in range(5)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
-
-    assert peak == 1
-    assert results == [0, 2, 4, 6, 8]
-
-
-def test_serialize_design_access_is_reentrant_and_preserves_metadata():
-    """Test that nested decorated calls do not deadlock and tool metadata is kept."""
-
-    @serialize_design_access
-    def inner() -> str:
-        """Inner docstring."""
-        return "inner"
-
-    @serialize_design_access
-    def outer(ctx: object, name: str = "x") -> str:
-        """Outer docstring."""
-        return inner() + name
-
-    assert outer(None) == "innerx"
-    assert outer.__doc__ == "Outer docstring."
-    assert list(inspect.signature(outer).parameters) == ["ctx", "name"]
-
-
-async def test_serialized_tools_keep_their_mcp_schema():
-    """Test that decorated tools still register with their parameters and hide ``ctx``."""
-    from ansys.geometry.mcp import app
-    import ansys.geometry.mcp.tools  # noqa: F401
-
-    tools = {tool.name: tool for tool in await app.list_tools()}
-    properties = tools["list_entities"].parameters["properties"]
-    assert "ctx" not in properties
-    assert {"entity_type", "body_id", "component_id", "name"} <= set(properties)
-    assert "discovery tool" in tools["list_entities"].description

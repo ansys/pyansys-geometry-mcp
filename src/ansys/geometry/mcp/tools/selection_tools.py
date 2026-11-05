@@ -51,12 +51,7 @@ from ansys.common.mcp.logging_config import get_logger
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import (
-    find_bodies_by_id,
-    get_geometry_ctx,
-    serialize_design_access,
-    walk_components,
-)
+from ansys.geometry.mcp.misc.auxiliary import find_bodies_by_id, get_geometry_ctx, walk_components
 from ansys.geometry.mcp.misc.selection_enums import (
     _CURVE_TYPE_MAP,
     _RANGE_TYPE_MAP,
@@ -299,7 +294,6 @@ def _list_entities_transcript(
 
 
 @app.tool()
-@serialize_design_access
 def list_entities(
     ctx: Context,
     entity_type: Literal[
@@ -442,7 +436,6 @@ def list_entities(
 
 
 @app.tool()
-@serialize_design_access
 def create_selection_builder(ctx: Context) -> str:
     """Create an empty selection builder in the product backend.
 
@@ -495,7 +488,6 @@ def create_selection_builder(ctx: Context) -> str:
 
 
 @app.tool()
-@serialize_design_access
 def select_entities(
     ctx: Context,
     selection_handle: str,
@@ -738,7 +730,6 @@ def select_entities(
 
 
 @app.tool()
-@serialize_design_access
 def filter_entities(
     ctx: Context,
     selection_handle: str,
@@ -992,7 +983,6 @@ def filter_entities(
 
 
 @app.tool()
-@serialize_design_access
 def order_entities(
     ctx: Context,
     selection_handle: str,
@@ -1107,7 +1097,6 @@ def order_entities(
 
 
 @app.tool()
-@serialize_design_access
 def group_entities(
     ctx: Context,
     selection_handle: str,
@@ -1217,7 +1206,6 @@ def group_entities(
 
 
 @app.tool()
-@serialize_design_access
 def extend_selection(
     ctx: Context,
     selection_handle: str,
@@ -1352,7 +1340,6 @@ def extend_selection(
 
 
 @app.tool()
-@serialize_design_access
 def create_named_selection(
     ctx: Context,
     name: str,
