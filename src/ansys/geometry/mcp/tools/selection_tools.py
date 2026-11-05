@@ -269,15 +269,18 @@ def _list_entities_transcript(
             root = "component"
         lines.extend(
             [
-                "def _collect_component_entities(component):",
+                f"{entity_type} = []",
+                f"pending_components = [{root}]",
+                "while pending_components:",
+                "    component = pending_components.pop()",
                 "    if not component.is_alive:",
-                "        return []",
-                f"    entities = [entity for entity in component.{entity_type} if entity.is_alive]",
-                "    for child in component.components:",
-                "        if child.is_alive:",
-                "            entities.extend(_collect_component_entities(child))",
-                "    return entities",
-                f"{entity_type} = _collect_component_entities({root})",
+                "        continue",
+                f"    {entity_type}.extend(",
+                f"        entity for entity in component.{entity_type} if entity.is_alive",
+                "    )",
+                "    pending_components.extend(",
+                "        reversed([child for child in component.components if child.is_alive])",
+                "    )",
             ]
         )
         if name is not None:
