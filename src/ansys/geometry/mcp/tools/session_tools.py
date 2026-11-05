@@ -216,7 +216,7 @@ async def run_python_code(
     else:
         if parsed.get("success"):
             try:
-                instance.get_active_design(sync_with_backend=True)
+                instance.get_active_design()
             except Exception as e:
                 refresh_error = f"Python execution succeeded, but refreshing the design failed: {e}"
                 logger.error(refresh_error)
