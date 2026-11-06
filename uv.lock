@@ -284,7 +284,7 @@ wheels = [
 
 [[package]]
 name = "ansys-geometry-core"
-version = "0.18.3"
+version = "0.18.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ansys-api-discovery" },
@@ -304,9 +304,9 @@ dependencies = [
     { name = "six" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/ed/cf592bec8fe3aad0c274e8bc12f2c649a8a4bac359beb1bec3df44ae7e36/ansys_geometry_core-0.18.3.tar.gz", hash = "sha256:6552604768f2dfe9b11f887e2fdd543f7b6374237478c157e69be9cd159c29f4", size = 23437607, upload-time = "2026-11-02T17:52:17.892Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/6d/f9fc2af894be7d3dda43aa93cf547138d26f052d82cb80a1d903b816d80b/ansys_geometry_core-0.18.4.tar.gz", hash = "sha256:f52cb004e210e7ac2458aa6adac1676edee325db4f67f4de4b563b7287583deb", size = 23442533, upload-time = "2026-11-05T21:16:36.936Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/0e/b202e4f89248025e79d017e25a2a261ac5a6f9b851f452efdb118e927dd5/ansys_geometry_core-0.18.3-py3-none-any.whl", hash = "sha256:6ca2fe797c2f63fdd8ed629b0803e214d6c72284ed3bf1b2b1774bbc7c5fcd62", size = 611084, upload-time = "2026-11-02T17:52:16.014Z" },
+    { url = "https://files.pythonhosted.org/packages/63/7b/9094568a9c305094b9516928a7d8628fc7b6b7b65477cceb71e1c84ef8b1/ansys_geometry_core-0.18.4-py3-none-any.whl", hash = "sha256:d5768a47415f42715b715fff9828d6dd304c3792f8a2ae47350051ed5e9a5455", size = 611742, upload-time = "2026-11-05T21:16:34.962Z" },
 ]
 
 [package.optional-dependencies]
@@ -394,7 +394,7 @@ tests = [
 [package.metadata]
 requires-dist = [
     { name = "ansys-common-mcp", specifier = ">=0.3.6" },
-    { name = "ansys-geometry-core", extras = ["all"], specifier = ">=0.18.3" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = ">=0.18.4" },
     { name = "black", specifier = ">=23.7.0" },
     { name = "isort", specifier = ">=5.13.0" },
 ]
@@ -402,7 +402,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.3" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.12.1" },
     { name = "jupytext", specifier = "==1.19.6" },
     { name = "myst-parser", specifier = "==5.1.0" },
@@ -424,7 +424,7 @@ dev = [
 ]
 doc = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.3" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.12.1" },
     { name = "jupytext", specifier = "==1.19.6" },
     { name = "myst-parser", specifier = "==5.1.0" },
@@ -441,7 +441,7 @@ doc = [
 ]
 eval = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.3" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "jsonschema", specifier = "==4.26.0" },
     { name = "openai", specifier = "==3.41.0" },
     { name = "pytest", specifier = "==9.1.1" },
@@ -451,7 +451,7 @@ eval = [
 ]
 tests = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.3" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.1" },
     { name = "pytest-cov", specifier = "==7.1.0" },
