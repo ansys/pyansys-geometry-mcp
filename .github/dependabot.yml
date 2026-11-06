@@ -22,28 +22,10 @@ updates:
       - "pyansys-ci-bot"
     commit-message:
       prefix: "build(deps)"
-    ignore:
-      - dependency-name: "trame-vtk" # DO NOT UPDATE - issues observed with 2.11.X versions
-        versions:
-          - ">=2.10.3"
     groups:
-      grpc-deps:
+      python-deps:
         patterns:
-          - "grpc*"
-          - "protobuf"
-      docs-deps:
-        patterns:
-          - "ansys-sphinx-theme*"
-          - "ipyvtklink"
-          - "jupyter_sphinx"
-          - "jupytext"
-          - "myst-parser"
-          - "nbconvert"
-          - "nbsphinx"
-          - "notebook"
-          - "numpydoc"
-          - "sphinx"
-          - "sphinx*"
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
