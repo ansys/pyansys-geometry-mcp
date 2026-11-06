@@ -10,11 +10,7 @@ updates:
       semver-minor-days: 7 # Cooldown for minor version updates
       semver-patch-days: 3 # Cooldown for patch updates
       exclude:
-        - "ansys-api-discovery"
-        - "ansys-platform-instancemanagement"
-        - "ansys-sphinx-theme"
-        - "ansys-tools-common"
-        - "ansys-tools-visualization-interface"
+        - "ansys-*"
     labels:
       - "maintenance"
       - "dependencies"
