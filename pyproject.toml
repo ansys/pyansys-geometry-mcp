@@ -37,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
   "ansys-common-mcp>=0.3.6",
-  "ansys-geometry-core[all]>=0.17.0",
+  "ansys-geometry-core==0.18.3",
   "black>=23.7.0",
   "isort>=5.13.0",
 ]
@@ -58,7 +58,7 @@ dev = [
 ]
 doc = [
   "ansys-common-mcp==0.3.6",
-  "ansys-geometry-core==0.18.2",
+  "ansys-geometry-core==0.18.3",
   "ansys-sphinx-theme[autoapi,changelog]==1.12.1",
   "jupytext==1.19.6",
   "myst-parser==5.1.0",
@@ -83,7 +83,7 @@ eval = [
 ]
 tests = [
   "ansys-common-mcp==0.3.6",
-  "ansys-geometry-core==0.18.2",
+  "ansys-geometry-core==0.18.3",
   "pytest==9.1.1",
   "pytest-asyncio==1.4.1",
   "pytest-cov==7.1.0",
