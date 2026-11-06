@@ -71,7 +71,7 @@ def test_file_io_export(ctx, tmp_path_factory: pytest.TempPathFactory):
 
 @pytest.mark.parametrize(
     "file_format",
-    ["fmd", "step", "iges", "disco", "parasolid_text", "parasolid_bin"],
+    ["fmd", "step", "iges", "dsco", "parasolid_text", "parasolid_bin"],
 )
 def test_file_io_export_formats(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
     """Test exporting the active design to each supported file format."""
