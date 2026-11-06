@@ -37,7 +37,7 @@ classifiers = [
 ]
 dependencies = [
   "ansys-common-mcp>=0.3.6",
-  "ansys-geometry-core==0.18.3",
+  "ansys-geometry-core[all]>=0.18.3",
   "black>=23.7.0",
   "isort>=5.13.0",
 ]
