@@ -66,7 +66,7 @@ doc = [
   "nbsphinx==0.9.8",
   "notebook==7.6.4",
   "pypdf==6.21.4",
-  "quarto-cli==1.10.20",
+  "quarto-cli==1.11.9",
   "sphinx==9.1.1",
   "sphinx-click==6.2.0",
   "sphinx-copybutton==0.5.2",
@@ -78,14 +78,14 @@ doc = [
 # OpenAI deployment and is never run as part of the regular test run.
 eval = [
   "jsonschema==4.26.0",
-  "openai==3.41.0",
+  "openai==3.42.1",
   { include-group = "tests" },
 ]
 tests = [
   "ansys-common-mcp==0.3.6",
   "ansys-geometry-core==0.18.2",
   "pytest==9.1.1",
-  "pytest-asyncio==1.4.1",
+  "pytest-asyncio==1.4.1.post1",
   "pytest-cov==7.1.0",
   "pytest-mock==3.17.0",
 ]
