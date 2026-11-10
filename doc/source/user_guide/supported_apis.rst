@@ -16,7 +16,7 @@ Design and session
    * - ``create_design``
      - Create a design with the specified name.
    * - ``get_design_info``
-     - Report information about the active design.
+     - Inventory the active design, counting objects throughout nested components.
    * - ``get_session_script``
      - Return the recorded session commands as a reusable PyAnsys Geometry script.
    * - ``run_python_code``
@@ -35,7 +35,9 @@ Selection and querying
    * - Tool
      - Description
    * - ``list_entities``
-     - List bodies, components, faces, or edges in the active design.
+     - List bodies, components, faces, edges, design curves, datum points/planes/lines,
+       or coordinate systems. Body and construction-object listings include component
+       paths and support component scoping and case-insensitive name lookup.
    * - ``create_selection_builder``
      - Create an empty selection builder and return its handle.
    * - ``select_entities``

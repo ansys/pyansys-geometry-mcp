@@ -46,7 +46,7 @@ import ansys.common.mcp.tools as shared_tools
 from fastmcp.server import Context
 
 from ansys.geometry.mcp import app
-from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx
+from ansys.geometry.mcp.misc.auxiliary import get_geometry_ctx, walk_components
 from ansys.geometry.mcp.misc.helpers import (
     connect_to_modeler_in_persistent_python,
     refresh_design_in_persistent_python,
@@ -145,6 +145,7 @@ async def run_python_code(
     The code runs in a separate process that is connected to the same geometry
     service the other tools use, so bodies they created are immediately available
     here, and bodies created here are immediately visible to them.
+    After successful execution, the server-side design cache is synchronized.
 
     Parameters
     ----------
@@ -164,6 +165,9 @@ async def run_python_code(
         JSON string with ``success``, ``stdout``, ``stderr``, and ``error`` keys.
         On failure, read ``error``/``stderr``, correct the code, and retry rather than
         reporting the operation as impossible.
+        If execution succeeds but synchronizing the server-side design fails,
+        ``success`` remains true and ``refresh_error`` describes the synchronization
+        failure. Do not rerun successful geometry operations because of ``refresh_error``.
 
     """
     app_context = get_geometry_ctx(ctx)
@@ -209,6 +213,15 @@ async def run_python_code(
             app_context.command_history.append(code)
     except (json.JSONDecodeError, AttributeError):
         pass
+    else:
+        if parsed.get("success"):
+            try:
+                instance.get_active_design()
+            except Exception as e:
+                refresh_error = f"Python execution succeeded, but refreshing the design failed: {e}"
+                logger.error(refresh_error)
+                parsed["refresh_error"] = refresh_error
+                return json.dumps(parsed, ensure_ascii=False)
 
     return result
 
@@ -251,7 +264,19 @@ def create_design(ctx: Context, design_name: str) -> str:
 
 @app.tool()
 def get_design_info(ctx: Context) -> str:
-    """Get information about the current active design.
+    """Get an inventory of the active design, including objects inside components.
+
+    Report counts of components, bodies, named selections, materials, coordinate
+    systems, datum points, planes and lines, beams, beam profiles, design points,
+    and design curves (including construction lines created as side effects of
+    patterns, revolves, and similar operations). Component-owned objects are
+    counted throughout the hierarchy, not just at the design root. Deleted
+    components and objects with an ``is_alive`` flag set to false are excluded.
+    Named selections, materials, and beam profiles are design-level collections.
+
+    Use this to check what exists in the design, find leftover construction
+    geometry, and as a final inventory check before exporting or saving.
+    Use ``list_entities`` to discover object IDs and component paths.
 
     Parameters
     ----------
@@ -272,7 +297,40 @@ def get_design_info(ctx: Context) -> str:
     try:
         design = app_context.product_instance.get_active_design()
         logger.info("get_design_info called")
-        return str(design)
+        components = [component for component, _ in walk_components(design)]
+        counts = {
+            "Bodies": sum(body.is_alive for component in components for body in component.bodies),
+            "Components": len(components) - 1,
+            "Coordinate Systems": sum(
+                entity.is_alive
+                for component in components
+                for entity in component.coordinate_systems
+            ),
+            "Named Selections": len(design.named_selections),
+            "Materials": len(design.materials),
+            "Beams": sum(beam.is_alive for component in components for beam in component.beams),
+            "Beam Profiles": len(design.beam_profiles),
+            "Datum Points": sum(
+                entity.is_alive for component in components for entity in component.datum_points
+            ),
+            "Datum Planes": sum(
+                entity.is_alive for component in components for entity in component.datum_planes
+            ),
+            "Datum Lines": sum(
+                entity.is_alive for component in components for entity in component.datum_lines
+            ),
+            "Design Points": sum(len(component.design_points) for component in components),
+            "Design Curves": sum(
+                entity.is_alive for component in components for entity in component.design_curves
+            ),
+        }
+        lines = [
+            f"ansys.geometry.core.designer.Design {hex(id(design))}",
+            f"  {'Name':<21}: {design.name}",
+            f"  {'Is active?':<21}: {design.is_active}",
+        ]
+        lines.extend(f"  {'N ' + label:<21}: {count}" for label, count in counts.items())
+        return "\n".join(lines)
     except Exception as e:
         logger.error(f"get_design_info failed: {e}")
         return f"Error retrieving info for design: {e}"
