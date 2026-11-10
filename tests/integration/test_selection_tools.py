@@ -924,9 +924,19 @@ def test_create_named_selection_from_selection_handle(ctx: PyAnsysGeometryContex
     assert "ns_from_handle_mixed" in history
 
 
-@pytest.mark.parametrize("entity_types", [None, ["body"], ["body", "face"]])
-def test_create_named_selection_from_mixed_builder(ctx: PyAnsysGeometryContext, entity_types):
-    """Mixed builders require explicit types and save exactly the requested entities."""
+@pytest.mark.parametrize(
+    "entity_types, expected_types",
+    [
+        (None, {"body", "face"}),
+        (["body"], {"body"}),
+        (["body", "face"], {"body", "face"}),
+        (["body", "face", "edge"], {"body", "face"}),
+    ],
+)
+def test_create_named_selection_from_mixed_builder(
+    ctx: PyAnsysGeometryContext, entity_types, expected_types
+):
+    """Mixed builders save all available types by default and ignore unavailable requested types."""
     handle = _setup(ctx, "test_named_selection_mixed_builder", box_name="BoxA")
     create_box(ctx, name="BoxB", width=1.0, depth=1.0, height=1.0, origin=[2, 0, 0])
     face_ids = select_entities(ctx, handle, "face", criteria="all")
@@ -942,15 +952,24 @@ def test_create_named_selection_from_mixed_builder(ctx: PyAnsysGeometryContext, 
         ctx, "ns_mixed_builder", selection_handle=handle, entity_types=entity_types
     )
 
-    if entity_types is None:
-        assert "multiple entity types: body, face" in result
-        assert "entity_types=['body']" in result
-        assert not design.named_selections
-    else:
-        assert "created successfully" in result
-        assert len(design.named_selections) == 1
-        named_selection = design.named_selections[0]
-        assert {body.id for body in named_selection.bodies} == set(body_ids)
-        expected_face_ids = set(face_ids) if "face" in entity_types else set()
-        assert {face.id for face in named_selection.faces} == expected_face_ids
-        assert not named_selection.edges
+    assert "created successfully" in result
+    assert len(design.named_selections) == 1
+    named_selection = design.named_selections[0]
+    expected_body_ids = set(body_ids) if "body" in expected_types else set()
+    expected_face_ids = set(face_ids) if "face" in expected_types else set()
+    assert {body.id for body in named_selection.bodies} == expected_body_ids
+    assert {face.id for face in named_selection.faces} == expected_face_ids
+    assert not named_selection.edges
+
+
+def test_create_named_selection_no_matching_builder_types(ctx: PyAnsysGeometryContext):
+    """An error is returned only when none of the requested types are in the selection."""
+    handle = _setup(ctx, "test_named_selection_no_matching_types", box_name="BoxA")
+    select_entities(ctx, handle, "body", criteria="all")
+
+    result = create_named_selection(
+        ctx, "ns_no_match", selection_handle=handle, entity_types=["face"]
+    )
+
+    assert "no selected entities of type(s): face" in result
+    assert not get_geometry_ctx(ctx).product_instance.get_active_design().named_selections
