@@ -1377,8 +1377,8 @@ def create_named_selection(
       ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
       ``extend_selection``. Then pass that builder's ``selection_handle`` here to
       save its currently selected bodies, faces, and edges as a named selection
-      (for example, "save the bodies/faces I selected as ..."). If the builder contains
-      more than one entity type, specify ``entity_types`` to choose which types to save.
+      (for example, "save the bodies/faces I selected as ..."). Use ``entity_types`` to
+      limit which of those types are saved.
       The IDs those tools return can also be passed directly as ``body_ids``, ``face_ids``,
       or ``edge_ids``.
 
@@ -1392,14 +1392,13 @@ def create_named_selection(
         Handle of a selection builder (from ``create_selection_builder``) whose
         currently selected bodies, faces, and edges should be included. Use this
         when the user refers to entities already picked/selected rather than
-        naming them explicitly. If it contains more than one entity type,
-        ``entity_types`` is required.
+        naming them explicitly.
     entity_types : list of str, default: None
         Entity types to include from ``selection_handle``: ``"body"``, ``"face"``,
-        and/or ``"edge"``. Required when the builder contains multiple selected
-        entity types. If omitted for a builder containing only one type, that type
-        is included. This does not restrict entities supplied by the explicit ID
-        arguments.
+        and/or ``"edge"``. If omitted, all entity types present in the selection
+        are included. Requested types that the selection does not contain are
+        ignored; an error is returned only if none of them are present. This does
+        not restrict entities supplied by the explicit ID arguments.
     body_ids : list of str, default: None
         Body IDs to include. Look up a body named by the user with
         ``list_entities(entity_type="body", name=...)``.
@@ -1497,21 +1496,18 @@ def create_named_selection(
             ]
             if not available_types:
                 return f"Selection '{selection_handle}' has no entities selected."
-            if entity_types is None and len(available_types) > 1:
-                available = ", ".join(available_types)
-                return (
-                    f"Selection '{selection_handle}' contains multiple entity types: {available}. "
-                    "Specify entity_types=['body'] (or the desired types) to choose which "
-                    "types to include."
-                )
-            included_types = set(entity_types or available_types)
-            unavailable_types = [kind for kind in included_types if kind not in available_types]
-            if unavailable_types:
-                unavailable = ", ".join(sorted(unavailable_types))
+            # Requested types the selection does not hold are ignored.
+            included_types = (
+                set(available_types)
+                if entity_types is None
+                else set(entity_types) & set(available_types)
+            )
+            if not included_types:
+                requested = ", ".join(entity_types or [])
                 available = ", ".join(available_types)
                 return (
                     f"Selection '{selection_handle}' has no selected entities of type(s): "
-                    f"{unavailable}. Available entity types: {available}."
+                    f"{requested}. Available entity types: {available}."
                 )
             if "body" in included_types:
                 bodies.extend(selected_bodies.items)
