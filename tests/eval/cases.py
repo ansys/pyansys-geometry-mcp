@@ -64,6 +64,15 @@ CASES: list[EvalCase] = [
         expected="get_design_info",
     ),
     EvalCase(
+        id="construction_inventory",
+        prompt=(
+            "Before saving, give me an inventory including leftover construction curves "
+            "and datum objects inside nested components."
+        ),
+        checker=expect_tool("get_design_info", arguments={}),
+        expected="get_design_info",
+    ),
+    EvalCase(
         id="file_io_import",
         prompt=r"Open the file C:\models\flange.scdocx in the geometry service.",
         checker=expect_tool(
@@ -151,6 +160,12 @@ CASES: list[EvalCase] = [
         checker=expect_tool("list_entities", arguments={"entity_type": "body"}),
         expected="list_entities",
         note="Confusable with select_entities and get_design_info.",
+    ),
+    EvalCase(
+        id="list_design_curves",
+        prompt="List the IDs and component paths of construction design curves in this design.",
+        checker=expect_tool("list_entities", arguments={"entity_type": "design_curves"}),
+        expected="list_entities",
     ),
     EvalCase(
         id="resolve_body_name",
