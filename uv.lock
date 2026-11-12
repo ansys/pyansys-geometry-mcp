@@ -335,7 +335,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "ansys-common-mcp" },
-    { name = "ansys-geometry-core" },
+    { name = "ansys-geometry-core", extra = ["all"] },
     { name = "ansys-sphinx-theme", extra = ["autoapi", "changelog"] },
     { name = "jupytext" },
     { name = "myst-parser" },
@@ -357,7 +357,7 @@ dev = [
 ]
 doc = [
     { name = "ansys-common-mcp" },
-    { name = "ansys-geometry-core" },
+    { name = "ansys-geometry-core", extra = ["all"] },
     { name = "ansys-sphinx-theme", extra = ["autoapi", "changelog"] },
     { name = "jupytext" },
     { name = "myst-parser" },
@@ -374,7 +374,7 @@ doc = [
 ]
 eval = [
     { name = "ansys-common-mcp" },
-    { name = "ansys-geometry-core" },
+    { name = "ansys-geometry-core", extra = ["all"] },
     { name = "jsonschema" },
     { name = "openai" },
     { name = "pytest" },
@@ -384,7 +384,7 @@ eval = [
 ]
 tests = [
     { name = "ansys-common-mcp" },
-    { name = "ansys-geometry-core" },
+    { name = "ansys-geometry-core", extra = ["all"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-cov" },
@@ -402,7 +402,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", specifier = "==0.18.4" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.12.1" },
     { name = "jupytext", specifier = "==1.19.6" },
     { name = "myst-parser", specifier = "==5.1.0" },
@@ -424,7 +424,7 @@ dev = [
 ]
 doc = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", specifier = "==0.18.4" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "ansys-sphinx-theme", extras = ["autoapi", "changelog"], specifier = "==1.12.1" },
     { name = "jupytext", specifier = "==1.19.6" },
     { name = "myst-parser", specifier = "==5.1.0" },
@@ -441,7 +441,7 @@ doc = [
 ]
 eval = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", specifier = "==0.18.4" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "jsonschema", specifier = "==4.26.0" },
     { name = "openai", specifier = "==3.42.1" },
     { name = "pytest", specifier = "==9.1.1" },
@@ -451,7 +451,7 @@ eval = [
 ]
 tests = [
     { name = "ansys-common-mcp", specifier = "==0.3.6" },
-    { name = "ansys-geometry-core", specifier = "==0.18.4" },
+    { name = "ansys-geometry-core", extras = ["all"], specifier = "==0.18.4" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.1.post1" },
     { name = "pytest-cov", specifier = "==7.1.0" },
