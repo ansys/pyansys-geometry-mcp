@@ -84,9 +84,16 @@ def ctx(context, startup_history):
 
 @pytest.fixture
 def execute_mock(monkeypatch, ctx):
-    """Replace ``PersistentPythonSession.execute`` with a mock returning a result dict."""
+    """Replace ``PersistentPythonSession.execute`` with a mock returning a result dict.
+
+    A fresh per-test session mock is swapped in rather than patching ``execute`` on
+    the session-scoped one: since pytest 9.2, ``monkeypatch`` undoes patches of
+    auto-created ``MagicMock`` children with ``delattr``, which permanently removes
+    the attribute from the shared mock.
+    """
     mock = MagicMock(return_value={"success": True, "stdout": "", "stderr": ""})
-    monkeypatch.setattr(ctx.request_context.lifespan_context.python_session, "execute", mock)
+    session = MagicMock(metadata={}, execute=mock)
+    monkeypatch.setattr(ctx.request_context.lifespan_context, "python_session", session)
     return mock
 
 
