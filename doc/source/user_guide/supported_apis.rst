@@ -22,7 +22,7 @@ Design and session
    * - ``run_python_code``
      - Run PyAnsys Geometry Python code in the persistent session for operations without a dedicated tool.
    * - ``run_script_file``
-     - Run an existing Discovery or SpaceClaim scripting API file.
+     - Run Discovery or SpaceClaim scripting API code or an existing script file.
    * - ``file_io``
      - Import a geometry file or export the active design.
 
@@ -113,4 +113,4 @@ Run other operations
 
 Use a dedicated MCP tool when one matches the requested operation. Otherwise,
 use ``run_python_code`` for PyAnsys Geometry operations or ``run_script_file``
-for an existing Discovery or SpaceClaim script.
+for Discovery or SpaceClaim script text or an existing script file.

@@ -230,6 +230,67 @@ def test_run_script_file(ctx):
     assert int(result["numBodies"]) == 2
 
 
+def test_run_script_text(ctx):
+    """Test executing script text with arguments on the geometry backend."""
+    result = run_script_file(
+        ctx, script='result = {"answer": argsDict["answer"]}', args={"answer": "42"}
+    )
+    assert result == {"answer": "42"}
+
+
+def test_run_script_text_dispatch():
+    """Test script text and arguments are passed through to the backend."""
+    mock_ctx = MagicMock()
+    modeler = mock_ctx.fastmcp._lifespan_result.product_instance
+    modeler.run_script.return_value = ({"answer": "42"}, None)
+    script = 'result = {"answer": argsDict["answer"]}\n'
+    args = {"answer": "42"}
+
+    assert run_script_file(mock_ctx, script=script, args=args) == {"answer": "42"}
+    modeler.run_script.assert_called_once_with(script, args)
+    modeler.run_script_file.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    ("file_path", "script", "message"),
+    [
+        (None, None, "exactly one"),
+        ("test.py", "print(1)", "exactly one"),
+        (None, "  \n", "must not be empty"),
+        ("", None, "must not be empty"),
+    ],
+)
+def test_run_script_invalid_inputs(file_path, script, message):
+    """Test ambiguous or empty inputs are rejected without executing anything."""
+    mock_ctx = MagicMock()
+    modeler = mock_ctx.fastmcp._lifespan_result.product_instance
+
+    assert message in run_script_file(mock_ctx, file_path=file_path, script=script)
+    modeler.run_script.assert_not_called()
+    modeler.run_script_file.assert_not_called()
+
+
+def test_run_script_text_error():
+    """Test backend errors are reported for script text."""
+    mock_ctx = MagicMock()
+    mock_ctx.fastmcp._lifespan_result.product_instance.run_script.side_effect = RuntimeError("boom")
+    assert "boom" in run_script_file(mock_ctx, script="print(1)")
+
+
+def test_run_script_file_dispatch(tmp_path):
+    """Test file execution remains available with arguments."""
+    mock_ctx = MagicMock()
+    modeler = mock_ctx.fastmcp._lifespan_result.product_instance
+    modeler.run_script_file.return_value = ({"answer": "42"}, None)
+    script_file = tmp_path / "script.py"
+    script_file.write_text("pass", encoding="utf-8")
+    args = {"answer": "42"}
+
+    assert run_script_file(mock_ctx, script_file, args) == {"answer": "42"}
+    modeler.run_script_file.assert_called_once_with(script_file.resolve(), args)
+    modeler.run_script.assert_not_called()
+
+
 def test_run_script_file_errors(ctx):
     """Test that running a nonexistent script file returns an error message."""
     mock_ctx = MagicMock()
