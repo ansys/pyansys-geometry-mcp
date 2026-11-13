@@ -66,15 +66,26 @@ def test_file_io_export(ctx, tmp_path_factory: pytest.TempPathFactory):
     location = tmp_path_factory.mktemp("test_export_to_scdocx")
     file_location = location / f"{design_name}.scdocx"
 
-    result = file_io(ctx, operation="export", file_format="scdocx", folder=str(file_location))
+    result = file_io(ctx, operation="export", file_format="scdocx", file_path=str(file_location))
     assert "Design exported to SCDOCX file:" in result
+    assert file_location.is_file()
+    assert str(file_location) in result
 
 
 @pytest.mark.parametrize(
-    "file_format",
-    ["fmd", "step", "iges", "disco", "parasolid_text", "parasolid_bin"],
+    ("file_format", "extension"),
+    [
+        ("fmd", "fmd"),
+        ("step", "stp"),
+        ("iges", "igs"),
+        ("dsco", "dsco"),
+        ("parasolid_text", "x_t"),
+        ("parasolid_bin", "x_b"),
+    ],
 )
-def test_file_io_export_formats(ctx, file_format: str, tmp_path_factory: pytest.TempPathFactory):
+def test_file_io_export_formats(
+    ctx, file_format: str, extension: str, tmp_path_factory: pytest.TempPathFactory
+):
     """Test exporting the active design to each supported file format."""
     design_name = f"test_export_{file_format}_001"
     create_design(ctx, design_name)
@@ -82,11 +93,43 @@ def test_file_io_export_formats(ctx, file_format: str, tmp_path_factory: pytest.
 
     # Define the location and expected file location
     location = tmp_path_factory.mktemp(f"test_export_to_{file_format}")
-    file_location = location / f"{design_name}.{file_format}"
-    result = file_io(ctx, operation="export", file_format=file_format, folder=str(file_location))
+    file_location = location / f"custom_name.{extension}"
+    result = file_io(ctx, operation="export", file_format=file_format, file_path=str(file_location))
 
     assert f"Design exported to {file_format.upper()} file:" in result
     assert file_location.exists()
+
+
+def test_file_io_export_path_conflicts():
+    """Test that an explicit export path and a folder cannot be combined."""
+    mock_ctx = MagicMock()
+    result = file_io(
+        mock_ctx, operation="export", file_format="dsco", file_path="custom.dsco", folder="other"
+    )
+    assert "file_path" in result and "folder" in result
+    mock_ctx.fastmcp._lifespan_result.product_instance.get_active_design.assert_not_called()
+
+
+def test_file_io_export_missing_output(tmp_path):
+    """Test that a backend success without the requested file is reported as an error."""
+    mock_ctx = MagicMock()
+    file_location = tmp_path / "custom.step"
+    result = file_io(mock_ctx, operation="export", file_format="step", file_path=str(file_location))
+    assert "did not create the requested export file" in result
+    assert str(file_location) in result
+
+
+def test_file_io_export_dsco_folder(ctx, tmp_path):
+    """Test exporting a design-named .dsco file to a directory."""
+    design_name = "test_folder_dsco"
+    create_design(ctx, design_name)
+    create_box(ctx, name="box", width=1.0, depth=1.0, height=1.0)
+    file_location = tmp_path / f"{design_name}.dsco"
+
+    result = file_io(ctx, operation="export", file_format="dsco", folder=str(tmp_path))
+    assert "Design exported to DSCO file:" in result
+    assert file_location.is_file()
+    assert str(file_location) in result
 
 
 def test_file_io_export_unsupported_format(ctx, tmp_path_factory: pytest.TempPathFactory):

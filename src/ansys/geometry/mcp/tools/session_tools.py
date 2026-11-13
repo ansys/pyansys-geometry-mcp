@@ -361,8 +361,9 @@ def file_io(
     ``Inventor``, ``Rhino``, and ``AutoCAD``.
 
     Use ``operation="export"`` to save the active design in ``fmd``, ``step``,
-    ``iges``, ``scdocx``, ``disco``, ``parasolid_text``, or ``parasolid_bin``
-    format.
+    ``iges``, ``scdocx``, ``dsco``, ``parasolid_text``, or ``parasolid_bin`` format.
+    Use ``file_path`` to specify the exact export filename, or ``folder`` to use the
+    design name as the filename. Do not pass both.
 
     Parameters
     ----------
@@ -371,15 +372,17 @@ def file_io(
     operation : Literal["import", "export"]
         Whether to import a file or export the active design.
     file_path : str, default: None
-        Path of the file to import, including its extension. For a shattered assembly,
-        give the path of the assembly file. Referenced files in the same folder are
-        included automatically. This parameter is required for import.
+        Path of the file to import or the exact output path for export, including its
+        extension. For a shattered assembly import, give the path of the assembly file.
+        Referenced files in the same folder are included automatically. Required for
+        import; mutually exclusive with ``folder`` for export.
     file_format : str, default: None
         Export format. Options are ``"fmd"``, ``"step"``, ``"iges"``, ``"scdocx"``,
-        ``"disco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter
-        is required for export.
+        ``"dsco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter is
+        required for export.
     folder : str, default: None
-        Export destination. If omitted, the file is saved in the current working directory.
+        Export directory. The design name and format-specific extension form the filename.
+        If omitted along with ``file_path``, use the current working directory.
     mode : str, default: ``"open"``
         How to import the file. When ``"open"`` is used, the active design is closed
         and the file is opened as a new design.
@@ -410,39 +413,54 @@ def file_io(
     if operation == "export":
         if file_format is None:
             return "file_format is required when operation is 'export'."
+        if file_path is not None and folder is not None:
+            return "Provide either file_path or folder for export, not both."
+        if file_path is not None and not file_path:
+            return "file_path must not be empty for export."
 
         try:
+            from pathlib import Path
+
             from ansys.geometry.core.designer import DesignFileFormat
 
-            design = app_context.product_instance.get_active_design()
-            if file_format.lower() == DesignFileFormat.FMD.name.lower():
-                saved_path = design.export_to_fmd(folder)
-                command = f"design.export_to_fmd({folder!r})"
-            elif file_format.lower() == DesignFileFormat.STEP.name.lower():
-                saved_path = design.export_to_step(folder)
-                command = f"design.export_to_step({folder!r})"
-            elif file_format.lower() == DesignFileFormat.IGES.name.lower():
-                saved_path = design.export_to_iges(folder)
-                command = f"design.export_to_iges({folder!r})"
-            elif file_format.lower() == DesignFileFormat.SCDOCX.name.lower():
-                saved_path = design.export_to_scdocx(folder)
-                command = f"design.export_to_scdocx({folder!r})"
-            elif file_format.lower() == DesignFileFormat.DISCO.name.lower():
-                saved_path = design.export_to_disco(folder)
-                command = f"design.export_to_disco({folder!r})"
-            elif file_format.lower() == DesignFileFormat.PARASOLID_TEXT.name.lower():
-                saved_path = design.export_to_parasolid_text(folder)
-                command = f"design.export_to_parasolid_text({folder!r})"
-            elif file_format.lower() == DesignFileFormat.PARASOLID_BIN.name.lower():
-                saved_path = design.export_to_parasolid_bin(folder)
-                command = f"design.export_to_parasolid_bin({folder!r})"
-            else:
+            export_methods = {
+                "fmd": "export_to_fmd",
+                "step": "export_to_step",
+                "iges": "export_to_iges",
+                "scdocx": "export_to_scdocx",
+                "dsco": "export_to_dsco",
+                "parasolid_text": "export_to_parasolid_text",
+                "parasolid_bin": "export_to_parasolid_bin",
+            }
+            if file_format.lower() not in export_methods:
                 return (
-                    f"Unsupported format '{file_format}'. Supported formats are: fmd, step, "
-                    "iges, scdocx, disco, parasolid_text, parasolid_bin."
+                    f"Unsupported format '{file_format}'. Supported formats are: "
+                    f"{', '.join(export_methods)}."
                 )
+            design = app_context.product_instance.get_active_design()
+            if file_path is not None:
+                saved_path = Path(file_path).resolve()
+                export_format = DesignFileFormat[file_format.upper()]
+                design.download(saved_path, export_format)
+                app_context.command_history.append(
+                    "from ansys.geometry.core.designer import DesignFileFormat"
+                )
+                command = (
+                    f"design.download({str(saved_path)!r}, DesignFileFormat.{export_format.name})"
+                )
+            else:
+                method_name = export_methods[file_format.lower()]
+                saved_path = getattr(design, method_name)(folder)
+                command = f"design.{method_name}({folder!r})"
 
             app_context.command_history.append(command)
+            if file_path is not None and not saved_path.is_file():
+                message = (
+                    f"Geometry-core did not create the requested export file: {saved_path}. "
+                    "The backend may have written a different filename in the destination folder."
+                )
+                logger.error(message)
+                return message
             logger.info(f"file_io export called, saved to {saved_path}")
             return f"Design exported to {file_format.upper()} file: {saved_path}"
         except Exception as e:

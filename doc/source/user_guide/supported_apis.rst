@@ -24,7 +24,7 @@ Design and session
    * - ``run_script_file``
      - Run Discovery or SpaceClaim scripting API code or an existing script file.
    * - ``file_io``
-     - Import a geometry file or export the active design.
+     - Import a geometry file or export the active design to a directory or a specified filename.
 
 Selection and querying
 ----------------------

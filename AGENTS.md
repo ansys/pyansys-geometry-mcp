@@ -144,9 +144,9 @@ and state clearly what has already been applied if a sequence is interrupted.
 **Clarify export format; default saves to `.dsco`.** When a user requests "export"
 without specifying a format, including at the end of a longer prompt, ask which supported
 format they want before exporting. Offer the supported choices: `fmd`, `step`, `iges`,
-`scdocx`, `disco` (`.dsco`), `parasolid_text`, and `parasolid_bin`. Do not silently choose
-an export format. When a user requests "save" without specifying a format, save as
-`.dsco` by default using `file_format="disco"`; no format clarification is needed.
+`scdocx`, `dsco`, `parasolid_text`, and `parasolid_bin`. Do not silently choose an export
+format. When a user requests "save" without specifying a format, save as `.dsco` by
+default using `file_format="dsco"`; no format clarification is needed.
 Honor an explicitly requested format for either operation.
 For both save and export, check whether the destination file already exists before
 writing. Never overwrite an existing file without the user's explicit permission.
