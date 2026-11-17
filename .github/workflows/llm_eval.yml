@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Login in GitHub Container registry
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -128,7 +128,7 @@ jobs:
 
       - name: Microsoft Teams Notification
         if: failure()
-        uses: skitionek/notify-microsoft-teams@944af5529de00d798bc68b8d1c15d8da66c1a4d7 # v1.3.5
+        uses: skitionek/notify-microsoft-teams@4a91a6045a815ad9d7d37cce51970e99b0f96dfa # v1.3.6
         with:
           webhook_url: ${{ secrets.MSTEAMS_WEBHOOK }}
           # Message to send to Teams as a webhook notification in JSON Payload format
