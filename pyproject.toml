@@ -61,7 +61,7 @@ doc = [
   "ansys-geometry-core[all]==0.18.4",
   "ansys-sphinx-theme[autoapi,changelog]==1.12.1",
   "jupytext==1.19.6",
-  "myst-parser==5.1.0",
+  "myst-parser==5.2.0",
   "nbconvert==7.17.2",
   "nbsphinx==0.9.8",
   "notebook==7.6.5",
@@ -70,7 +70,7 @@ doc = [
   "sphinx==9.1.1",
   "sphinx-click==6.2.0",
   "sphinx-copybutton==0.5.2",
-  "sphinx-design==0.7.0",
+  "sphinx-design==0.8.0",
   "sphinx-jinja==2.0.2",
 ]
 # Extra dependencies for the opt-in LLM tool-discoverability evaluation suite
