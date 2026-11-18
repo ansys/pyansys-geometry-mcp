@@ -48,8 +48,8 @@ CASES: list[EvalCase] = [
     EvalCase(
         id="product_status",
         prompt="Is the geometry backend up and running right now?",
-        checker=expect_tool("get_product_status", arguments={}),
-        expected="get_product_status",
+        checker=expect_tool("get_backend_status", arguments={}),
+        expected="get_backend_status",
     ),
     EvalCase(
         id="create_design",
@@ -73,20 +73,22 @@ CASES: list[EvalCase] = [
         expected="get_design_info",
     ),
     EvalCase(
-        id="file_io_import",
+        id="file_operation_import",
         prompt=r"Open the file C:\models\flange.scdocx in the geometry service.",
         checker=expect_tool(
-            "file_io",
+            "file_operation",
             arguments={"operation": "import", "file_path": r"C:\models\flange.scdocx"},
         ),
-        expected="file_io",
+        expected="file_operation",
     ),
     EvalCase(
-        id="file_io_export",
+        id="file_operation_export",
         prompt=r"Save the current design out as a STEP file at D:\out\flange.stp.",
-        checker=expect_tool("file_io", arguments={"operation": "export", "file_format": "step"}),
-        expected="file_io",
-        note="Confusable with file_io import.",
+        checker=expect_tool(
+            "file_operation", arguments={"operation": "export", "file_format": "step"}
+        ),
+        expected="file_operation",
+        note="Confusable with file_operation import.",
     ),
     EvalCase(
         id="command_history",
@@ -101,16 +103,16 @@ CASES: list[EvalCase] = [
         expected="get_session_script",
     ),
     EvalCase(
-        id="run_python_code",
+        id="run_python",
         prompt=(
             "Run this snippet in the backend Python session for me: "
             "print(sum(b.volume.m for b in design.bodies))"
         ),
         checker=expect_tool(
-            "run_python_code",
+            "run_python",
             arguments={"code": "print(sum(b.volume.m for b in design.bodies))"},
         ),
-        expected="run_python_code",
+        expected="run_python",
     ),
     # -- Boolean operations (mutually confusable) ---------------------------
     EvalCase(

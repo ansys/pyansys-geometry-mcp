@@ -34,12 +34,12 @@ from ansys.geometry.mcp.tools.selection_tools import (
 )
 from ansys.geometry.mcp.tools.session_tools import (
     create_design,
-    file_io,
+    file_operation,
+    get_backend_status,
     get_design_info,
-    get_product_status,
     get_session_script,
-    run_python_code,
-    run_script_file,
+    run_iron_python,
+    run_python,
 )
 from ansys.geometry.mcp.tools.visualization_tools import (
     read_image_in_base64,

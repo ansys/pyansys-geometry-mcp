@@ -62,7 +62,7 @@ Try prompts such as:
 - "Create a named selection containing the bodies named Housing and Cover."
   to use ``create_named_selection``.
 - "Create a 10 mm fillet on the edges of the Housing body." If no dedicated
-  tool supports the requested operation, use ``run_python_code`` with the
+  tool supports the requested operation, use ``run_python`` with the
   PyAnsys Geometry API.
 
 Troubleshooting

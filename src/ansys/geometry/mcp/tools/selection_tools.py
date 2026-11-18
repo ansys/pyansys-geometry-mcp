@@ -349,7 +349,7 @@ def list_entities(
       they are separate from body edges. Pass ``name`` for an exact case-insensitive
       name match or ``component_id`` to restrict the listing to a component and
       its children. Use these IDs with the PyAnsys Geometry API through
-      ``run_python_code``; selection-builder tools accept only bodies, faces, and edges.
+      ``run_python``; selection-builder tools accept only bodies, faces, and edges.
 
     Parameters
     ----------

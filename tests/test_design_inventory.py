@@ -236,6 +236,12 @@ def test_existing_entity_listings_and_replay(inventory_ctx, entity_type):
 
 async def test_inventory_tool_discovery_schema():
     registered = {tool.name: tool for tool in await app.list_tools()}
+    assert {
+        "get_backend_status",
+        "run_python",
+        "run_iron_python",
+        "file_operation",
+    } <= registered.keys()
     options = registered["list_entities"].parameters["properties"]["entity_type"]["enum"]
     assert set(options) == {"body", "component", "face", "edge", *CONSTRUCTION_TYPES}
     assert "including objects inside components" in registered["get_design_info"].description

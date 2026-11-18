@@ -12,7 +12,7 @@ Prerequisites and conventions
 
 Connect your MCP client to a Geometry-MCP server with a running Ansys
 Geometry backend. Use a fresh session: creating a design changes the active
-design. Python variables persist between calls to ``run_python_code``.
+design. Python variables persist between calls to ``run_python``.
 
 The calls below use server tool names; clients can display a server prefix.
 ``ctx`` is injected by MCP and is not a client argument. The Python-style
@@ -56,7 +56,7 @@ multiple faces in more complex models.
 2. Build the base and fins
 --------------------------
 
-The same prompt continues with ``run_python_code`` because there is no
+The same prompt continues with ``run_python`` because there is no
 dedicated primitive-creation tool. All bare lengths below are in metres.
 The fins overlap the base by 1 mm to make the union operation unambiguous;
 their exposed height remains 20 mm.
@@ -65,7 +65,7 @@ their exposed height remains 20 mm.
 
 .. code-block:: python
 
-    run_python_code(
+    run_python(
         code="""
     from ansys.geometry.core.math import Plane, Point2D
     from ansys.geometry.core.sketch import Sketch

@@ -34,7 +34,7 @@ PyAnsys Geometry tools to your AI clients.
 
 **Warning: arbitrary code execution**
 
-The ``run_python_code`` and ``run_script_file`` tools execute arbitrary code with
+The ``run_python`` and ``run_iron_python`` tools execute arbitrary code with
 the permissions of the account running the server. Connect the server only to AI
 clients and content sources you trust. For details, see the `SECURITY.md
 <https://github.com/ansys/pyansys-geometry-mcp/blob/main/SECURITY.md>`_ file.
