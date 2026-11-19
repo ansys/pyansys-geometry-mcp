@@ -530,7 +530,7 @@ def file_operation(
 
 
 @app.tool()
-def run_script_file(
+def run_iron_python(
     ctx: Context,
     file_path: str | None = None,
     args: dict[str, str] | None = None,
@@ -616,7 +616,7 @@ def run_script_file(
         try:
             return app_context.product_instance.run_script(script, args)[0]
         except Exception as e:
-            logger.error(f"run_script_file failed: {e}")
+            logger.error(f"run_iron_python failed: {e}")
             return f"Error running script: {e}"
 
     if not file_path:

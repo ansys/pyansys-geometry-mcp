@@ -279,7 +279,7 @@ def test_run_iron_python(ctx):
 
 def test_run_iron_python_text(ctx):
     """Test executing script text with arguments on the geometry backend."""
-    result = run_script_file(
+    result = run_iron_python(
         ctx, script='result = {"answer": argsDict["answer"]}', args={"answer": "42"}
     )
     assert result == {"answer": "42"}
@@ -293,7 +293,7 @@ def test_iron_python_text_dispatch():
     script = 'result = {"answer": argsDict["answer"]}\n'
     args = {"answer": "42"}
 
-    assert run_script_file(mock_ctx, script=script, args=args) == {"answer": "42"}
+    assert run_iron_python(mock_ctx, script=script, args=args) == {"answer": "42"}
     modeler.run_script.assert_called_once_with(script, args)
     modeler.run_script_file.assert_not_called()
 
@@ -312,7 +312,7 @@ def test_run_iron_python_invalid_inputs(file_path, script, message):
     mock_ctx = MagicMock()
     modeler = mock_ctx.fastmcp._lifespan_result.product_instance
 
-    assert message in run_script_file(mock_ctx, file_path=file_path, script=script)
+    assert message in run_iron_python(mock_ctx, file_path=file_path, script=script)
     modeler.run_script.assert_not_called()
     modeler.run_script_file.assert_not_called()
 
@@ -321,7 +321,7 @@ def test_run_iron_python_text_error():
     """Test backend errors are reported for script text."""
     mock_ctx = MagicMock()
     mock_ctx.fastmcp._lifespan_result.product_instance.run_script.side_effect = RuntimeError("boom")
-    assert "boom" in run_script_file(mock_ctx, script="print(1)")
+    assert "boom" in run_iron_python(mock_ctx, script="print(1)")
 
 
 def test_run_iron_python_dispatch(tmp_path):
@@ -333,7 +333,7 @@ def test_run_iron_python_dispatch(tmp_path):
     script_file.write_text("pass", encoding="utf-8")
     args = {"answer": "42"}
 
-    assert run_script_file(mock_ctx, script_file, args) == {"answer": "42"}
+    assert run_iron_python(mock_ctx, script_file, args) == {"answer": "42"}
     modeler.run_script_file.assert_called_once_with(script_file.resolve(), args)
     modeler.run_script.assert_not_called()
 
