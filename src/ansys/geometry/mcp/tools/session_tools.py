@@ -97,7 +97,7 @@ def get_session_script(ctx: Context) -> str:
 
 
 @app.tool()
-def get_product_status(ctx: Context) -> str:
+def get_backend_status(ctx: Context) -> str:
     """Get the current status of the product backend.
 
     Parameters
@@ -120,7 +120,7 @@ def get_product_status(ctx: Context) -> str:
 
 
 @app.tool()
-async def run_python_code(
+async def run_python(
     ctx: Context, code: str, timeout: int = 300, no_output_timeout: int = 300
 ) -> str:
     """Perform any geometry/CAD operation that has no dedicated MCP tool.
@@ -131,7 +131,7 @@ async def run_python_code(
     query, or modification action (such as fillet, chamfer, shell, measure, pattern) and
     no other tool matches it, do NOT answer that it is unsupported. Write the
     equivalent ``ansys.geometry.core`` code and run it here. Choose a dedicated tool
-    whenever one exists. Use ``run_script_file`` for Discovery/SpaceClaim scripting API
+    whenever one exists. Use ``run_iron_python`` for Discovery/SpaceClaim scripting API
     code or an existing script file. Never write a temporary file to run a few statements.
 
     The session is persistent, so variables defined by one call stay available to the
@@ -339,7 +339,7 @@ def get_design_info(ctx: Context) -> str:
 
 
 @app.tool()
-def file_io(
+def file_operation(
     ctx: Context,
     operation: Literal["import", "export"],
     file_path: str | None = None,
@@ -456,15 +456,15 @@ def file_io(
             app_context.command_history.append(command)
             if file_path is not None and not saved_path.is_file():
                 message = (
-                    f"Geometry-core did not create the requested export file: {saved_path}. "
+                    f"Backend did not create the requested export file: {saved_path}. "
                     "The backend may have written a different filename in the destination folder."
                 )
                 logger.error(message)
                 return message
-            logger.info(f"file_io export called, saved to {saved_path}")
+            logger.info(f"file_operation export called, saved to {saved_path}")
             return f"Design exported to {file_format.upper()} file: {saved_path}"
         except Exception as e:
-            logger.error(f"file_io export failed: {e}")
+            logger.error(f"file_operation export failed: {e}")
             return f"Error exporting design to {file_format.upper()}: {e}"
 
     if operation != "import":
@@ -515,7 +515,7 @@ def file_io(
                 f"design = instance.open_file({str(resolved)!r}, import_options=import_options)"
             )
             body_count = len(design.get_all_bodies())
-            logger.info(f"file_io import opened {resolved}")
+            logger.info(f"file_operation import opened {resolved}")
             return (
                 f"Imported '{resolved.name}' into new design '{design.name}' ({body_count} bodies)."
             )
@@ -526,18 +526,18 @@ def file_io(
             f"component = design.insert_file({str(resolved)!r}, import_options=import_options)"
         )
         body_count = len(component.get_all_bodies())
-        logger.info(f"file_io import inserted {resolved}")
+        logger.info(f"file_operation import inserted {resolved}")
         return (
             f"Inserted '{resolved.name}' into design '{design.name}' as component "
             f"'{component.name}' ({body_count} bodies)."
         )
     except Exception as e:
-        logger.error(f"file_io import failed: {e}")
+        logger.error(f"file_operation import failed: {e}")
         return f"Error importing '{file_path}': {e}"
 
 
 @app.tool()
-def run_script_file(
+def run_iron_python(
     ctx: Context,
     file_path: str | None = None,
     args: dict[str, str] | None = None,
@@ -550,10 +550,10 @@ def run_script_file(
     Provide exactly one of ``script`` and ``file_path``.
 
     When NOT to use this tool: to execute PyAnsys Geometry API code. Use
-    ``run_python_code`` instead. That tool runs the PyAnsys Geometry API
+    ``run_python`` instead. That tool runs the PyAnsys Geometry API
     (``instance``, ``design``, ...) in a persistent session, while this tool runs a
     different language surface entirely. To load a CAD/geometry file (``.scdocx``,
-    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``.
+    ``.step``, ``.iges``, ``.x_t``, ...), use ``file_operation`` with ``operation="import"``.
     Do not write a temporary script file: pass Discovery/SpaceClaim code as ``script``.
 
     **Script language**
@@ -561,7 +561,7 @@ def run_script_file(
     The script must be written against the Discovery/SpaceClaim scripting
     API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``,
     ``instance``, ``design``) are NOT available inside the script, and script variables do not leak
-    into the ``run_python_code`` session (or vice versa).
+    into the ``run_python`` session (or vice versa).
 
     **Passing arguments**
 
@@ -623,7 +623,7 @@ def run_script_file(
         try:
             return app_context.product_instance.run_script(script, args)[0]
         except Exception as e:
-            logger.error(f"run_script_file failed: {e}")
+            logger.error(f"run_iron_python failed: {e}")
             return f"Error running script: {e}"
 
     if not file_path:
@@ -636,5 +636,5 @@ def run_script_file(
         return app_context.product_instance.run_script_file(resolved, args)[0]
 
     except Exception as e:
-        logger.error(f"run_script_file failed: {e}")
+        logger.error(f"run_iron_python failed: {e}")
         return f"Error running script file '{file_path}': {e}"

@@ -11,7 +11,7 @@ Design and session
 
    * - Tool
      - Description
-   * - ``get_product_status``
+   * - ``get_backend_status``
      - Report whether the Geometry backend is connected.
    * - ``create_design``
      - Create a design with the specified name.
@@ -19,12 +19,12 @@ Design and session
      - Inventory the active design, counting objects throughout nested components.
    * - ``get_session_script``
      - Return the recorded session commands as a reusable PyAnsys Geometry script.
-   * - ``run_python_code``
+   * - ``run_python``
      - Run PyAnsys Geometry Python code in the persistent session for operations without a dedicated tool.
-   * - ``run_script_file``
-     - Run Discovery or SpaceClaim scripting API code or an existing script file.
-   * - ``file_io``
-     - Import a geometry file or export the active design to a directory or a specified filename.
+   * - ``run_iron_python``
+     - Run an existing Discovery or SpaceClaim scripting API file.
+   * - ``file_operation``
+     - Import a geometry file or export the active design.
 
 Selection and querying
 ----------------------
@@ -112,5 +112,5 @@ Run other operations
 ^^^^^^^^^^^^^^^^^^^^
 
 Use a dedicated MCP tool when one matches the requested operation. Otherwise,
-use ``run_python_code`` for PyAnsys Geometry operations or ``run_script_file``
-for Discovery or SpaceClaim script text or an existing script file.
+use ``run_python`` for PyAnsys Geometry operations or ``run_iron_python``
+for an existing Discovery or SpaceClaim script.

@@ -22,10 +22,10 @@ Provide the PyAnsys Core team with this information:
 PyAnsys Geometry-MCP exposes tools that run arbitrary Python code and script files on the
 machine hosting the server:
 
-- `run_python_code` executes any Python code it is given in a persistent session with full
+- `run_python` executes any Python code it is given in a persistent session with full
   access to the process's privileges (filesystem, network, subprocesses, and so on).
-- `run_script_file` executes Discovery/SpaceClaim script text or a script file from disk on
-  the geometry backend.
+- `run_iron_python` executes an existing Discovery/SpaceClaim script file from disk on the
+  geometry backend.
 
 These tools give the connected AI client **full code execution as the host user running the
 MCP server**. This is intentional: it is what lets the assistant perform geometry operations
@@ -37,7 +37,7 @@ As a result:
 - Only connect this server to AI clients you trust, and only in sessions where you trust the
   content the assistant is exposed to (files, scripts, web pages, and so on). A prompt
   injection in untrusted content could induce the assistant to run malicious code through
-  `run_python_code` or run a malicious script through `run_script_file`.
+  `run_python` or point `run_iron_python` at a malicious script.
 - Do not expose the server's HTTP/SSE transport to untrusted networks. Prefer the default
   `stdio` transport, and if you must use `--transport http`, bind to `127.0.0.1` (the
   default) and add your own network-level access control, since the server does not include

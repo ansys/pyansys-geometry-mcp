@@ -128,7 +128,7 @@ itself.
 When a measurement *is* warranted, take the cheapest one that answers the question:
 scope it to the bodies the operation actually touched, and prefer `inspect_geometry`
 over hand-written traversal. Never walk the whole design's topology through
-`run_python_code` — iterating `body.edges` or `body.faces` across every body pulls
+`run_python` — iterating `body.edges` or `body.faces` across every body pulls
 thousands of entities over gRPC one at a time and is far more expensive than the
 repair it is checking. If only an expensive measurement would settle the question, say
 so and let the user choose.
