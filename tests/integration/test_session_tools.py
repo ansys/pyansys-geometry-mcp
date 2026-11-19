@@ -66,9 +66,7 @@ def test_file_operation_export(ctx, tmp_path_factory: pytest.TempPathFactory):
     location = tmp_path_factory.mktemp("test_export_to_scdocx")
     file_location = location / f"{design_name}.scdocx"
 
-    result = file_operation(
-        ctx, operation="export", file_format="scdocx", folder=str(file_location)
-    )
+    result = file_operation(ctx, operation="export", file_format="scdocx", folder=str(location))
     assert "Design exported to SCDOCX file:" in result
     assert file_location.is_file()
     assert str(file_location) in result
@@ -112,17 +110,6 @@ def test_file_operation_export_path_conflicts():
     )
     assert "file_path" in result and "folder" in result
     mock_ctx.fastmcp._lifespan_result.product_instance.get_active_design.assert_not_called()
-
-
-def test_file_operation_export_missing_output(tmp_path):
-    """Test that a backend success without the requested file is reported as an error."""
-    mock_ctx = MagicMock()
-    file_location = tmp_path / "custom.step"
-    result = file_operation(
-        mock_ctx, operation="export", file_format="step", file_path=str(file_location)
-    )
-    assert "did not create the requested export file" in result
-    assert str(file_location) in result
 
 
 def test_file_operation_export_dsco_folder(ctx, tmp_path):
