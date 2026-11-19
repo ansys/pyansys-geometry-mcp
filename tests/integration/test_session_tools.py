@@ -96,7 +96,9 @@ def test_file_operation_export_formats(
     # Define the location and expected file location
     location = tmp_path_factory.mktemp(f"test_export_to_{file_format}")
     file_location = location / f"custom_name.{extension}"
-    result = file_io(ctx, operation="export", file_format=file_format, file_path=str(file_location))
+    result = file_operation(
+        ctx, operation="export", file_format=file_format, file_path=str(file_location)
+    )
 
     assert f"Design exported to {file_format.upper()} file:" in result
     assert file_location.exists()
@@ -105,7 +107,7 @@ def test_file_operation_export_formats(
 def test_file_operation_export_path_conflicts():
     """Test that an explicit export path and a folder cannot be combined."""
     mock_ctx = MagicMock()
-    result = file_io(
+    result = file_operation(
         mock_ctx, operation="export", file_format="dsco", file_path="custom.dsco", folder="other"
     )
     assert "file_path" in result and "folder" in result
@@ -116,7 +118,9 @@ def test_file_operation_export_missing_output(tmp_path):
     """Test that a backend success without the requested file is reported as an error."""
     mock_ctx = MagicMock()
     file_location = tmp_path / "custom.step"
-    result = file_io(mock_ctx, operation="export", file_format="step", file_path=str(file_location))
+    result = file_operation(
+        mock_ctx, operation="export", file_format="step", file_path=str(file_location)
+    )
     assert "did not create the requested export file" in result
     assert str(file_location) in result
 
@@ -128,7 +132,7 @@ def test_file_operation_export_dsco_folder(ctx, tmp_path):
     create_box(ctx, name="box", width=1.0, depth=1.0, height=1.0)
     file_location = tmp_path / f"{design_name}.dsco"
 
-    result = file_io(ctx, operation="export", file_format="dsco", folder=str(tmp_path))
+    result = file_operation(ctx, operation="export", file_format="dsco", folder=str(tmp_path))
     assert "Design exported to DSCO file:" in result
     assert file_location.is_file()
     assert str(file_location) in result
