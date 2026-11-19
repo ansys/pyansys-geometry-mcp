@@ -4,7 +4,6 @@ on:
 
 env:
   MAIN_PYTHON_VERSION: "3.14"
-  HAS_SECRETS: ${{ secrets.PYANSYS_CI_BOT_TOKEN != '' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
