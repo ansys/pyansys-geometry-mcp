@@ -454,6 +454,13 @@ def file_operation(
                 command = f"design.{method_name}({folder!r})"
 
             app_context.command_history.append(command)
+            if file_path is not None and not saved_path.is_file():
+                message = (
+                    f"Backend did not create the requested export file: {saved_path}. "
+                    "The backend may have written a different filename in the destination folder."
+                )
+                logger.error(message)
+                return message
             logger.info(f"file_operation export called, saved to {saved_path}")
             return f"Design exported to {file_format.upper()} file: {saved_path}"
         except Exception as e:

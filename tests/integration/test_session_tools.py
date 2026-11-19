@@ -112,6 +112,17 @@ def test_file_operation_export_path_conflicts():
     mock_ctx.fastmcp._lifespan_result.product_instance.get_active_design.assert_not_called()
 
 
+def test_file_operation_export_missing_output(tmp_path):
+    """Test that a backend success without the requested file is reported as an error."""
+    mock_ctx = MagicMock()
+    file_location = tmp_path / "custom.step"
+    result = file_operation(
+        mock_ctx, operation="export", file_format="step", file_path=str(file_location)
+    )
+    assert "did not create the requested export file" in result
+    assert str(file_location) in result
+
+
 def test_file_operation_export_dsco_folder(ctx, tmp_path):
     """Test exporting a design-named .dsco file to a directory."""
     design_name = "test_folder_dsco"
