@@ -131,16 +131,18 @@ async def run_python_code(
     query, or modification action (such as fillet, chamfer, shell, measure, pattern) and
     no other tool matches it, do NOT answer that it is unsupported. Write the
     equivalent ``ansys.geometry.core`` code and run it here. Choose a dedicated tool
-    whenever one exists. Use ``run_script_file`` for an existing Discovery/SpaceClaim
-    script file on disk. Never write a temporary file to run a few statements.
+    whenever one exists. Use ``run_script_file`` for Discovery/SpaceClaim scripting API
+    code or an existing script file. Never write a temporary file to run a few statements.
 
     The session is persistent, so variables defined by one call stay available to the
     next. ``instance`` (the ``Modeler``) and ``design`` are predefined. Import anything
     else explicitly. Bodies, faces, and edges are reached
     through the design tree (``design.bodies[0].faces[0].edges``) and edits are methods
-    on those objects. Only stdout is returned, so ``print()`` the values you need. If
-    you are unsure of the exact API, introspect it first with ``dir()`` or ``help()``, and then
-    issue a second call with the real code.
+    on those objects. Only stdout is returned, so ``print()`` the values you need. Look
+    up the API with ``suggest_api`` and ``get_api_details`` before writing the code, and
+    use the documented signatures and imports as given without re-checking them.
+    Introspect with ``dir()`` or ``help()`` only for something the documentation does
+    not cover, or after a documented call raises an error.
 
     The code runs in a separate process that is connected to the same geometry
     service the other tools use, so bodies they created are immediately available
@@ -359,8 +361,9 @@ def file_io(
     ``Inventor``, ``Rhino``, and ``AutoCAD``.
 
     Use ``operation="export"`` to save the active design in ``fmd``, ``step``,
-    ``iges``, ``scdocx``, ``disco``, ``parasolid_text``, or ``parasolid_bin``
-    format.
+    ``iges``, ``scdocx``, ``dsco``, ``parasolid_text``, or ``parasolid_bin`` format.
+    Use ``file_path`` to specify the exact export filename, or ``folder`` to use the
+    design name as the filename. Do not pass both.
 
     Parameters
     ----------
@@ -369,15 +372,17 @@ def file_io(
     operation : Literal["import", "export"]
         Whether to import a file or export the active design.
     file_path : str, default: None
-        Path of the file to import, including its extension. For a shattered assembly,
-        give the path of the assembly file. Referenced files in the same folder are
-        included automatically. This parameter is required for import.
+        Path of the file to import or the exact output path for export, including its
+        extension. For a shattered assembly import, give the path of the assembly file.
+        Referenced files in the same folder are included automatically. Required for
+        import; mutually exclusive with ``folder`` for export.
     file_format : str, default: None
         Export format. Options are ``"fmd"``, ``"step"``, ``"iges"``, ``"scdocx"``,
-        ``"dsco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter
-        is required for export.
+        ``"dsco"``, ``"parasolid_text"``, and ``"parasolid_bin"``. This parameter is
+        required for export.
     folder : str, default: None
-        Export destination. If omitted, the file is saved in the current working directory.
+        Export directory. The design name and format-specific extension form the filename.
+        If omitted along with ``file_path``, use the current working directory.
     mode : str, default: ``"open"``
         How to import the file. When ``"open"`` is used, the active design is closed
         and the file is opened as a new design.
@@ -408,39 +413,54 @@ def file_io(
     if operation == "export":
         if file_format is None:
             return "file_format is required when operation is 'export'."
+        if file_path is not None and folder is not None:
+            return "Provide either file_path or folder for export, not both."
+        if file_path is not None and not file_path:
+            return "file_path must not be empty for export."
 
         try:
+            from pathlib import Path
+
             from ansys.geometry.core.designer import DesignFileFormat
 
-            design = app_context.product_instance.get_active_design()
-            if file_format.lower() == DesignFileFormat.FMD.name.lower():
-                saved_path = design.export_to_fmd(folder)
-                command = f"design.export_to_fmd({folder!r})"
-            elif file_format.lower() == DesignFileFormat.STEP.name.lower():
-                saved_path = design.export_to_step(folder)
-                command = f"design.export_to_step({folder!r})"
-            elif file_format.lower() == DesignFileFormat.IGES.name.lower():
-                saved_path = design.export_to_iges(folder)
-                command = f"design.export_to_iges({folder!r})"
-            elif file_format.lower() == DesignFileFormat.SCDOCX.name.lower():
-                saved_path = design.export_to_scdocx(folder)
-                command = f"design.export_to_scdocx({folder!r})"
-            elif file_format.lower() == DesignFileFormat.DSCO.name.lower():
-                saved_path = design.export_to_dsco(folder)
-                command = f"design.export_to_dsco({folder!r})"
-            elif file_format.lower() == DesignFileFormat.PARASOLID_TEXT.name.lower():
-                saved_path = design.export_to_parasolid_text(folder)
-                command = f"design.export_to_parasolid_text({folder!r})"
-            elif file_format.lower() == DesignFileFormat.PARASOLID_BIN.name.lower():
-                saved_path = design.export_to_parasolid_bin(folder)
-                command = f"design.export_to_parasolid_bin({folder!r})"
-            else:
+            export_methods = {
+                "fmd": "export_to_fmd",
+                "step": "export_to_step",
+                "iges": "export_to_iges",
+                "scdocx": "export_to_scdocx",
+                "dsco": "export_to_dsco",
+                "parasolid_text": "export_to_parasolid_text",
+                "parasolid_bin": "export_to_parasolid_bin",
+            }
+            if file_format.lower() not in export_methods:
                 return (
-                    f"Unsupported format '{file_format}'. Supported formats are: fmd, step, "
-                    "iges, scdocx, dsco, parasolid_text, parasolid_bin."
+                    f"Unsupported format '{file_format}'. Supported formats are: "
+                    f"{', '.join(export_methods)}."
                 )
+            design = app_context.product_instance.get_active_design()
+            if file_path is not None:
+                saved_path = Path(file_path).resolve()
+                export_format = DesignFileFormat[file_format.upper()]
+                design.download(saved_path, export_format)
+                app_context.command_history.append(
+                    "from ansys.geometry.core.designer import DesignFileFormat"
+                )
+                command = (
+                    f"design.download({str(saved_path)!r}, DesignFileFormat.{export_format.name})"
+                )
+            else:
+                method_name = export_methods[file_format.lower()]
+                saved_path = getattr(design, method_name)(folder)
+                command = f"design.{method_name}({folder!r})"
 
             app_context.command_history.append(command)
+            if file_path is not None and not saved_path.is_file():
+                message = (
+                    f"Geometry-core did not create the requested export file: {saved_path}. "
+                    "The backend may have written a different filename in the destination folder."
+                )
+                logger.error(message)
+                return message
             logger.info(f"file_io export called, saved to {saved_path}")
             return f"Design exported to {file_format.upper()} file: {saved_path}"
         except Exception as e:
@@ -518,25 +538,27 @@ def file_io(
 
 @app.tool()
 def run_script_file(
-    ctx: Context, file_path: str, args: dict[str, str] | None = None
+    ctx: Context,
+    file_path: str | None = None,
+    args: dict[str, str] | None = None,
+    script: str | None = None,
 ) -> str | dict[str, str]:
-    """Run an existing Discovery/SpaceClaim scripting API file on the geometry backend.
+    """Run Discovery/SpaceClaim scripting API code on the geometry backend.
 
-    Use this tool when the user asks to run, execute, or play back a script file that
-    already exists on disk (for example "run C:/scripts/make_flange.py", "execute my
-    SpaceClaim script", or "replay this .scscript").
+    Use this tool to execute Discovery/SpaceClaim script text or an existing script
+    file (for example "run C:/scripts/make_flange.py" or "replay this .scscript").
+    Provide exactly one of ``script`` and ``file_path``.
 
-    When NOT to use this tool: to execute Python code you are writing yourself. Use
+    When NOT to use this tool: to execute PyAnsys Geometry API code. Use
     ``run_python_code`` instead. That tool runs the PyAnsys Geometry API
     (``instance``, ``design``, ...) in a persistent session, while this tool runs a
     different language surface entirely. To load a CAD/geometry file (``.scdocx``,
     ``.step``, ``.iges``, ``.x_t``, ...), use ``file_io`` with ``operation="import"``.
-    Never write a temporary script file just to run a few statements. Choose ``run_python_code``
-    instead.
+    Do not write a temporary script file: pass Discovery/SpaceClaim code as ``script``.
 
     **Script language**
 
-    The file must be written against the Discovery/SpaceClaim scripting
+    The script must be written against the Discovery/SpaceClaim scripting
     API, not the PyAnsys Geometry API. PyAnsys Geometry objects (``Modeler``, ``Sketch``,
     ``instance``, ``design``) are NOT available inside the script, and script variables do not leak
     into the ``run_python_code`` session (or vice versa).
@@ -566,12 +588,15 @@ def run_script_file(
     ----------
     ctx : Context
         MCP request context (injected automatically).
-    file_path : str
+    file_path : str, default: None
         Path to the script file, including its extension. The path must be readable
         by the machine running this MCP server. Use an absolute path when possible,
-        since relative paths are resolved against the server's working directory.
+        since relative paths are resolved against the server's working directory. Mutually
+        exclusive with ``script``.
     args : dict[str, str], default: None
         String-valued arguments exposed to the script as ``argsDict``.
+    script : str, default: None
+        Discovery/SpaceClaim script source. Mutually exclusive with ``file_path``.
 
     Returns
     -------
@@ -590,6 +615,19 @@ def run_script_file(
     if app_context.product_instance is None:
         return "Product backend is not connected. Cannot run script file."
 
+    if (file_path is None) == (script is None):
+        return "Provide exactly one of file_path or script."
+    if script is not None:
+        if not script.strip():
+            return "Script must not be empty."
+        try:
+            return app_context.product_instance.run_script(script, args)[0]
+        except Exception as e:
+            logger.error(f"run_script_file failed: {e}")
+            return f"Error running script: {e}"
+
+    if not file_path:
+        return "Script file path must not be empty."
     resolved = Path(file_path).resolve()
     if not resolved.exists():
         return f"File not found: {resolved}"
