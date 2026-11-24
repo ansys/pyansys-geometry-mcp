@@ -5,7 +5,7 @@ exclude: "uv\\.lock"
 repos:
 
   - repo: https://github.com/google/yamlfmt
-    rev: v0.21.0
+    rev: 21ca5323a9c87ee37a434e0ca908efc0a89daa07 # frozen: v0.21.0
     hooks:
       - id: yamlfmt
         args:
@@ -13,25 +13,25 @@ repos:
           - "max_line_length=80,retain_line_breaks=true,retain_line_breaks_single=true"
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.30.6
+    rev: 02ef6d1c28994054a843e58604e1a343faa42987 # frozen: v2.31.2
     hooks:
       - id: pyproject-fmt
         args: [--keep-full-version]
 
   - repo: https://github.com/adamchainz/blacken-docs
-    rev: 1.20.0
+    rev: fda77690955e9b63c6687d8806bafd56a526e45f # frozen: 1.20.0
     hooks:
       - id: blacken-docs
         additional_dependencies: [black==26.10.1]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.3
+    rev: 57b21406f092110c18776e39b0bda50d37c945c8 # frozen: v2.4.3
     hooks:
       - id: codespell
         args: [--ignore-words, doc/styles/config/vocabularies/ANSYS/accept.txt, "-w"]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
       - id: check-merge-conflict
       - id: debug-statements
@@ -39,7 +39,7 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/ansys/pre-commit-hooks
-    rev: v0.8.1
+    rev: dbcd0a4ad0060f78ac3c7d53d342f510edc48eab # frozen: v0.8.1
     hooks:
       - id: add-license-headers
         files: (src|examples|tests|docker)/.*\.(py)|\.(proto)
@@ -48,18 +48,18 @@ repos:
           - --custom_license=Apache-2.0
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.39.0
+    rev: a76b92851fc9eede9f9bc4073eb55202f34eb0df # frozen: 0.39.0
     hooks:
       - id: check-github-workflows
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.17.5
+    rev: 9026c9127e153371d7a78dfcb0c45ae2046a3d10 # frozen:v0.17.6
     hooks:
       - id: ruff-check
       - id: ruff-format
 
   - repo: https://github.com/crate-ci/typos
-    rev: b859c0df7f391deba73030f79b957e62b4d81dc6 # frozen: varcon-core-v5.0.7
+    rev: 276087d9a4f06398b3e04825487805e2d7375888 # frozen: v1.52.2
     hooks:
       - id: typos
         args: ["--config", "doc/styles/typos.toml"]

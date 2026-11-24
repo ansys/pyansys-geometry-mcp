@@ -25,14 +25,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  packages: read # Needs access to the Geometry docker image
+permissions: {}
 
 jobs:
   tool-discoverability:
     name: Tool discoverability evaluation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the code
+      packages: read # Needed to pull the Geometry container image
     steps:
       - name: Login in GitHub Container registry
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
@@ -151,7 +152,7 @@ jobs:
                       },
                       {
                         "type": "TextBlock",
-                        "text": "[View details in GitHub Actions](https://github.com/ansys/pyansys-geometry/actions/runs/${{
+                        "text": "[View details in GitHub Actions](https://github.com/ansys/pyansys-geometry-mcp/actions/runs/${{
             github.run_id }})",
                         "wrap": true
                       }
