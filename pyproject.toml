@@ -4,7 +4,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "ansys-geometry-mcp"
-version = "0.1.dev0"
+version = "0.1.0"
 description = "MCP server for PyAnsys Geometry"
 readme = "README.rst"
 keywords = [
