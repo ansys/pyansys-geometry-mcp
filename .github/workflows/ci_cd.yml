@@ -164,6 +164,30 @@ jobs:
           maximum-pr-doc-deployments: 5
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  smoke-tests:
+    name: "Build and smoke tests"
+    runs-on: ${{ matrix.os }}
+    needs: [code-style]
+    permissions:
+      contents: read # Needed to checkout the code
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.12', '3.13', '3.14']
+        should-release:
+          - ${{ github.event_name == 'push' && contains(github.ref, 'refs/tags') }}
+        exclude:
+          - should-release: false
+            os: macos-latest
+    steps:
+      - name: "Build wheelhouse and perform smoke test"
+        uses: ansys/actions/build-wheelhouse@f5e1481b9c128197a30d1dc1dfc52b8cd6865555 # v11.1.5
+        with:
+          library-name: ${{ env.PACKAGE_NAME }}
+          operating-system: ${{ matrix.os }}
+          python-version: ${{ matrix.python-version }}
+
   testing-windows:
     name: "Testing and coverage (Windows) (${{ matrix.tracker-label }})"
     runs-on: windows-latest
@@ -359,7 +383,7 @@ jobs:
 
   package:
     name: "Package library"
-    needs: [testing-windows, testing-linux, docs]
+    needs: [smoke-tests, testing-windows, testing-linux, docs]
     runs-on: ubuntu-latest
     permissions:
       attestations: write # Required to upload provenance attestations
