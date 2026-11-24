@@ -7,6 +7,8 @@ on:
       - "*"
     branches:
       - main
+  schedule:
+    - cron: '30 8 * * *' # Daily at 08:30 UTC
 
 env:
   MAIN_PYTHON_VERSION: '3.14'
@@ -22,10 +24,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-  packages: read # Needs access to the Geometry docker image
-  pull-requests: read # Required to read PR content
+permissions: {}
 
 jobs:
 
@@ -46,6 +45,10 @@ jobs:
   vulnerabilities:
     name: "Vulnerabilities"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the code
+      security-events: write # Needed to create security advisories
+      issues: write # Needed to create issues for new advisories
     steps:
       - uses: ansys/actions/check-vulnerabilities@5a91d7c2c4da2e86f2b3b62ba62daad189a6b77c # v11.2.0
         with:
@@ -58,6 +61,8 @@ jobs:
   actions-security:
     name: "Actions Security"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout and scan workflow files
     steps:
       - uses: ansys/actions/check-actions-security@5a91d7c2c4da2e86f2b3b62ba62daad189a6b77c # v11.2.0
         with:
@@ -69,6 +74,9 @@ jobs:
     if: github.event_name == 'pull_request'
     name: "Check the name of the PR"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the code
+      pull-requests: read # Needed to read pull request titles for checks
     steps:
       - name: Check PR title
         uses: ansys/actions/check-pr-title@5a91d7c2c4da2e86f2b3b62ba62daad189a6b77c # v11.2.0
@@ -79,7 +87,7 @@ jobs:
     name: "Code Style"
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read # Needed to checkout the code
     steps:
       - uses: ansys/actions/code-style@5a91d7c2c4da2e86f2b3b62ba62daad189a6b77c # v11.2.0
         with:
@@ -88,6 +96,9 @@ jobs:
   docs-style:
     name: "Documentation Style Check"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the code
+      checks: write # Needed to create check runs for documentation style
     steps:
       - name: PyAnsys documentation style checks
         uses: ansys/actions/doc-style@5a91d7c2c4da2e86f2b3b62ba62daad189a6b77c # v11.2.0
@@ -98,6 +109,8 @@ jobs:
     name: "Build Documentation"
     needs: [docs-style]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the code
     steps:
       - name: "Set up headless display"
         uses: pyvista/setup-headless-display-action@10e6efb97af3cd1523828f0e22c39f0e4567f3e4 # v5.2.0
@@ -153,6 +166,9 @@ jobs:
   testing-windows:
     name: "Testing and coverage (Windows) (${{ matrix.tracker-label }})"
     runs-on: windows-latest
+    permissions:
+      contents: read # Needed to checkout the code
+      packages: read # Needed to pull the Geometry container image
     env:
       SKIP_UNSTABLE: false
     strategy:
@@ -268,6 +284,9 @@ jobs:
   testing-linux:
     name: "Testing and coverage (Linux) (${{ matrix.tracker-label }})"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # Needed to checkout the code
+      packages: read # Needed to pull the Geometry container image
     strategy:
       fail-fast: false
       matrix:
@@ -343,7 +362,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       attestations: write # Required to upload provenance attestations
-      contents: read
+      contents: read # Needed to checkout the code
       id-token: write # Required for OIDC authentication to upload provenance attestations
     steps:
       - name: Build library source and wheel artifacts
