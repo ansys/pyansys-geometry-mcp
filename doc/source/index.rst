@@ -51,3 +51,4 @@ Use PyAnsys Geometry-MCP to access Model Context Protocol (MCP) tools in the PyA
     api/index
     examples/index
     contributing
+    changelog

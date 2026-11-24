@@ -66,7 +66,6 @@ doc = [
   "nbsphinx==0.9.8",
   "notebook==7.6.5",
   "pypdf==6.21.4",
-  "quarto-cli==1.11.9",
   "sphinx==9.1.1",
   "sphinx-click==6.2.0",
   "sphinx-copybutton==0.5.2",
@@ -150,8 +149,8 @@ directory = "doc/changelog.d"
 filename = "doc/source/changelog.rst"
 start_string = ".. towncrier release notes start\n"
 template = "doc/changelog.d/changelog_template.jinja"
-title_format = "`{version} <https://github.com/ansys/pyansys-geometry/releases/tag/v{version}>`_ - {project_date}"
-issue_format = "`#{issue} <https://github.com/ansys/pyansys-geometry/pull/{issue}>`_"
+title_format = "`{version} <https://github.com/ansys/pyansys-geometry-mcp/releases/tag/v{version}>`_ - {project_date}"
+issue_format = "`#{issue} <https://github.com/ansys/pyansys-geometry-mcp/pull/{issue}>`_"
 type = [
   { directory = "breaking", name = "Breaking", showcontent = true },
   { directory = "added", name = "Added", showcontent = true },

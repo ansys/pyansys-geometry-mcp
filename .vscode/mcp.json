@@ -1,9 +1,0 @@
-// Launching the local MCP server
-{
-    "servers": {
-        "pyansys-geometry-mcp": {
-            "type": "http",
-            "url": "http://localhost:62000/mcp"
-        }
-    }
-}

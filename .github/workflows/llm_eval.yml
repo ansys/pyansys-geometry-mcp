@@ -151,7 +151,7 @@ jobs:
                       },
                       {
                         "type": "TextBlock",
-                        "text": "[View details in GitHub Actions](https://github.com/ansys/pyansys-geometry/actions/runs/${{
+                        "text": "[View details in GitHub Actions](https://github.com/ansys/pyansys-geometry-mcp/actions/runs/${{
             github.run_id }})",
                         "wrap": true
                       }
