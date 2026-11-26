@@ -60,7 +60,7 @@ doc = [
   "ansys-common-mcp==0.3.6",
   "ansys-geometry-core[all]==0.18.4",
   "ansys-sphinx-theme[autoapi,changelog]==1.12.1",
-  "jupytext==1.19.6",
+  "jupytext==1.19.7",
   "myst-parser==5.2.0",
   "nbconvert==7.17.2",
   "nbsphinx==0.9.8",
@@ -77,7 +77,7 @@ doc = [
 # OpenAI deployment and is never run as part of the regular test run.
 eval = [
   "jsonschema==4.26.0",
-  "openai==3.52.0",
+  "openai==3.55.1",
   { include-group = "tests" },
 ]
 tests = [
