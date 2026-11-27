@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = ">=3.12, <4"
 resolution-markers = [
     "python_full_version >= '3.15'",
@@ -322,9 +322,8 @@ all = [
 
 [[package]]
 name = "ansys-geometry-mcp"
-version = "0.1.dev0"
+version = "0.2.dev0"
 source = { editable = "." }
-default-groups = []
 dependencies = [
     { name = "ansys-common-mcp" },
     { name = "ansys-geometry-core", extra = ["all"] },

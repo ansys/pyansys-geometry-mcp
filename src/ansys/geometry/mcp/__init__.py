@@ -16,10 +16,10 @@
 
 """PyAnsys Geometry-MCP package."""
 
+import importlib.metadata as importlib_metadata
+
 from ansys.geometry.mcp.context import PyAnsysGeometryContext
 from ansys.geometry.mcp.server import PyAnsysGeometryMCP, app
-
-import importlib.metadata as importlib_metadata
 
 __version__ = importlib_metadata.version(__name__.replace(".", "-"))
 """PyAnsys Geometry-MCP version."""
