@@ -1,0 +1,78 @@
+
+
+
+
+
+
+The ``__main__.py`` module
+==========================
+
+.. py:module:: ansys.geometry.mcp.__main__
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: __main__
+.. tab-set::
+
+
+
+
+
+
+
+    .. tab-item:: Functions
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~main`
+            - Run PyAnsys Geometry-MCP.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+Entry point for running PyAnsys Geometry-MCP.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+.. py:function:: main()
+
+   Run PyAnsys Geometry-MCP.
+
+
+
+

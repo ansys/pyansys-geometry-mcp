@@ -1,0 +1,44 @@
+
+
+
+
+
+
+The ``selection_enums.py`` module
+=================================
+
+.. py:module:: ansys.geometry.mcp.misc.selection_enums
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+Selection enum tables to help the MCP resolve the correct enum values for selection criteria.
+
+
+
+
+
+

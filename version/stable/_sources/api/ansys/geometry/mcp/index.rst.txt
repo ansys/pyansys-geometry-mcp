@@ -1,0 +1,160 @@
+
+
+
+
+
+
+The ``ansys.geometry.mcp`` library
+==================================
+
+.. py:module:: ansys.geometry.mcp
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+
+
+
+
+.. py:currentmodule:: mcp
+.. tab-set::
+
+    .. tab-item:: Subpackages
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~ansys.geometry.mcp.misc`
+            - Miscellaneous PyAnsys Geometry-MCP helpers package.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.tools`
+            - General MCP tools package.
+
+
+
+    .. tab-item:: Submodules
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~ansys.geometry.mcp.__main__`
+            - Entry point for running PyAnsys Geometry-MCP.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.context`
+            - Context for PyAnsys Geometry-MCP server.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.server`
+            - MCP server for PyAnsys Geometry-MCP.
+
+
+
+
+    .. tab-item:: Classes
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~ansys.geometry.mcp.PyAnsysGeometryContext`
+            - App context for PyAnsys Geometry-MCP server.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.PyAnsysGeometryMCP`
+            - MCP server for PyAnsys Geometry-MCP.
+
+
+
+
+
+
+    .. tab-item:: Attributes
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~app`
+            - 
+
+
+          * - :py:obj:`~__version__`
+            - 
+
+
+
+
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+   :hidden:
+
+    <span class="nf nf-md-package"></span> misc</api/ansys/geometry/mcp/misc/index>
+    <span class="nf nf-md-package"></span> tools</api/ansys/geometry/mcp/tools/index>
+
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+   :hidden:
+
+    <span class="nf nf-fa-file"></span> __main__</api/ansys/geometry/mcp/__main__/index>
+    <span class="nf nf-fa-file"></span> context</api/ansys/geometry/mcp/context/index>
+    <span class="nf nf-fa-file"></span> server</api/ansys/geometry/mcp/server/index>
+
+
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+   :hidden:
+
+    <span class="nf nf-cod-symbol_class"></span> PyAnsysGeometryContext</api/ansys/geometry/mcp/PyAnsysGeometryContext>
+    <span class="nf nf-cod-symbol_class"></span> PyAnsysGeometryMCP</api/ansys/geometry/mcp/PyAnsysGeometryMCP>
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+PyAnsys Geometry-MCP package.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+
+.. py:data:: __version__
+   :value: '0.1.0'
+
+
+
+

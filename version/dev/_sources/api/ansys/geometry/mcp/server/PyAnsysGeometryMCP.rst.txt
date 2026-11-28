@@ -1,0 +1,118 @@
+
+
+
+
+
+
+:class:`PyAnsysGeometryMCP`
+===========================
+
+
+.. py:class:: ansys.geometry.mcp.server.PyAnsysGeometryMCP(name: str = 'pyansys-geometry-mcp', *args, **kwargs)
+
+   Bases: :py:obj:`ansys.common.mcp.PyAnsysBaseMCP`
+
+
+   MCP server for PyAnsys Geometry-MCP.
+
+   This server enables AI assistants to interact with PyAnsys Geometry
+   (``ansys-geometry-core``) for simulation and analysis workflows.
+
+
+
+.. py:currentmodule:: PyAnsysGeometryMCP
+
+Overview
+--------
+
+.. tab-set::
+
+
+
+   .. tab-item:: Methods
+
+      .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+          * - :py:attr:`~create_context`
+            - Create (or return the pre-existing) product-specific context.
+          * - :py:attr:`~product_startup`
+            - Launch the product instance when the server starts.
+          * - :py:attr:`~product_cleanup`
+            - Clean up the product instance when the server stops.
+
+
+
+   .. tab-item:: Attributes
+
+      .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+          * - :py:attr:`~context`
+            - App context for the MCP server.
+
+
+
+
+
+
+Import detail
+-------------
+
+.. code-block:: python
+
+    from ansys.geometry.mcp.server import PyAnsysGeometryMCP
+
+
+Attribute detail
+----------------
+
+.. py:attribute:: context
+   :type:  ansys.geometry.mcp.context.PyAnsysGeometryContext
+
+   App context for the MCP server.
+
+   Contains the product instance and related information.
+
+
+
+
+Method detail
+-------------
+
+.. py:method:: create_context() -> ansys.geometry.mcp.context.PyAnsysGeometryContext
+
+   Create (or return the pre-existing) product-specific context.
+
+   If the context has already been initialised, for example because
+   CLI arguments were written to ``app.context`` before ``app.run()``
+   was called, this method returns it unchanged so that caller-set
+   configuration is preserved.
+
+   Returns
+   -------
+   PyAnsysGeometryContext
+       Context instance with command history.
+
+
+
+
+.. py:method:: product_startup()
+
+   Launch the product instance when the server starts.
+
+   This method is called automatically during server startup.
+
+
+.. py:method:: product_cleanup()
+
+   Clean up the product instance when the server stops.
+
+   This method is called automatically during server shutdown.
+
+
+
+
+

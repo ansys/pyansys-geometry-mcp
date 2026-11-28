@@ -1,0 +1,113 @@
+
+
+
+
+
+
+The ``helpers.py`` module
+=========================
+
+.. py:module:: ansys.geometry.mcp.misc.helpers
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: helpers
+.. tab-set::
+
+
+
+
+
+
+
+    .. tab-item:: Functions
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~connect_to_modeler_in_persistent_python`
+            - Connect to the Modeler instance in the persistent Python session.
+
+
+          * - :py:obj:`~refresh_design_in_persistent_python`
+            - Rebind ``design`` in the persistent Python session to the active design.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+Helper functions for PyAnsys Geometry-MCP.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+.. py:function:: connect_to_modeler_in_persistent_python(ctx: fastmcp.server.Context) -> Any
+
+   Connect to the Modeler instance in the persistent Python session.
+
+   This tool connects to the Modeler instance from within the persistent Python session.
+   It assumes that the persistent session has already been created.
+
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP context containing server session and app context.
+
+   Returns
+   -------
+   str
+       Connection status message.
+
+
+
+.. py:function:: refresh_design_in_persistent_python(ctx: fastmcp.server.Context) -> None
+
+   Rebind ``design`` in the persistent Python session to the active design.
+
+   The persistent session runs in its own process with its own ``Modeler`` client,
+   so the design it holds has to be re-read whenever the active design changes.
+   This function does nothing when the session is not connected yet. The connection step
+   refreshes the design itself.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP context containing server session and app context.
+
+
+
+
+

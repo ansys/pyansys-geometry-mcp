@@ -1,0 +1,140 @@
+
+
+
+
+
+
+The ``edit_tools.py`` module
+============================
+
+.. py:module:: ansys.geometry.mcp.tools.edit_tools
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: edit_tools
+.. tab-set::
+
+
+
+
+
+
+
+    .. tab-item:: Functions
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~boolean_operation`
+            - Perform a Boolean subtract, union, or intersection on two bodies.
+
+
+
+    .. tab-item:: Attributes
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~logger`
+            - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+MCP edit tools for PyAnsys Geometry-MCP.
+
+Tools that modify bodies that already exist: Boolean operations and other
+in-place edits.
+
+Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
+The ``ctx`` parameter provides access to the app context (and thus
+to the live product instance and command history).
+
+How to add a tool
+-----------------
+1. Define a Python function with type-annotated parameters.
+2. Add a NumPy-style docstring. The summary line becomes the tool description
+   visible to the AI assistant.
+3. Decorate it with ``@app.tool()``.
+4. Access the product instance::
+
+       app_context = get_geometry_ctx(ctx)
+       instance = app_context.product_instance
+
+Notes
+-----
+Import this module in ``__main__.py`` (already done) to register all tools
+with the server before it starts.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+.. py:function:: boolean_operation(ctx: fastmcp.server.Context, operation: Literal['subtract', 'unite', 'intersect'], target_body_id: str, tool_body_id: str) -> str
+
+   Perform a Boolean subtract, union, or intersection on two bodies.
+
+   The target body survives the operation and the tool body is consumed.
+
+   - For ``subtract``, the tool body's volume is removed from the target.
+   - For ``unite``, the tool is merged into the target.
+   - For ``intersect``, the target is reduced to the volume common to both bodies.
+
+   Bodies are addressed by ID. Look up each body named by the user with
+   ``list_entities(entity_type="body", name=...)`` first.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   operation : Literal["subtract", "unite", "intersect"]
+       Boolean operation to perform.
+   target_body_id : str
+       ID of the body to modify (survives the operation).
+   tool_body_id : str
+       ID of the body used in the operation (consumed afterward).
+
+   Returns
+   -------
+   str
+       Confirmation message, or an error message.
+
+
+
+.. py:data:: logger
+
+
+

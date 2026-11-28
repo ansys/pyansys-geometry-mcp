@@ -1,0 +1,264 @@
+
+
+
+
+
+
+The ``repair_tools.py`` module
+==============================
+
+.. py:module:: ansys.geometry.mcp.tools.repair_tools
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: repair_tools
+.. tab-set::
+
+
+
+
+
+
+
+    .. tab-item:: Functions
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~inspect_geometry`
+            - Report geometry issues (defects) found in the design, without modifying it.
+
+
+          * - :py:obj:`~repair_geometry`
+            - Repair defective geometry by finding and fixing one class of problem area.
+
+
+
+    .. tab-item:: Attributes
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~logger`
+            - 
+
+
+          * - :py:obj:`~RepairOperation`
+            - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+MCP repair tools for PyAnsys Geometry-MCP.
+
+Tools that survey and clean up imported or otherwise defective geometry.
+
+- ``inspect_geometry`` reports issues without touching the model.
+- ``repair_geometry`` applies one repair operation to a scope of bodies.
+
+Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
+The ``ctx`` parameter provides access to the app context (and thus
+to the live product instance and command history).
+
+Notes
+-----
+Import this module in ``tools/__init__.py`` (already done) to register these
+tools with the server before it starts.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+.. py:function:: inspect_geometry(ctx: fastmcp.server.Context, body_ids: list[str] | None = None, named_selection: str | None = None, selection_handle: str | None = None) -> str
+
+   Report geometry issues (defects) found in the design, without modifying it.
+
+   This is the read-only diagnosis step for when the defect is not yet known.
+   Run it to find out what is wrong with an imported or defective geometry. Because it
+   does not change the model, it is always safe to call. It is also the way
+   to confirm what a repair actually changed.
+
+   If the user has already said what is wrong ("fix the short edges under
+   0.5 mm"), skip this tool and call ``repair_geometry`` directly.
+
+   By default every body in the active design is inspected. Narrow the scope
+   with exactly one of ``body_ids``, ``named_selection``, or
+   ``selection_handle``.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   body_ids : list of str, default: None
+       IDs of the bodies to inspect. Look up a body named by the user with
+       ``list_entities(entity_type="body", name=...)``.
+   named_selection : str, default: None
+       Label of a named selection whose bodies should be inspected.
+   selection_handle : str, default: None
+       Handle of a selection builder (from ``create_selection_builder``) whose
+       selected bodies should be inspected.
+
+   Returns
+   -------
+   str
+       Issues grouped by body, or an error message.
+
+
+
+.. py:function:: repair_geometry(ctx: fastmcp.server.Context, operation: RepairOperation, body_ids: list[str] | None = None, named_selection: str | None = None, selection_handle: str | None = None, length: float | None = None, angle: float | None = None, max_distance: float | None = None, allow_multiple_bodies: bool | None = None, maintain_components: bool | None = None, check_for_coincidence: bool | None = None, comprehensive_result: bool = False, distance: float | None = None, area: float | None = None, width: float | None = None, min_height: float | None = None, max_height: float | None = None) -> str
+
+   Repair defective geometry by finding and fixing one class of problem area.
+
+   Use this to clean up imported or faulty CAD. Remove slivers and small
+   faces, fill missing faces, merge fragmented edges, simplify over-complex
+   faces, stitch surfaces into solids, or find and remove logos.
+
+   When the user has already named the defect ("fix the short edges under
+   0.5 mm", "stitch these surfaces"), call this tool directly. Running
+   ``inspect_geometry`` first is unnecessary. Reach for ``inspect_geometry``
+   only when the defect is unknown and needs diagnosing first.
+
+   ``operation`` selects what to repair:
+
+   - ``"all"``
+       Run the backend's blanket repair, letting it inspect and fix everything
+       it can across the scope. Use it when the user explicitly asks for an
+       automatic whole-design repair. An undiagnosed problem should go to
+       ``inspect_geometry`` first. Accepts no tuning parameters. If one
+       is supplied, including ``comprehensive_result``, it is rejected.
+   - ``"short_edges"``
+       Remove edges shorter than ``length``. Accepts ``length``.
+   - ``"extra_edges"``
+       Remove redundant edges that do not bound a real feature.
+   - ``"split_edges"``
+       Merge edges that were needlessly split. Accepts ``angle`` and ``length``.
+   - ``"simplify"``
+       Replace over-complex (spline) faces with analytic ones where possible.
+   - ``"stitch_faces"``
+       Join adjacent surface bodies into solids. Accepts ``max_distance``,
+       ``allow_multiple_bodies``, ``maintain_components``, and
+       ``check_for_coincidence``.
+   - ``"missing_faces"``
+       Find gaps where faces are missing and fix each detected region.
+       This can help solidify open surface bodies by closing missing-face gaps.
+       Accepts ``angle`` and ``distance`` thresholds.
+   - ``"small_faces"``
+       Find and fix small face regions. Accepts ``area`` and ``width``
+       thresholds.
+   - ``"logos"``
+       Find and remove logos. Accepts ``min_height`` and ``max_height``.
+       ``max_height`` is required and has no default: if the user has not
+       given one, ask them for it before calling. Do not choose a value
+       yourself, because a height that is too large also removes real
+       features such as bolt heads.
+       Requires Ansys 25R2 or later (26R1 or later on Linux).
+       Reports only the backend success flag, not logo or repair counts.
+
+   Passing a tuning parameter that the chosen operation does not accept is
+   rejected rather than silently ignored.
+
+   By default every body in the active design is repaired. Narrow the scope
+   with exactly one of ``body_ids``, ``named_selection``, or
+   ``selection_handle``.
+
+   Partial repair is a normal outcome. The modeling kernel legitimately
+   declines work that would invalidate adjacent topology, so problem areas can
+   remain afterwards. The reported ``found``/``repaired`` counts are results
+   for this call only, not totals for the design. Report them as such rather
+   than measuring the model to confirm them. If the user asks what state the
+   design is actually in, re-run ``inspect_geometry`` scoped to the bodies
+   this call modified. Do not count edges or faces by hand.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   operation : str
+       Which repair to apply. Options are ``"all"``, ``"short_edges"``, ``"extra_edges"``,
+       ``"split_edges"``, ``"simplify"``, ``"stitch_faces"``,
+       ``"missing_faces"``, ``"small_faces"``, and ``"logos"``.
+   body_ids : list of str, default: None
+       IDs of the bodies to repair. Look up a body named by the user with
+       ``list_entities(entity_type="body", name=...)``.
+   named_selection : str, default: None
+       Label of a named selection whose bodies should be repaired.
+   selection_handle : str, default: None
+       Handle of a selection builder (from ``create_selection_builder``) whose
+       selected bodies should be repaired.
+   length : float, default: None
+       Maximum edge length in meters for ``"short_edges"`` and ``"split_edges"``.
+   angle : float, default: None
+       Minimum angle between edges in degrees for ``"split_edges"``. Minimum
+       angle between faces in degrees for ``"missing_faces"``.
+   max_distance : float, default: None
+       Maximum gap between faces to stitch in meters for ``"stitch_faces"``.
+   allow_multiple_bodies : bool, default: None
+       Whether ``"stitch_faces"`` may leave more than one resulting body.
+   maintain_components : bool, default: None
+       Whether ``"stitch_faces"`` stitches only within each component.
+   check_for_coincidence : bool, default: None
+       Whether ``"stitch_faces"`` also searches for coincident surfaces.
+   distance : float, default: None
+       Minimum distance in meters between faces for ``"missing_faces"``.
+   area : float, default: None
+       Maximum face area in square meters for ``"small_faces"``.
+   width : float, default: None
+       Maximum face width in meters for ``"small_faces"``.
+   min_height : float, default: None
+       Minimum logo height in meters for ``"logos"``. Omit to use the backend default.
+   max_height : float, default: None
+       Maximum logo height in meters for ``"logos"``. Required for ``"logos"``. Ask the
+       user for it if they have not given one. Never guess it.
+   comprehensive_result : bool, default: False
+       Whether to fix each problem area individually. This is expensive. It costs one
+       backend round trip per problem area. Leave it set to ``False`` unless the user
+       asks for it. This parameter is not supported by ``operation="all"``,
+       ``"missing_faces"``, ``"small_faces"``, or ``"logos"``. The face operations fix each
+       detected region.
+
+   Returns
+   -------
+   str
+       Summary of what was found and repaired, or an error message.
+
+
+
+.. py:data:: logger
+
+.. py:data:: RepairOperation
+
+
+

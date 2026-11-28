@@ -1,0 +1,96 @@
+
+
+
+
+
+
+The ``tools`` package
+=========================
+
+.. py:module:: ansys.geometry.mcp.tools
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: tools
+.. tab-set::
+
+
+    .. tab-item:: Submodules
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~ansys.geometry.mcp.tools.edit_tools`
+            - MCP edit tools for PyAnsys Geometry-MCP.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.tools.repair_tools`
+            - MCP repair tools for PyAnsys Geometry-MCP.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.tools.selection_tools`
+            - MCP selection tools for PyAnsys Geometry-MCP.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.tools.session_tools`
+            - MCP session tools for PyAnsys Geometry-MCP.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.tools.visualization_tools`
+            - MCP visualization tools for PyAnsys Geometry-MCP.
+
+
+
+
+
+
+
+
+
+
+
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+   :hidden:
+
+    <span class="nf nf-fa-file"></span> edit_tools</api/ansys/geometry/mcp/tools/edit_tools/index>
+    <span class="nf nf-fa-file"></span> repair_tools</api/ansys/geometry/mcp/tools/repair_tools/index>
+    <span class="nf nf-fa-file"></span> selection_tools</api/ansys/geometry/mcp/tools/selection_tools/index>
+    <span class="nf nf-fa-file"></span> session_tools</api/ansys/geometry/mcp/tools/session_tools/index>
+    <span class="nf nf-fa-file"></span> visualization_tools</api/ansys/geometry/mcp/tools/visualization_tools/index>
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+General MCP tools package.
+
+Importing this package registers every ``@app.tool()`` defined in its submodules.
+
+
+
+
+
+

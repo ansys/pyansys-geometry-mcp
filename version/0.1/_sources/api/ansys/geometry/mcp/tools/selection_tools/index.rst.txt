@@ -1,0 +1,706 @@
+
+
+
+
+
+
+The ``selection_tools.py`` module
+=================================
+
+.. py:module:: ansys.geometry.mcp.tools.selection_tools
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: selection_tools
+.. tab-set::
+
+
+
+
+
+
+
+    .. tab-item:: Functions
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~list_entities`
+            - List the entities of a given type in the active design.
+
+
+          * - :py:obj:`~create_selection_builder`
+            - Create an empty selection builder in the product backend.
+
+
+          * - :py:obj:`~select_entities`
+            - Query the design for entities matching a property and store them in a selection builder.
+
+
+          * - :py:obj:`~filter_entities`
+            - Narrow the entities already held in a selection builder to those matching a condition.
+
+
+          * - :py:obj:`~order_entities`
+            - Order the entities in a selection builder by a numeric property (ascending).
+
+
+          * - :py:obj:`~group_entities`
+            - Group the entities in a selection builder by a shared property.
+
+
+          * - :py:obj:`~extend_selection`
+            - Extend a selection with additional entities related to the ones already selected.
+
+
+          * - :py:obj:`~create_named_selection`
+            - Create a named selection containing geometry entities.
+
+
+
+    .. tab-item:: Attributes
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~logger`
+            - 
+
+
+          * - :py:obj:`~EntityType`
+            - 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+MCP selection tools for PyAnsys Geometry-MCP.
+
+Each function decorated with ``@app.tool()`` is exposed as an MCP tool.
+The ``ctx`` parameter provides access to the app context (and thus
+to the live product instance and command history).
+
+The query/filter/order/group/extend tools all take an ``entity_type`` of
+``"body"``, ``"face"``, or ``"edge"`` and dispatch to the matching typed
+selection on the selection builder. Not every criterion applies to every
+entity type. The tools report the supported criteria when given a bad
+combination.
+
+How to add a tool
+-----------------
+1. Define a Python function with type-annotated parameters.
+2. Add a NumPy-style docstring. The summary line becomes the tool description
+   visible to the AI assistant.
+3. Decorate it with ``@app.tool()``.
+4. Access the product instance::
+
+       app_context = ctx.fastmcp._lifespan_result
+       instance = app_context.product_instance
+
+Notes
+-----
+Import this module in ``__main__.py`` to register all tools
+with the server before it starts.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+.. py:function:: list_entities(ctx: fastmcp.server.Context, entity_type: Literal['body', 'component', 'face', 'edge', 'design_curves', 'datum_points', 'datum_planes', 'datum_lines', 'coordinate_systems'], body_id: str | None = None, component_id: str | None = None, name: str | None = None) -> str
+
+   List the entities of a given type in the active design.
+
+   This is the discovery tool. Use it to find the exact body, component, face, and edge IDs
+   that other tools expect as input, with body paths and component names for context.
+   Body and component names need not be unique, so other tools take IDs.
+
+   Users refer to bodies by name. To turn a body name into its ID, call this
+   tool with ``entity_type="body"`` and ``name`` set to that name. If more than
+   one body matches, use the component path to tell them apart, or ask the
+   user which one they mean.
+
+   Behavior per ``entity_type``:
+
+   - ``"body"``: ``id=<body id>  path=<component path>/<body name>`` for every
+     body, e.g. ``id=0:12  path=MainComponent/Cylinder``. Pass ``name`` to
+     list only bodies with that name, and ``component_id`` to restrict the
+     listing to one component and its children.
+   - ``"component"``: the component hierarchy as an indented tree of
+     ``id=<component id>  name=<component name>`` lines. Component names
+     need not be unique, so use the ID to refer to a component.
+   - ``"face"``: ``id=<face id>  surface_type=<type>`` for every face of
+     ``body_id``. Use it whenever a face ID is needed, or to answer
+     questions about how many faces a body has or which faces are planes,
+     cylinders, cones, and so on.
+   - ``"edge"``: ``id=<edge id>  curve_type=<type>`` for every edge of
+     ``body_id``. Use it whenever an edge ID is needed, or to answer
+     questions about how many edges a body has or which edges are lines,
+     circles, arcs, and so on.
+   - ``"design_curves"``, ``"datum_points"``, ``"datum_planes"``, ``"datum_lines"``,
+     and ``"coordinate_systems"``: ``id=<entity id>  path=<component path>/<name>``
+     for live objects throughout the design, including nested components.
+     Design curves include construction lines left by modeling operations;
+     they are separate from body edges. Pass ``name`` for an exact case-insensitive
+     name match or ``component_id`` to restrict the listing to a component and
+     its children. Use these IDs with the PyAnsys Geometry API through
+     ``run_python``; selection-builder tools accept only bodies, faces, and edges.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   entity_type : str
+       Kind of entity to select. Options are ``"body"``, ``"component"``,
+       ``"face"``, ``"edge"``, ``"design_curves"``, ``"datum_points"``,
+       ``"datum_planes"``, ``"datum_lines"``, and ``"coordinate_systems"``.
+   body_id : str, default: None
+       ID of the body to inspect. Required for ``"face"`` and ``"edge"``,
+       ignored otherwise. List the bodies first to discover valid IDs.
+   component_id : str, default: None
+       ID of a component to restrict body, design curve, datum object, or coordinate
+       system listings to, together with its children. List the components first
+       to discover IDs. Ignored for component, face, and edge listings.
+   name : str, default: None
+       Entity name to look up; only objects with exactly this name (ignoring
+       case) are listed. Applies to bodies, design curves, datum objects, and
+       coordinate systems. Ignored for components, faces, and edges.
+
+   Returns
+   -------
+   str
+       Newline-separated listing, or an error message.
+
+
+
+.. py:function:: create_selection_builder(ctx: fastmcp.server.Context) -> str
+
+   Create an empty selection builder in the product backend.
+
+   Use a selection builder when a selection request needs multiple query or refinement
+   steps. Start with ``select_entities``, refine with ``filter_entities`` or add related
+   entities with ``extend_selection``, and use ``order_entities`` or ``group_entities``
+   when ranking or grouping is useful. Save the final set with ``create_named_selection``.
+   If the requested entities are already known by ID and only need a label, call
+   ``create_named_selection`` directly without a builder. Resolve body names to IDs with
+   ``list_entities`` first.
+
+   Call this tool only to start a brand-new selection. If a selection builder already
+   exists from earlier in this conversation, reuse its handle in the other
+   selection tools instead of calling it again.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+
+   Returns
+   -------
+   str
+       Selection handle (opaque ID string) that can be used in subsequent selection tools, or an
+       error message if creation fails.
+
+
+
+.. py:function:: select_entities(ctx: fastmcp.server.Context, selection_handle: str, entity_type: EntityType, criteria: Literal['all', 'visible', 'solid', 'surface', 'named_selection', 'name', 'volume', 'surface_area', 'area', 'length', 'x_location', 'y_location', 'z_location', 'color'], name: str | None = None, named_selection: str | None = None, min_value: float | None = None, max_value: float | None = None, color: str | None = None, range_type: Literal['intersect', 'contain'] = 'intersect', body_ids: list[str] | None = None) -> list[str] | str
+
+   Query the design for entities matching a property and store them in a selection builder.
+
+   Query the design for the starting set of bodies, faces, or edges in a selection
+   workflow. The result replaces the builder's current selection for that entity type.
+   Queries search the whole design. To select only faces or edges of specific bodies,
+   such as "the circular edges of the plate", pass those bodies' IDs as ``body_ids``.
+   Follow with ``filter_entities`` to narrow the set, ``extend_selection`` to add
+   related entities, or ``create_named_selection`` to save the final set. Pass one
+   ``criteria`` value with its one or more corresponding arguments. Available criteria depend
+   on ``entity_type``.
+
+   Criteria by ``entity_type``:
+
+   - ``"body"``: ``all``, ``visible``, ``solid``, ``surface``, ``named_selection``,
+     ``name``, ``volume``, ``surface_area``, ``x_location``, ``y_location``,
+     ``z_location``, ``color``
+   - ``"face"``: ``all``, ``visible``, ``named_selection``, ``area``,
+     ``x_location``, ``y_location``, ``z_location``, ``color``
+   - ``"edge"``: ``all``, ``visible``, ``named_selection``, ``length``,
+     ``x_location``, ``y_location``, ``z_location``
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   selection_handle : str
+       Handle of the selection builder to use for this query. Reuse the handle
+       from the most recent ``create_selection_builder`` call in this
+       conversation rather than creating a new one.
+   entity_type : str
+       Kind of entity to select. Options are ``"body"``, ``"face"``, and ``"edge"``.
+   criteria : str
+       Selection rule to apply:
+
+       ``"all"``
+           Every entity of that type in the design. No extra arguments are needed.
+       ``"visible"``
+           All currently visible entities. No extra arguments are needed.
+       ``"solid"``
+           Solid (volumetric) bodies. Bodies only.
+       ``"surface"``
+           Surface (sheet) bodies. Bodies only.
+       ``"named_selection"``
+           Entities belonging to a named selection group. Requires ``named_selection``.
+       ``"name"``
+           All bodies whose name matches, ignoring case, including bodies sharing a name.
+           Bodies only. Requires ``name``.
+       ``"volume"``
+           Bodies whose volume falls in [``min_value``, ``max_value``] (m³).
+           ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"surface_area"``
+           Bodies whose surface area falls in [``min_value``, ``max_value``] (m²).
+           ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"area"``
+           Faces whose area falls in [``min_value``, ``max_value``] (m²).
+           ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"length"``
+           Edges whose length falls in [``min_value``, ``max_value``] (m).
+           ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"x_location"``, ``"y_location"``, ``"z_location"``
+           Entities whose location range on that axis intersects or is contained
+           within [``min_value``, ``max_value``] (m), according to ``range_type``.
+           Requires at least one of ``min_value`` or ``max_value``.
+       ``"color"``
+           Bodies or faces with a specific display color. Requires ``color``.
+   name : str, default: None
+       Body name for the ``"name"`` criterion.
+   named_selection : str, default: None
+       Named selection label for the ``"named_selection"`` criterion.
+   min_value : float, default: None
+       Lower bound (inclusive) for range-based criteria, in SI units: m for ``length``
+       and the location criteria, m² for ``area`` and ``surface_area``, m³ for ``volume``.
+       Convert millimeter values first, for example 2000 mm² is ``0.002``.
+   max_value : float, default: None
+       Upper bound (inclusive) for range-based criteria, in the same SI units as
+       ``min_value``. Pass ``None`` to leave the upper bound open.
+   color : str, default: None
+       Hex color string for the ``"color"`` criterion, such as ``"#FF0000"``.
+   range_type : str, default: ``"intersect"``
+       Whether a location criterion intersects or contains the specified range.
+       Options are ``"intersect"`` and ``"contain"``.
+   body_ids : list of str, default: None
+       Keep only faces or edges that belong to these bodies. Faces and edges only.
+       Look up a body named by the user with ``list_entities(entity_type="body", name=...)``.
+
+   Returns
+   -------
+   list of str | str
+       Body, face, or edge IDs for every match. If no entities match, an empty list
+       is returned.
+
+       If the selection handle is invalid, the criterion does not apply to the entity type,
+       or required arguments are missing, a string error message is returned.
+
+   Examples
+   --------
+   All solid bodies:
+       ``select_entities(entity_type="body", criteria="solid")``
+
+   All faces of the design:
+       ``select_entities(entity_type="face", criteria="all")``
+
+   Edges longer than 0.01 m:
+       ``select_entities(entity_type="edge", criteria="length", min_value=0.01)``
+
+   Bodies matching a Z-location range starting at 0.05 m:
+       ``select_entities(entity_type="body", criteria="z_location", min_value=0.05)``
+
+   Circular edges of one body, after looking up its ID with ``list_entities``:
+       ``select_entities(entity_type="edge", criteria="all", body_ids=[plate_id])``
+       followed by
+       ``filter_entities(entity_type="edge", criteria="curve_type", curve_type="circle")``
+
+
+
+.. py:function:: filter_entities(ctx: fastmcp.server.Context, selection_handle: str, entity_type: EntityType, criteria: Literal['volume', 'surface_area', 'area', 'perimeter', 'length', 'face_count', 'edge_count', 'loop_count', 'surface_count', 'curve_count', 'color', 'name', 'containing_surface_type', 'containing_curve_type', 'curve_type', 'is_surface', 'is_solid'], name: str | None = None, find_max: bool | None = None, find_min: bool | None = None, min_value: float | None = None, max_value: float | None = None, surface_type: Literal['plane', 'cylinder', 'cone', 'torus', 'sphere', 'nurbs', 'procedural', 'spline'] | None = None, curve_type: Literal['line', 'circle', 'ellipse', 'nurbs', 'procedural', 'helix', 'spline'] | None = None, color: str | None = None) -> list[str] | str
+
+   Narrow the entities already held in a selection builder to those matching a condition.
+
+   Unlike ``select_entities``, which queries the whole design, this tool only keeps
+   a subset of the current selection. It does not search the design for new entities.
+   Populate the builder with ``select_entities`` or another selection operation first.
+   Use ``extend_selection`` when the request is to add related entities. Use
+   ``create_named_selection`` to save the resulting set.
+
+   Criteria by ``entity_type``:
+
+   - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
+     ``loop_count``, ``surface_count``, ``curve_count``, ``color``, ``name``,
+     ``containing_surface_type``, ``containing_curve_type``, ``is_surface``, ``is_solid``
+   - ``"face"``: ``area``, ``perimeter``, ``edge_count``, ``loop_count``,
+     ``curve_count``, ``color``, ``containing_curve_type``
+   - ``"edge"``: ``length``, ``curve_type``
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   selection_handle : str
+       Handle of the selection builder to use for this query. Reuse the handle
+       from the most recent ``create_selection_builder`` call in this
+       conversation rather than creating a new one.
+   entity_type : str
+       Kind of entity to filter. Options are ``"body"``, ``"face"``, and ``"edge"``.
+   criteria : str
+       Filter rule to apply:
+
+       ``"volume"``, ``"surface_area"``, ``"area"``, ``"perimeter"``, ``"length"``
+           Keep entities whose measurement falls in [``min_value``, ``max_value``],
+           or the single largest/smallest when ``find_max``/``find_min`` is ``True``.
+           ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"face_count"``, ``"edge_count"``, ``"loop_count"``
+           Keep entities with a count in [``min_value``, ``max_value``], or the
+           largest/smallest when ``find_max``/``find_min`` is ``True``.
+           ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"surface_count"``
+           Keep bodies by how many surfaces of ``surface_type`` they contain.
+           Requires ``surface_type``. ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"curve_count"``
+           Keep bodies or faces by how many curves of ``curve_type`` they contain.
+           Requires ``curve_type``. ``min_value`` defaults to 0. ``max_value`` is optional.
+       ``"color"``
+           Keep bodies or faces with a specific display color. Requires ``color``.
+       ``"name"``
+           Keep all bodies whose name matches, ignoring case, including bodies sharing a name.
+           Bodies only. Requires ``name``.
+       ``"containing_surface_type"``
+           Keep bodies containing a surface of ``surface_type``. Bodies only.
+       ``"containing_curve_type"``
+           Keep bodies or faces containing a curve of ``curve_type``.
+       ``"curve_type"``
+           Keep edges of the given ``curve_type``. Edges only.
+       ``"is_surface"`` / ``"is_solid"``
+           Keep only surface or only solid bodies. Bodies only.
+   name : str, default: None
+       Body name for the ``"name"`` criterion.
+   find_max : bool, default: False
+       Keep only the entity with the maximum value of the criterion.
+   find_min : bool, default: False
+       Keep only the entity with the minimum value of the criterion.
+   min_value : float, default: None
+       Lower bound (inclusive) for range-based criteria. Measurements are in SI units:
+       m for ``length`` and ``perimeter``, m² for ``area`` and ``surface_area``, m³ for
+       ``volume``. Convert millimeter values first, for example 2000 mm² is ``0.002``.
+       Count criteria take plain integers.
+   max_value : float, default: None
+       Upper bound (inclusive) for range-based criteria, in the same units as
+       ``min_value``.
+   surface_type : str, default: None
+       Surface type for the ``"surface_count"`` and ``"containing_surface_type"`` criteria.
+   curve_type : str, default: None
+       Curve type for the ``"curve_count"``, ``"containing_curve_type"``, and
+       ``"curve_type"`` criteria.
+   color : str, default: None
+       Hex color string for the ``"color"`` criterion, e.g. ``"#FF0000"``.
+
+   Returns
+   -------
+   list of str | str
+       Body, face, or edge IDs that survive the filter. If no entities survive
+       the filter, an empty list is returned.
+
+       If the selection handle is invalid, the criterion does not apply to the entity type, or
+       required arguments are missing, a string error message is returned.
+
+   Examples
+   --------
+   Keep only bodies with volume of at least 100 m³ (drops the smaller ones):
+       ``filter_entities(entity_type="body", criteria="volume", min_value=100)``
+
+   Keep only the single largest face by area:
+       ``filter_entities(entity_type="face", criteria="area", find_max=True)``
+
+   Keep only solid bodies:
+       ``filter_entities(entity_type="body", criteria="is_solid")``
+
+
+
+.. py:function:: order_entities(ctx: fastmcp.server.Context, selection_handle: str, entity_type: EntityType, criteria: Literal['volume', 'surface_area', 'area', 'perimeter', 'length', 'face_count', 'edge_count', 'loop_count', 'surface_count', 'curve_count'], curve_type: Literal['line', 'circle', 'ellipse', 'nurbs', 'procedural', 'helix', 'spline'] | None = None) -> list[str] | str
+
+   Order the entities in a selection builder by a numeric property (ascending).
+
+   This ranks the entities already in the builder. It does not discover, add, or
+   remove entities. Use ``filter_entities`` to narrow the set, ``extend_selection``
+   to add related entities, or ``group_entities`` to partition it by a shared property.
+
+   Criteria by ``entity_type``:
+
+   - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
+     ``loop_count``, ``surface_count``, ``curve_count``
+   - ``"face"``: ``area``, ``perimeter``, ``edge_count``, ``loop_count``,
+     ``curve_count`` (requires ``curve_type``)
+   - ``"edge"``: ``length``
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   selection_handle : str
+       Handle of the selection builder to use for this query. Reuse the handle
+       from the most recent ``create_selection_builder`` call in this
+       conversation rather than creating a new one.
+   entity_type : str
+       Kind of entity to order. Options are ``"body"``, ``"face"``, and ``"edge"``.
+   criteria : str
+       Property to sort by, smallest first.
+   curve_type : str, default: None
+       Curve type for the face ``"curve_count"`` criterion.
+
+   Returns
+   -------
+   list of str | str
+       Body, face, or edge IDs in ascending order of the chosen property.
+       If the selection is empty, an empty list is returned.
+
+       If the selection handle is invalid, the criterion does not apply to the entity type, or
+       required arguments are missing, a string error message is returned.
+
+   Examples
+   --------
+   Bodies sorted by volume (smallest first):
+       ``order_entities(entity_type="body", criteria="volume")``
+
+   Faces sorted by area:
+       ``order_entities(entity_type="face", criteria="area")``
+
+
+
+.. py:function:: group_entities(ctx: fastmcp.server.Context, selection_handle: str, entity_type: EntityType, criteria: Literal['volume', 'surface_area', 'area', 'perimeter', 'face_count', 'edge_count', 'loop_count', 'color', 'name', 'body', 'coincident', 'curve_type']) -> list[list[str]] | str
+
+   Group the entities in a selection builder by a shared property.
+
+   Each returned group contains entities that are equal in the chosen property.
+   Grouping applies only to entities already in the builder. It does not search the
+   design for additional matches. Use ``filter_entities`` to narrow the selection or
+   ``extend_selection`` to add related entities.
+
+   Criteria by ``entity_type``:
+
+   - ``"body"``: ``volume``, ``surface_area``, ``face_count``, ``edge_count``,
+     ``loop_count``, ``color``, ``name``
+   - ``"face"``: ``area``, ``perimeter``, ``body`` (group faces by owning body),
+     ``edge_count``, ``loop_count``, ``color``, ``coincident``
+   - ``"edge"``: ``curve_type``
+
+   Backend compatibility: face ``coincident`` grouping has been reported as
+   unimplemented on CoreService ``CORE_WINDOWS`` 27.1.0. Do not use that combination
+   on the affected backend. Other grouping properties, such as ``area`` or ``body``,
+   do not identify coincident faces; use them only when they match the request.
+   If no supported criterion satisfies the request, report the limitation rather
+   than substituting a different property.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   selection_handle : str
+       Handle of the selection builder to use for this query. Reuse the handle
+       from the most recent ``create_selection_builder`` call in this
+       conversation rather than creating a new one.
+   entity_type : str
+       Kind of entity to group. Options are ``"body"``, ``"face"``, and ``"edge"``.
+   criteria : str
+       Property to group by.
+
+   Returns
+   -------
+   list of list of str | str
+       Each inner list holds the body, face, or edge IDs of one group.
+
+       If the selection handle is invalid or the criterion does not apply
+       to the entity type, a string error message is returned.
+
+   Examples
+   --------
+   Group all bodies by color:
+       ``group_entities(entity_type="body", criteria="color")``
+
+   Group faces by the body that owns them:
+       ``group_entities(entity_type="face", criteria="body")``
+
+
+
+.. py:function:: extend_selection(ctx: fastmcp.server.Context, selection_handle: str, entity_type: EntityType, criteria: Literal['volume', 'surface_area', 'area', 'face_count', 'edge_count', 'loop_count', 'color', 'name', 'nearby', 'coincident', 'coaxial', 'connected', 'tangent_chain'], scope: Literal['all', 'visible', 'body'] = 'all', distance: float | None = None) -> list[str] | str
+
+   Extend a selection with additional entities related to the ones already selected.
+
+   The current selection is kept and matching entities from the specified scope
+   are added to it.
+   Use this when a request asks to include entities related to an existing selection.
+   Use ``filter_entities`` instead when it asks to keep only matching entities, and
+   ``create_named_selection`` when it asks to save the final selection under a name.
+
+   Criteria by ``entity_type``:
+
+   - ``"body"``: ``volume``, ``surface_area``, ``face_count``,
+     ``edge_count``, ``color``, ``name``, ``nearby``
+   - ``"face"``: ``area``, ``edge_count``, ``loop_count``, ``color``,
+     ``coincident``, ``coaxial``
+   - ``"edge"``: ``nearby``, ``connected``, ``tangent_chain``, ``coaxial``
+
+   Backend compatibility: body ``nearby`` is unsupported on CoreService backends,
+   regardless of ``distance``, including zero. Face ``coincident`` and edge
+   ``nearby``/``connected`` have also been reported as unimplemented on CoreService
+   ``CORE_WINDOWS`` 27.1.0. Do not use these combinations on the affected backend
+   or retry them with different distances. These restrictions take precedence over
+   the general criterion guidance below. Property-based criteria are not substitutes
+   for contact, coincidence, or connectivity. If no supported criterion satisfies
+   the request, report the limitation rather than claiming an equivalent selection.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   selection_handle : str
+       Handle of the selection builder to use for this query. Reuse the handle
+       from the most recent ``create_selection_builder`` call in this
+       conversation rather than creating a new one.
+   entity_type : str
+       Kind of entity to extend. Options are ``"body"``, ``"face"``, and ``"edge"``.
+   criteria : str
+       Rule used to find additional entities. Property criteria such as
+       ``"volume"`` or ``"color"`` add entities sharing that property with any
+       entity already selected. ``"nearby"`` adds entities within ``distance``.
+       ``"coincident"``, ``"coaxial"``, ``"connected"``, and ``"tangent_chain"``
+       add entities related by topology or geometry. Bodies have no dedicated
+       "touching"/contact criterion: for bodies in direct contact, use ``"nearby"``
+       with a near-zero ``distance`` (e.g. ``0.0``) rather than omitting it.
+   scope : str, default: ``"all"``
+       Which entities to search when extending: ``"all"``, ``"visible"``, ``"body"``.
+   distance : float, default: None
+       Maximum proximity distance in metres for the ``"nearby"`` criterion.
+
+   Returns
+   -------
+   list of str | str
+       Body, face, or edge IDs in the extended selection.
+
+       If the selection handle is invalid, the criterion does not apply to the entity type,
+       or required arguments are missing, a string error message is returned.
+
+   Examples
+   --------
+   Add bodies that share the same color:
+       ``extend_selection(entity_type="body", criteria="color")``
+
+   Add edges tangent to the selected ones:
+       ``extend_selection(entity_type="edge", criteria="tangent_chain")``
+
+
+
+.. py:function:: create_named_selection(ctx: fastmcp.server.Context, name: str, selection_handle: str | None = None, entity_types: list[EntityType] | None = None, body_ids: list[str] | None = None, face_ids: list[str] | None = None, edge_ids: list[str] | None = None, beam_ids: list[str] | None = None, design_point_ids: list[str] | None = None, component_ids: list[str] | None = None, vertex_ids: list[str] | None = None, datum_plane_ids: list[str] | None = None, coordinate_system_ids: list[str] | None = None, datum_point_ids: list[str] | None = None) -> str
+
+   Create a named selection containing geometry entities.
+
+   A named selection is a labelled group of entities that can later be
+   referenced by name (for example, for meshing or boundary conditions). Use this tool
+   to save the final result of a selection workflow or call it directly when the
+   requested entities are already known by ID. Resolve body names to IDs with
+   ``list_entities`` first. It stores the supplied entities. It does not discover
+   or refine them. At least one of ``selection_handle`` or an entity list must be provided.
+
+   Typical workflows:
+
+   - Use ``list_entities`` with ``entity_type="body"`` or ``"component"`` to find body or component
+     IDs. Then use ``entity_type="face"`` or ``"edge"`` on a body to obtain the face and edge IDs
+     to pass here.
+   - Build a selection with ``create_selection_builder`` followed by
+     ``select_entities``/``filter_entities``/``order_entities``/``group_entities``/
+     ``extend_selection``. Then pass that builder's ``selection_handle`` here to
+     save its currently selected bodies, faces, and edges as a named selection
+     (for example, "save the bodies/faces I selected as ..."). Use ``entity_types`` to
+     limit which of those types are saved.
+     The IDs those tools return can also be passed directly as ``body_ids``, ``face_ids``,
+     or ``edge_ids``.
+
+   Parameters
+   ----------
+   ctx : Context
+       MCP request context (injected automatically).
+   name : str
+       Label for the named selection.
+   selection_handle : str, default: None
+       Handle of a selection builder (from ``create_selection_builder``) whose
+       currently selected bodies, faces, and edges should be included. Use this
+       when the user refers to entities already picked/selected rather than
+       naming them explicitly.
+   entity_types : list of str, default: None
+       Entity types to include from ``selection_handle``: ``"body"``, ``"face"``,
+       and/or ``"edge"``. If omitted, all entity types present in the selection
+       are included. Requested types that the selection does not contain are
+       ignored; an error is returned only if none of them are present. This does
+       not restrict entities supplied by the explicit ID arguments.
+   body_ids : list of str, default: None
+       Body IDs to include. Look up a body named by the user with
+       ``list_entities(entity_type="body", name=...)``.
+   face_ids : list of str, default: None
+       Face IDs to include. Use ``list_entities`` to discover face IDs of a body.
+   edge_ids : list of str, default: None
+       Edge IDs to include. Use ``list_entities`` to discover edge IDs of a body.
+   beam_ids : list of str, default: None
+       Beam IDs to include.
+   design_point_ids : list of str, default: None
+       Design point IDs to include.
+   component_ids : list of str, default: None
+       Component IDs to include. Use ``list_entities`` with
+       ``entity_type="component"`` to discover component IDs.
+   vertex_ids : list of str, default: None
+       Vertex IDs to include (from ``body.vertices``).
+   datum_plane_ids : list of str, default: None
+       Datum plane IDs to include.
+   coordinate_system_ids : list of str, default: None
+       Coordinate system IDs to include.
+   datum_point_ids : list of str, default: None
+       Datum point IDs to include.
+
+   Returns
+   -------
+   str
+       Confirmation message, or an error message.
+
+
+
+.. py:data:: logger
+
+.. py:data:: EntityType
+
+
+

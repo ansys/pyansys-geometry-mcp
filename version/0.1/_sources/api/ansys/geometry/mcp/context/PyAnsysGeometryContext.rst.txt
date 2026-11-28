@@ -1,0 +1,174 @@
+
+
+
+
+
+
+:class:`PyAnsysGeometryContext`
+===============================
+
+
+.. py:class:: ansys.geometry.mcp.context.PyAnsysGeometryContext
+
+   Bases: :py:obj:`ansys.common.mcp.PyAnsysBaseAppContext`
+
+
+   App context for PyAnsys Geometry-MCP server.
+
+   Attributes
+   ----------
+   product_instance : [Any], default: None
+       Connected product instance.
+   mode : default: str, default: None
+       Launch mode for the geometry service (such as ``"docker"`` or ``"spaceclaim"``).
+   transport_mode : str, default: None
+       Transport mode for the geometry service connection.
+   proto_version : str, default: ``"v1"``
+       Geometry service protocol version for an existing service connection.
+   geometry_host : str, default: ``"localhost"``
+       Host name or IP address of the geometry service.
+   geometry_port : int
+       Port number of the geometry service.
+   uds_dir : str, default: None
+       Directory for the Unix domain socket.
+   uds_id : str, default: None
+       Optional identifier for the Unix domain socket filename.
+   connect_to_existing_service : bool, default: False
+       Whether to connect to a running geometry service. When ``False``, a new
+       geometry service is launched.
+   log_level : str, default: ``"INFO"``
+       Logging level for the MCP server.
+   log_file : str, default: None
+       Optional path to a file that receives server logs.
+   selection_registry : dict[str, SelectionBuilder], default: None
+       Registry mapping selection IDs to their corresponding selection builders.
+       If no registry is provided, an empty dictionary is used.
+
+   Examples
+   --------
+   >>> context = PyAnsysGeometryContext()
+   >>> context.product_instance  # None until product_startup() runs
+
+
+
+
+.. py:currentmodule:: PyAnsysGeometryContext
+
+Overview
+--------
+
+.. tab-set::
+
+
+
+
+
+   .. tab-item:: Attributes
+
+      .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+          * - :py:attr:`~product_instance`
+            - 
+          * - :py:attr:`~mode`
+            - 
+          * - :py:attr:`~transport_mode`
+            - 
+          * - :py:attr:`~proto_version`
+            - 
+          * - :py:attr:`~geometry_host`
+            - 
+          * - :py:attr:`~geometry_port`
+            - 
+          * - :py:attr:`~uds_dir`
+            - 
+          * - :py:attr:`~uds_id`
+            - 
+          * - :py:attr:`~connect_to_existing_service`
+            - 
+          * - :py:attr:`~selection_registry`
+            - 
+          * - :py:attr:`~log_level`
+            - 
+          * - :py:attr:`~log_file`
+            - 
+
+
+
+
+
+
+Import detail
+-------------
+
+.. code-block:: python
+
+    from ansys.geometry.mcp.context import PyAnsysGeometryContext
+
+
+Attribute detail
+----------------
+
+.. py:attribute:: product_instance
+   :type:  Optional[ansys.geometry.core.Modeler]
+   :value: None
+
+
+.. py:attribute:: mode
+   :type:  Optional[str]
+   :value: None
+
+
+.. py:attribute:: transport_mode
+   :type:  Optional[str]
+   :value: None
+
+
+.. py:attribute:: proto_version
+   :type:  str
+   :value: 'v1'
+
+
+.. py:attribute:: geometry_host
+   :type:  str
+   :value: 'localhost'
+
+
+.. py:attribute:: geometry_port
+   :type:  int
+   :value: 50051
+
+
+.. py:attribute:: uds_dir
+   :type:  Optional[str]
+   :value: None
+
+
+.. py:attribute:: uds_id
+   :type:  Optional[str]
+   :value: None
+
+
+.. py:attribute:: connect_to_existing_service
+   :type:  bool
+   :value: False
+
+
+.. py:attribute:: selection_registry
+   :type:  dict[str, ansys.geometry.core.selection_builder.selection_builder.SelectionBuilder]
+
+.. py:attribute:: log_level
+   :type:  str
+   :value: 'INFO'
+
+
+.. py:attribute:: log_file
+   :type:  Optional[str]
+   :value: None
+
+
+
+
+
+

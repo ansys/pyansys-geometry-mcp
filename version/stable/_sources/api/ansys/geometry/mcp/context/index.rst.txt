@@ -1,0 +1,78 @@
+
+
+
+
+
+
+The ``context.py`` module
+=========================
+
+.. py:module:: ansys.geometry.mcp.context
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+
+
+.. py:currentmodule:: context
+.. tab-set::
+
+
+
+
+    .. tab-item:: Classes
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~ansys.geometry.mcp.context.PyAnsysGeometryContext`
+            - App context for PyAnsys Geometry-MCP server.
+
+
+
+
+
+
+
+
+
+
+
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+   :hidden:
+
+    <span class="nf nf-cod-symbol_class"></span> PyAnsysGeometryContext</api/ansys/geometry/mcp/context/PyAnsysGeometryContext>
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+Context for PyAnsys Geometry-MCP server.
+
+
+
+
+
+
+
+

@@ -1,0 +1,84 @@
+
+
+
+
+
+
+The ``misc`` package
+========================
+
+.. py:module:: ansys.geometry.mcp.misc
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: misc
+.. tab-set::
+
+
+    .. tab-item:: Submodules
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~ansys.geometry.mcp.misc.auxiliary`
+            - Shared helpers used by the MCP tool modules.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.misc.helpers`
+            - Helper functions for PyAnsys Geometry-MCP.
+
+
+          * - :py:obj:`~ansys.geometry.mcp.misc.selection_enums`
+            - Selection enum tables to help the MCP resolve the correct enum values for selection criteria.
+
+
+
+
+
+
+
+
+
+
+
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+   :hidden:
+
+    <span class="nf nf-fa-file"></span> auxiliary</api/ansys/geometry/mcp/misc/auxiliary/index>
+    <span class="nf nf-fa-file"></span> helpers</api/ansys/geometry/mcp/misc/helpers/index>
+    <span class="nf nf-fa-file"></span> selection_enums</api/ansys/geometry/mcp/misc/selection_enums/index>
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+Miscellaneous PyAnsys Geometry-MCP helpers package.
+
+
+
+
+
+

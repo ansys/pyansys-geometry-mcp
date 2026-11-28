@@ -1,0 +1,248 @@
+
+
+
+
+
+
+The ``auxiliary.py`` module
+===========================
+
+.. py:module:: ansys.geometry.mcp.misc.auxiliary
+
+
+Summary
+-------
+
+
+
+
+
+
+
+
+.. py:currentmodule:: auxiliary
+.. tab-set::
+
+
+
+
+
+
+
+    .. tab-item:: Functions
+
+        .. list-table::
+          :header-rows: 0
+          :widths: auto
+
+
+          * - :py:obj:`~get_geometry_ctx`
+            - Access the PyAnsys Geometry-MCP context from the MCP context.
+
+
+          * - :py:obj:`~walk_components`
+            - Yield a component and its live descendants with relative name paths.
+
+
+          * - :py:obj:`~find_body_by_name`
+            - Find a body by name across the full design tree.
+
+
+          * - :py:obj:`~find_bodies_by_id`
+            - Find bodies by ID across the full design tree.
+
+
+          * - :py:obj:`~find_component`
+            - Find a component by name across the full design tree.
+
+
+          * - :py:obj:`~find_named_selection`
+            - Find a named selection by name in the design.
+
+
+          * - :py:obj:`~resolve_bodies`
+            - Resolve the bodies a tool should act on from IDs or a selection.
+
+
+          * - :py:obj:`~build_sketch`
+            - Build a sketch from a list of primitive dictionaries and an optional plane definition.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Description
+-----------
+
+Shared helpers used by the MCP tool modules.
+
+
+
+
+
+
+
+Module detail
+-------------
+
+.. py:function:: get_geometry_ctx(ctx: fastmcp.server.Context) -> ansys.geometry.mcp.context.PyAnsysGeometryContext
+
+   Access the PyAnsys Geometry-MCP context from the MCP context.
+
+
+.. py:function:: walk_components(component: ansys.geometry.core.designer.component.Component, prefix: str = '') -> collections.abc.Iterator[tuple[ansys.geometry.core.designer.component.Component, str]]
+
+   Yield a component and its live descendants with relative name paths.
+
+
+.. py:function:: find_body_by_name(design: ansys.geometry.core.designer.design.Design, body_name: str) -> Body | None
+
+   Find a body by name across the full design tree.
+
+   Uses the ``Component.get_all_bodies()`` method, which recursively collects every body
+   in the component hierarchy.
+
+   Parameters
+   ----------
+   design : Design
+       Active design to search in.
+   body_name : str
+       Name of the body to find.
+
+   Returns
+   -------
+   Body | None
+       Body with the specified name, or ``None`` if not found.
+
+
+
+.. py:function:: find_bodies_by_id(design: ansys.geometry.core.designer.design.Design, body_ids: list[str]) -> tuple[list[ansys.geometry.core.designer.body.Body], list[str]]
+
+   Find bodies by ID across the full design tree.
+
+   Body names need not be unique, so tools address bodies by ID.
+
+   Parameters
+   ----------
+   design : Design
+       Active design to search in.
+   body_ids : list of str
+       IDs of the bodies to find, as reported by ``list_entities``.
+
+   Returns
+   -------
+   tuple[list[Body], list[str]]
+       ``(bodies, missing)``: the bodies found, in the order requested, and the
+       IDs that matched no body.
+
+
+
+.. py:function:: find_component(design: ansys.geometry.core.designer.design.Design, component_name: str) -> Component | None
+
+   Find a component by name across the full design tree.
+
+   Uses the ``Design._get_all_components()`` method, which recursively collects every
+   component in the design hierarchy.
+
+   Parameters
+   ----------
+   design : Design
+       Active design to search in.
+   component_name : str
+       Name of the component to find.
+
+   Returns
+   -------
+   Component | None
+       Component with the specified name, or ``None`` if not found.
+
+
+
+.. py:function:: find_named_selection(design: ansys.geometry.core.designer.design.Design, name: str) -> NamedSelection | None
+
+   Find a named selection by name in the design.
+
+   Parameters
+   ----------
+   design : Design
+       Active design to search in.
+   name : str
+       Name of the named selection to find.
+
+   Returns
+   -------
+   NamedSelection | None
+       Named selection with the specified name, or ``None`` if not found.
+
+
+
+.. py:function:: resolve_bodies(app_context: ansys.geometry.mcp.context.PyAnsysGeometryContext, design: ansys.geometry.core.designer.design.Design, body_ids: list[str] | None = None, named_selection: str | None = None, selection_handle: str | None = None) -> tuple[list[ansys.geometry.core.designer.body.Body], str | None]
+
+   Resolve the bodies a tool should act on from IDs or a selection.
+
+   Precedence is ``selection_handle``, then ``named_selection``, then
+   ``body_ids``, and then every body in the design.
+
+   On success, a ``bodies = ...`` line is appended to the command history. It
+   replays the lookup the caller asked for (the selection, the named selection,
+   the supplied IDs, or every body) rather than the IDs it resolved to, so the
+   script stays valid when the design is rebuilt and IDs change.
+
+   Parameters
+   ----------
+   app_context : PyAnsysGeometryContext
+       Application state, which is used to look up ``selection_handle`` and to
+       record the command history.
+   design : Design
+       Active design to resolve against.
+   body_ids : list of str, default: None
+       Body IDs, as reported by ``list_entities``.
+   named_selection : str, default: None
+       Label of a named selection whose bodies should be used.
+   selection_handle : str, default: None
+       Handle of a selection builder from the ``create_selection_builder`` method.
+
+   Returns
+   -------
+   tuple[list[Body], str | None]
+       ``(bodies, error)``. ``error`` is ``None`` on success; otherwise the
+       body list is empty and the string is meant to be returned to the caller.
+
+
+
+.. py:function:: build_sketch(sketch_primitives: list[dict], plane_origin: list[float] | None = None, plane_dir_x: list[float] | None = None, plane_dir_y: list[float] | None = None) -> tuple[ansys.geometry.core.sketch.Sketch, list[str]]
+
+   Build a sketch from a list of primitive dictionaries and an optional plane definition.
+
+   Parameters
+   ----------
+   sketch_primitives : list of dict
+       Each dictionary must have a ``"type"`` key. See ``extrude_sketch`` for supported types.
+   plane_origin : list of float, default: None
+       ``[x, y, z]`` origin of the sketch plane.
+   plane_dir_x : list of float, default: None
+       ``[x, y, z]`` X direction of the sketch plane.
+   plane_dir_y : list of float, default: None
+       ``[x, y, z]`` Y direction of the sketch plane.
+
+   Returns
+   -------
+   tuple[Sketch, list[str]]
+       Populated sketch object and the list of accumulated commands.
+
+
+
+
+
